@@ -281,8 +281,31 @@ function ghProjectChanged() {
 const ghSyncNow = () => ghRun(() => ghCycle({ manual: true }));
 
 /* ---------- подключение проекта ---------- */
+/** GitHub отвечает «не найдено» и когда репозитория нет, и когда токен его не видит. Смотрим, что токен видит на самом деле, и говорим, в чём дело. */
+async function ghExplain404(repo) {
+  const [owner, name] = repo.split('/'), low = x => String(x || '').toLowerCase();
+  let login = '', list = [];
+  try {
+    const u = await ghReq('GET', '/user'); if (u.status === 200) login = (ghParse(u.text) || {}).login || '';
+    const l = await ghReq('GET', '/user/repos?per_page=100&sort=updated');
+    if (l.status === 200) list = (ghParse(l.text) || []).map(x => x.full_name).filter(Boolean);
+  } catch (e) { /* без подробностей */ }
+  if (!list.length && !login) return t('gh.err.notfound');
+  const exact = list.find(x => low(x) === low(repo));
+  if (exact) return t('gh.x.case', exact);
+  const sameName = list.filter(x => low(x.split('/')[1]) === low(name));
+  if (sameName.length) return t('gh.x.owner', sameName.join(', '), repo);
+  const near = list.filter(x => { const n = low(x.split('/')[1]); return n.includes(low(name)) || low(name).includes(n); }).slice(0, 4);
+  const parts = [];
+  if (login && low(login) !== low(owner)) parts.push(t('gh.x.login', login, owner));
+  if (near.length) parts.push(t('gh.x.near', near.join(', ')));
+  parts.push(list.length ? t('gh.x.sees', list.length, list.slice(0, 6).join(', ') + (list.length > 6 ? '…' : '')) : t('gh.x.none'));
+  parts.push(t('gh.x.fix', name));
+  return parts.join(' ');
+}
 async function ghRepoCheck(repo) {
   const r = await ghReq('GET', '/repos/' + repo);
+  if (r.status === 404) throw ghFail('not_found', await ghExplain404(repo));
   if (r.status !== 200) throw ghStatusErr(r);
   const j = ghParse(r.text) || {};
   if (j.permissions && j.permissions.push === false) throw ghFail('forbidden', t('gh.err.readonly'));
@@ -412,7 +435,7 @@ function renderGhStatus(st) {
 function renderGhPanel(st) {
   if (!st || st.m.closed) return;
   const keep = st.m.card.querySelector('.m-main'), top = keep ? keep.scrollTop : 0, parts = [];
-  const guard = async (fn) => { st.busy = true; renderGhPanel(st); try { await fn(); } catch (e) { toast(ghErrInfo(e).msg, 6500); } st.busy = false; renderGhPanel(st); };
+  const guard = async (fn) => { st.busy = true; st.err = ''; renderGhPanel(st); try { await fn(); } catch (e) { const g = ghErrInfo(e); st.err = g.msg; toast(g.msg, Math.max(6500, g.msg.length * 70)); } st.busy = false; renderGhPanel(st); };
   const inp = (key, ph, type = 'text') => { const i = h('input', { class: 'inp mono', type, spellcheck: 'false', autocomplete: 'off', placeholder: ph, value: st.draft[key] || '', id: 'gh-' + key }); i.addEventListener('input', () => { st.draft[key] = i.value; }); return i; };
 
   /* 0. открыть по ссылке */
@@ -464,6 +487,7 @@ function renderGhPanel(st) {
           GHS.remote && GHS.remote.kind !== 'newer' ? h('button', { class: 'btn danger-fill', onclick: () => ghConflictDialog() }, icon('alert', 15), t('drive.resolve')) : null,
           h('button', { class: 'btn', id: 'gh-off', onclick: () => { ghDisable(); renderGhPanel(st); } }, t('gh.off'))));
     }
+    if (st.err) card.append(h('div', { class: 'hint warn-t', id: 'gh-err', style: { marginTop: '8px' } }, st.err));
     card.append(h('div', { class: 'hint', style: { marginTop: '8px' } }, t('gh.scope')));
     parts.push(card);
 

@@ -668,7 +668,7 @@ function plRich(text) {
   const segs = []; const st = { b: 0, i: 0, u: 0, s: 0, color: [], size: [], hl: [] };
   const push = (t, br) => { if (!t && !br) return; segs.push({ t: t || '', br: !!br, b: st.b > 0, i: st.i > 0, u: st.u > 0, s: st.s > 0, color: st.color.length ? st.color[st.color.length - 1] : '', size: st.size.length ? st.size[st.size.length - 1] : '', hl: st.hl.length ? st.hl[st.hl.length - 1] : '' }); };
   const s = String(text).replace(/\{\{/g, '\u0002');
-  let buf = '', i = 0, nw = false;
+  let buf = '', i = 0, nw = false, wait = 0;
   while (i < s.length) {
     const c = s[i];
     if (c === '{') {
@@ -680,6 +680,7 @@ function plRich(text) {
       const close = !!m[1], name = m[2].toLowerCase(), arg = m[3];
       if (name === 'nw') { nw = true; continue; }
       if (name === 'p' || name === 'w' || name === 'fast' || name === 'cps' || name === 'k' || name === 'alpha' || name === 'font' || name === 'a' || name === 'art' || name === 'plain' || name === 'rb' || name === 'rt' || name === 'image' || name === 'vspace' || name === 'space') {
+        if ((name === 'p' || name === 'w') && arg && Number.isFinite(+arg)) wait += +arg;
         if (name === 'p') { push(buf); buf = ''; push('', true); }
         continue;
       }
@@ -696,7 +697,7 @@ function plRich(text) {
   }
   push(buf);
   for (const sg of segs) sg.t = sg.t.replace(/\u0002/g, '{');
-  segs.nw = nw;
+  segs.nw = nw; segs.wait = wait;
   return segs;
 }
 const plPlain = segs => segs.map(x => x.br ? ' ' : x.t).join('');
@@ -755,7 +756,7 @@ class PlGame {
     const l = this.prog.labels.get(label || 'start');
     if (!l) { this.over = true; return { type: 'error', text: 'Нет метки «' + (label || 'start') + '»' }; }
     this.frames = [{ body: l.body, i: 0, base: true, label: l.name, next: l.next }];
-    this.curLabel = l.name;
+    this.curLabel = l.name; if (this.onLabel) this.onLabel(l.name);
     return this.run();
   }
   snap() { return { frames: this.frames.map(f => ({ body: f.body, i: f.i, base: f.base, label: f.label, next: f.next })), vars: plClone(this.vars), disp: plClone(this.disp), logLen: this.log.length, lastSay: this.lastSay, curLabel: this.curLabel }; }
@@ -774,7 +775,7 @@ class PlGame {
   /** Переход на метку без сброса переменных (кнопка «с блока»). */
   startAt(label) {
     const l = this.prog.labels.get(label); if (!l) return { type: 'error', text: 'Нет метки «' + label + '»' };
-    this.frames = [{ body: l.body, i: 0, base: true, label: l.name, next: l.next }]; this.curLabel = l.name; this.over = false; this.pend = null;
+    this.frames = [{ body: l.body, i: 0, base: true, label: l.name, next: l.next }]; this.curLabel = l.name; this.over = false; this.pend = null; if (this.onLabel) this.onLabel(l.name);
     return this.run();
   }
   advance() { return this.run(); }
@@ -809,7 +810,7 @@ class PlGame {
       if (!f) { this.over = true; return this.fin({ type: 'end' }); }
       if (f.i >= f.body.length) {
         this.frames.pop();
-        if (f.base && f.next) { const l = this.prog.labels.get(f.next); if (l) { this.frames.push({ body: l.body, i: 0, base: true, label: l.name, next: l.next }); this.curLabel = l.name; } }
+        if (f.base && f.next) { const l = this.prog.labels.get(f.next); if (l) { this.frames.push({ body: l.body, i: 0, base: true, label: l.name, next: l.next }); this.curLabel = l.name; if (this.onLabel) this.onLabel(l.name); } }
         else if (f.base) { const b = this.baseLabel(); if (b) this.curLabel = b; }
         continue;
       }
@@ -827,7 +828,7 @@ class PlGame {
   pushBase(name) {
     const l = this.prog.labels.get(name);
     if (!l) throw new PlErr('нет метки «' + name + '»');
-    this.frames.push({ body: l.body, i: 0, base: true, label: l.name, next: l.next }); this.curLabel = l.name;
+    this.frames.push({ body: l.body, i: 0, base: true, label: l.name, next: l.next }); this.curLabel = l.name; if (this.onLabel) this.onLabel(l.name);
   }
   /** Выполняет один оператор. Возвращает событие, если нужен ответ игрока. */
   exec(s, f) {

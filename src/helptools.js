@@ -106,7 +106,9 @@ HELP.ru.push(
     'Играть можно с начала или с любого блока: «С блока…» в шапке плеера либо «Играть отсюда» в меню блока на карте.',
     'Кнопки внизу: назад (откат на шаг), авто, пропуск, звук, заново, боковая панель. Клавиши: `Пробел`, `Enter`, `→` дальше, `←` назад, `A` авто, `S` пропуск, `H` панель.',
     'Панель справа: «Переменные» (значение можно поправить щелчком, чтобы проверить ветку), «История» (всё, что уже прочитано) и «Замечания» (что плеер не понял в сценарии). Там же счётчик открытых концовок и галочка «Показывать закрытые выборы»: выбор с невыполненным условием виден серым с замком.',
-    'Если картинки или звука нет в ресурсах, вместо спрайта показывается цветная заглушка с названием. Хитрый Python и особые возможности Ren\'Py плеер не выполняет: об этом скажут «Замечания», а сюжет всё равно пойдёт дальше.'] }
+    'Если картинки или звука нет в ресурсах, вместо спрайта показывается цветная заглушка с названием. Хитрый Python и особые возможности Ren\'Py плеер не выполняет: об этом скажут «Замечания», а сюжет всё равно пойдёт дальше.',
+    'Автопрогон («Инструменты → Автопрогон», `Ctrl+K`) сам проходит новеллу всеми способами и показывает, за какое минимальное время игрок доберётся до каждого блока и каждой концовки. Считаются условия и переменные из сценария, скорость чтения, минимум на реплику, время на выбор, паузы и длина озвучки (читается из загруженных записей).',
+    'Кнопка «Путь» у блока раскрывает цепочку выборов с отметкой времени, «На карте» подсвечивает этот путь. Блоки, до которых условия не дают дойти (хотя стрелка на карте есть), перечисляются отдельно. Если ситуаций слишком много, поиск останавливается на пределе, и об этом сказано в окне.'] }
 );
 HELP.en.push(
   { h: 'Built-in player', items: [
@@ -114,7 +116,9 @@ HELP.en.push(
     'Start from the beginning or from any block: “From block…” in the player header, or “Play from here” in a block\'s map menu.',
     'Bottom buttons: back (roll back a step), auto, skip, sound, restart, side panel. Keys: `Space`, `Enter`, `→` next, `←` back, `A` auto, `S` skip, `H` panel.',
     'The side panel has “Variables” (click a value to change it and test a branch), “History” (everything already read) and “Warnings” (what the player did not understand in the script). It also shows the unlocked endings count and a “Show locked choices” switch: a choice whose condition fails is greyed out with a lock.',
-    'If an image or sound is missing from resources, a coloured placeholder with its name is shown instead. Tricky Python and exotic Ren\'Py features are not executed: “Warnings” will say so, and the story still goes on.'] }
+    'If an image or sound is missing from resources, a coloured placeholder with its name is shown instead. Tricky Python and exotic Ren\'Py features are not executed: “Warnings” will say so, and the story still goes on.',
+    'Auto-run (Tools → Auto-run, `Ctrl+K`) plays the novel every possible way and shows the shortest time in which a player can reach each block and each ending. Script conditions and variables, reading speed, minimum per line, time per choice, pauses and voice length (read from the uploaded recordings) are all counted.',
+    'The “Route” button of a block expands the chain of choices with timestamps, “On the map” highlights that route. Blocks the conditions never let anyone reach (even if the map has an arrow) are listed separately. If there are too many situations, the search stops at the limit and the window says so.'] }
 );
 HELP_ICONS.push('sliders', 'rows', 'type', 'play');
 HELP_GROUPS.splice(2, 0, [['Инструменты, текст и печать', 'Tools, text and printing'], [20, 21, 22, 23]]);
