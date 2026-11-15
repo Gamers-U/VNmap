@@ -518,7 +518,7 @@ function plDefine(kw, rest, ctx, L) {
     ctx.chars.set(name, { name: nm ? nm.value : (/^\s*None\b/.test(body) ? '' : name), color: col ? col[2] : '', whatColor: wc ? wc[2] : '' });
     return { k: 'nop' };
   }
-  if (name === 'persistent.endings' || name.startsWith('config.') || name.startsWith('gui.') || name.startsWith('preferences.') || name.startsWith('build.')) return { k: 'nop' };
+  if (name === 'persistent.endings' || name.startsWith('persistent.vn_') || name.startsWith('config.') || name.startsWith('gui.') || name.startsWith('preferences.') || name.startsWith('build.')) return { k: 'nop' };
   const ast = plParseSafe(expr, ctx, L);
   return ast ? { k: 'init', name, ast, once: kw === 'default' } : { k: 'nop' };
 }
@@ -712,8 +712,9 @@ class PlGame {
     opt = opt || {};
     this.prog = prog;
     this.images = new Map(prog.images);
-    this.persistent = Object.assign(Object.create(null), { endings: opt.persist || new Set() });
+    this.persistent = Object.assign(Object.create(null), { endings: opt.persist || new Set(), vn_ach: opt.achPersist || new Set() });
     this.endingsData = opt.endings || { list: [], rules: {} };
+    this.achData = opt.ach || { list: [], all: [], cg: [] };
     this.maxSteps = opt.maxSteps || 200000;
     this.warns = []; this.warnSet = new Set();
     const G = this;
@@ -728,6 +729,17 @@ class PlGame {
       },
       is_unlocked: key => { const r = G.endingsData.rules[key]; if (!r) return true; return r.pool.filter(k => G.persistent.endings.has(k)).length >= r.need; },
       reach_ending: key => { if (!G.persistent.endings.has(key)) { G.persistent.endings.add(key); const e = G.endingsData.list.find(x => x.key === key); G.notices.push({ type: 'ending', key, text: e ? e.title : key }); } return null; },
+      vn_grant: key => {
+        const a = G.achData.list.find(x => x.key === key);
+        if (a && !G.persistent.vn_ach.has(key)) { G.persistent.vn_ach.add(key); G.notices.push({ type: 'ach', key, text: a.title }); }
+        return null;
+      },
+      vn_check_progress: () => {                           // «все CG» в плеере не проверяется: он не знает, какие картинки игрок видел
+        const tot = G.endingsData.list.length;
+        if (tot && G.persistent.endings.size >= tot) for (const k of G.achData.all) G.names.vn_grant(k);
+        return null;
+      },
+      vn_ach_has: key => G.persistent.vn_ach.has(key), vn_ach_count: () => G.persistent.vn_ach.size,
       endings_count: () => G.persistent.endings.size,
       endings_total: () => G.endingsData.list.length,
     };

@@ -1660,3 +1660,9 @@ body.game-mode{background:var(--bg)}
 .rp-go{margin-left:8px;padding:1px 8px;font-size:11.5px;vertical-align:middle}
 .rp-empty{padding:4px 0}
 @media (max-width:760px){.rp-row{grid-template-columns:1fr}.rp-arow{grid-template-columns:1fr}.rp-btns.end{justify-content:flex-start}}
+/* достижения в реестре */
+.ach-top{grid-template-columns:84px 1fr 1fr}
+.ach-ic{text-align:center;font-size:18px}
+.ach-code{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.ach-code code{padding:7px 12px;background:var(--code);border:1px solid var(--border);border-radius:10px;font-family:var(--mono);font-size:12.5px;user-select:all}
+@media (max-width:700px){.ach-top{grid-template-columns:1fr}}

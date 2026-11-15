@@ -3,7 +3,7 @@
 let REG = null;
 const REG_TABS = [
   { id: 'chars', icon: 'users' }, { id: 'team', icon: 'badge' }, { id: 'bg', icon: 'image' }, { id: 'sprite', icon: 'user' },
-  { id: 'audio', icon: 'music' }, { id: 'fx', icon: 'sparkles' }, { id: 'tf', icon: 'motion' }, { id: 'font', icon: 'type' }, { id: 'vars', icon: 'code' }, { id: 'files', icon: 'file' }
+  { id: 'audio', icon: 'music' }, { id: 'fx', icon: 'sparkles' }, { id: 'tf', icon: 'motion' }, { id: 'font', icon: 'type' }, { id: 'ach', icon: 'trophy' }, { id: 'vars', icon: 'code' }, { id: 'files', icon: 'file' }
 ];
 const AUDIO_KINDS = ['music', 'sfx', 'voice'];
 
@@ -27,6 +27,7 @@ function regCount(id) {
   if (id === 'files') return allFiles().length;
   if (id === 'vars') return P.vars.length;
   if (id === 'team') return P.members.length;
+  if (id === 'ach') return P.achs.length;
   return P.assets.filter(a => a.kind === id).length;
 }
 function renderReg() {
@@ -61,6 +62,7 @@ function regView(st) {
     else if (st.tab === 'files') regFiles(st, list, qq);
     else if (st.tab === 'vars') regVars(st, list, qq);
     else if (st.tab === 'team') regTeam(st, list, qq);
+    else if (st.tab === 'ach') regAchs(st, list, qq);
     else if (st.tab === 'fx' || st.tab === 'tf') regFx(st, list, qq);
     else regAssets(st, list, qq);
   };
@@ -75,6 +77,7 @@ function regAdd(st) {
   let focusId;
   if (st.tab === 'chars') { const c = createChar('', ''); c.name = t('char.default'); c.tag = uniqueTag(slug(t('char.default'))); focusId = c.id; }
   else if (st.tab === 'team') { const m = addMember(t('team.new')); focusId = m.id; }
+  else if (st.tab === 'ach') { const a = createAch(); focusId = a.id; }
   else if (st.tab === 'vars') { openFlagDialog({ name: nextFlagName(), type: 'flag', onDone: v => setTimeout(() => { const el = $('[data-rid="' + v.id + '"]'); if (el) el.scrollIntoView({ block: 'center' }); }, 60) }); return; }
   else {
     const kind = st.tab === 'audio' ? 'music' : st.tab;
@@ -160,6 +163,7 @@ function regAssets(st, list, qq) {
     body.push(h('div', { class: st.tab === 'audio' ? 'grid3' : 'grid2' }, row1));
     if (a.kind === 'sprite') body.push(field(t('as.f.expr'), exprEditor(a)));
     if (a.kind === 'bg') body.push(h('div', { class: 'opt-row' }, switchEl(!!a.cg, v => { if (v) a.cg = true; else delete a.cg; commit(true); }), h('div', { class: 'opt-t' }, h('div', {}, t('as.cg')), h('div', { class: 'hint' }, t('as.cg.h')))));
+    if (a.kind === 'music') body.push(h('div', { class: 'opt-row' }, switchEl(a.room !== false, v => { if (v) delete a.room; else a.room = false; commit(true); }), h('div', { class: 'opt-t' }, h('div', {}, t('as.room')), h('div', { class: 'hint' }, t('as.room.h')))));
     if (hasFilesKind(a.kind)) body.push(field(t('as.f.files.h'), assetFilesUI(a)));
     if (a.kind === 'font') body.push(fontSample(a));
     body.push(h('div', { class: 'grid2' }, field(t('as.f.notes'), bindInput(a, 'notes', { onChange: () => commit() })),

@@ -298,6 +298,37 @@ function compileProject(over, blobSet) {
   }
   const isLocked = n => rules.has(info.get(n.id).key);
 
+  /* ---------- «дополнительно»: что нужно знать до сборки блоков (CG, достижения) ---------- */
+  const cgItems = () => P.assets.filter(a => a.kind === 'bg' && a.cg && (a.name || '').trim()).map(a => ({ a, nm: cmpImageName(a.name), file: assetTarget.get(a.id + '|') })).filter(x => x.file || opt.placeholders);
+  /* достижения: что и куда выдавать. Сами строки vn_grant вставляются в блоки ниже; файл achievements.rpy пишет cmpAchievements */
+  const ach = { list: [], byBlock: new Map(), byEnding: new Map(), all: [], cg: [], on: false };
+  if (P.achs.length && opt.extras === false) add('warn', t('cmp.ach.off'));
+  if (P.achs.length && opt.extras !== false) {
+    const keys = achKeys();
+    const cgOk = cgItems().length > 0;
+    for (const a of P.achs) {
+      if (!String(a.title || '').trim()) { add('info', t('cmp.ach.notitle')); continue; }
+      const key = keys.get(a.id), node = a.ref ? nodeById(a.ref) : null, rec = { a, key, auto: false };
+      if (a.trig === 'ending' || a.trig === 'block') {
+        const ok = node && info.has(node.id) && (a.trig === 'block' || node.type === 'ending');
+        if (!ok) add('warn', t('cmp.ach.noref', a.title));
+        else { rec.auto = true; const m = a.trig === 'ending' ? ach.byEnding : ach.byBlock; (m.get(node.id) || m.set(node.id, []).get(node.id)).push(key); }
+      } else if (a.trig === 'endings_all') {
+        if (!endingNodes.length) add('warn', t('cmp.ach.noending', a.title)); else { rec.auto = true; ach.all.push(key); }
+      } else if (a.trig === 'cg_all') {
+        if (!cgOk) add('warn', t('cmp.ach.nocg', a.title)); else { rec.auto = true; ach.cg.push(key); }
+      }
+      ach.list.push(rec);
+    }
+    ach.on = ach.list.length > 0;
+    const known = new Set(ach.list.map(x => x.key));
+    const warned = new Set();
+    for (const lines of scriptLines.values()) for (const l of lines) {
+      const re = /\bvn_grant\(\s*(["'])([^"']*)\1/g; let m;
+      while ((m = re.exec(l))) if (!known.has(m[2]) && !warned.has(m[2])) { warned.add(m[2]); add('warn', t('cmp.ach.unknown', m[2])); }
+    }
+  }
+
   /* ---------- маршрутизация блоков (script.rpy) ---------- */
   const spine = new Map();
   const edgeChoice = e => {
@@ -317,9 +348,12 @@ function compileProject(over, blobSet) {
   };
   for (const I of info.values()) {
     const n = I.n, body = [];
+    for (const k of ach.byBlock.get(n.id) || []) body.push(`$ vn_grant(${pyStr(k)})`);
     n.files.length && I.files.forEach(F => body.push(`call ${F.label}` + (F.f.title ? '  # ' + F.f.title.replace(/\n/g, ' ') : '')));
     if (n.type === 'ending') {
       body.push(`$ reach_ending(${pyStr(I.key)})`);
+      for (const k of ach.byEnding.get(n.id) || []) body.push(`$ vn_grant(${pyStr(k)})`);
+      if (ach.all.length || ach.cg.length) body.push('$ vn_check_progress()');
       const card = tlEndingCard(n, opt);
       if (card) body.push(`centered "${card}"`);
       if (opt.endingCredits && creditSecs.length) body.push('call credits');
@@ -511,8 +545,11 @@ function compileProject(over, blobSet) {
 
   /** Экраны для меню игры: игрок открывает их кнопкой, которую автор добавляет в navigation (см. подсказку в окне «Сборка»). */
   function cmpExtras() {
+    cmpGallery(); cmpMusicRoom(); cmpAchievements();
+  }
+  /* галерея CG */
+  function cmpGallery() {
     const W = 320, H = 180;
-    /* галерея CG */
     const cgs = P.assets.filter(a => a.kind === 'bg' && a.cg && (a.name || '').trim());
     const items = [];
     for (const a of cgs) {
@@ -521,28 +558,93 @@ function compileProject(over, blobSet) {
       if (!file) add('info', t('cmp.cg.ph', a.name));
       items.push({ nm, file, a });
     }
-    if (cgs.length && !items.length) return;
-    if (items.length) {
-      const G = hdr(t('cmp.f.gallery'));
-      G.push('# ' + t('cmp.cg.hint'), '', 'init python:', '    cg_gallery = Gallery()', '    cg_gallery.transition = dissolve', '    CG_ITEMS = []', '    CG_NAMES = []', '');
-      items.forEach((it, i) => {
-        const key = 'cg' + (i + 1);
-        const thumb = it.file ? `im.Scale(${pyStr(it.file)}, ${W}, ${H})` : `Fixed(Solid("${PH_COLORS[hashStr(it.nm) % PH_COLORS.length]}", xsize=${W}, ysize=${H}), Text(${pyStr(it.nm)}, size=26, color="#ffffffcc", xalign=0.5, yalign=0.5), xsize=${W}, ysize=${H})`;
-        G.push(`    cg_gallery.button(${pyStr(key)})`, `    cg_gallery.unlock_image(${pyStr(it.nm)})`, `    CG_ITEMS.append((${pyStr(key)}, ${thumb}))`, `    CG_NAMES.append(${pyStr(it.nm)})`, '');
-      });
-      G.push(
-        `    CG_LOCKED = Fixed(Solid("#1d1d26", xsize=${W}, ysize=${H}), Text("?", size=64, color="#ffffff55", xalign=0.5, yalign=0.5), xsize=${W}, ysize=${H})`, '',
-        '    def cg_seen_count():', '        return len([n for n in CG_NAMES if renpy.seen_image(tuple(n.split()))])', '',
-        'screen cg_gallery():', '    tag menu', '    add Solid("#000000")',
-        `    text _(${pyStr(t('cmp.cg.title'))}) size 56 xalign 0.5 ypos 40`,
-        '    text "%d / %d" % (cg_seen_count(), len(CG_NAMES)) size 28 xalign 0.5 ypos 112',
-        '    vpgrid:', '        cols 3', '        spacing 24', '        xalign 0.5', '        ypos 170',
-        '        xysize (config.screen_width - 160, config.screen_height - 300)', '        mousewheel True', '        scrollbars "vertical"',
-        '        for key, thumb in CG_ITEMS:', '            add cg_gallery.make_button(key, thumb, locked=CG_LOCKED)',
-        `    textbutton _(${pyStr(t('cmp.extras.back'))}) action Return() xalign 0.5 yalign 0.97`);
-      R.files.push({ path: 'game/gallery.rpy', text: G.join('\n') + '\n' });
-      R.extras.push({ id: 'cg', screen: 'cg_gallery', label: t('cmp.cg.title'), count: items.length });
+    if (!items.length) return;
+    const G = hdr(t('cmp.f.gallery'));
+    G.push('# ' + t('cmp.cg.hint'), '', 'init python:', '    cg_gallery = Gallery()', '    cg_gallery.transition = dissolve', '    CG_ITEMS = []', '    CG_NAMES = []', '');
+    items.forEach((it, i) => {
+      const key = 'cg' + (i + 1);
+      const thumb = it.file ? `im.Scale(${pyStr(it.file)}, ${W}, ${H})` : `Fixed(Solid("${PH_COLORS[hashStr(it.nm) % PH_COLORS.length]}", xsize=${W}, ysize=${H}), Text(${pyStr(it.nm)}, size=26, color="#ffffffcc", xalign=0.5, yalign=0.5), xsize=${W}, ysize=${H})`;
+      G.push(`    cg_gallery.button(${pyStr(key)})`, `    cg_gallery.unlock_image(${pyStr(it.nm)})`, `    CG_ITEMS.append((${pyStr(key)}, ${thumb}))`, `    CG_NAMES.append(${pyStr(it.nm)})`, '');
+    });
+    G.push(
+      `    CG_LOCKED = Fixed(Solid("#1d1d26", xsize=${W}, ysize=${H}), Text("?", size=64, color="#ffffff55", xalign=0.5, yalign=0.5), xsize=${W}, ysize=${H})`, '',
+      '    def cg_seen_count():', '        return len([n for n in CG_NAMES if renpy.seen_image(tuple(n.split()))])', '',
+      'screen cg_gallery():', '    tag menu', '    add Solid("#000000")',
+      `    text _(${pyStr(t('cmp.cg.title'))}) size 56 xalign 0.5 ypos 40`,
+      '    text "%d / %d" % (cg_seen_count(), len(CG_NAMES)) size 28 xalign 0.5 ypos 112',
+      '    vpgrid:', '        cols 3', '        spacing 24', '        xalign 0.5', '        ypos 170',
+      '        xysize (config.screen_width - 160, config.screen_height - 300)', '        mousewheel True', '        scrollbars "vertical"',
+      '        for key, thumb in CG_ITEMS:', '            add cg_gallery.make_button(key, thumb, locked=CG_LOCKED)',
+      `    textbutton _(${pyStr(t('cmp.extras.back'))}) action Return() xalign 0.5 yalign 0.97`);
+    R.files.push({ path: 'game/gallery.rpy', text: G.join('\n') + '\n' });
+    R.extras.push({ id: 'cg', screen: 'cg_gallery', label: t('cmp.cg.title'), count: items.length });
+  }
+  /* музыкальная комната: вся музыка с файлом, кроме снятой галочкой в реестре */
+  function cmpMusicRoom() {
+    const songs = [];
+    for (const a of P.assets) {
+      if (a.kind !== 'music' || a.room === false || !(a.name || '').trim()) continue;
+      if (!audioHasFile(a)) { add('info', t('cmp.mr.nofile', a.name)); continue; }
+      songs.push({ title: a.name.trim(), file: assetTarget.get(a.id + '|') });
     }
+    if (!songs.length) return;
+    const M = hdr(t('cmp.f.musicroom'));
+    M.push('# ' + t('cmp.mr.hint'), '', 'init python:', '    music_room = MusicRoom(fadeout=1.0, loop=True)', '    MUSIC_TRACKS = []', '');
+    for (const sg of songs) M.push(`    music_room.add(${pyStr(sg.file)}, always_unlocked=False)`, `    MUSIC_TRACKS.append((${pyStr(achTxt(sg.title))}, ${pyStr(sg.file)}))`, '');
+    M.push(
+      '    def music_heard_count():', '        return len([f for n, f in MUSIC_TRACKS if renpy.seen_audio(f)])', '',
+      'screen music_room():', '    tag menu', '    add Solid("#000000")',
+      `    text _(${pyStr(t('cmp.mr.title'))}) size 56 xalign 0.5 ypos 40`,
+      '    text "%d / %d" % (music_heard_count(), len(MUSIC_TRACKS)) size 28 xalign 0.5 ypos 112',
+      '    vpgrid:', '        cols 1', '        spacing 10', '        xalign 0.5', '        ypos 170',
+      '        xysize (min(config.screen_width - 160, 900), config.screen_height - 360)', '        mousewheel True', '        scrollbars "vertical"',
+      '        for title, file in MUSIC_TRACKS:',
+      '            if renpy.seen_audio(file):', '                textbutton title action music_room.Play(file) xfill True',
+      '            else:', '                textbutton "???" action NullAction() xfill True sensitive False',
+      '    textbutton "■" action music_room.Stop() xalign 0.5 yalign 0.88',
+      `    textbutton _(${pyStr(t('cmp.extras.back'))}) action [music_room.Stop(), Return()] xalign 0.5 yalign 0.97`);
+    R.files.push({ path: 'game/musicroom.rpy', text: M.join('\n') + '\n' });
+    R.extras.push({ id: 'music', screen: 'music_room', label: t('cmp.mr.title'), count: songs.length });
+  }
+  /* достижения: список, выдача vn_grant, всплывающее окно, экран, передача в Steam */
+  function cmpAchievements() {
+    if (!ach.on) return;
+    const A = hdr(t('cmp.f.ach'));
+    A.push('# ' + t('cmp.ach.hint'), '', 'default persistent.vn_ach = set()', '', 'init -2 python:', '    # id, название, описание, значок, скрытое', '    ACHIEVEMENTS = [');
+    for (const r of ach.list) A.push(`        (${pyStr(r.key)}, ${pyStr(achTxt(r.a.title))}, ${pyStr(achTxt(r.a.desc))}, ${pyStr(Array.from(String(r.a.icon || '★')).slice(0, 2).join('') || '★')}, ${r.a.hidden ? 'True' : 'False'}),`);
+    A.push('    ]', '    ACH_INFO = dict([(a[0], a) for a in ACHIEVEMENTS])', '',
+      '    # Steam: если подключён модуль achievement, достижения регистрируются и передаются в Steam; без него ничего не ломается',
+      '    for _a in ACHIEVEMENTS:', '        try:', '            achievement.register(_a[0])', '        except Exception:', '            pass', '',
+      '    def vn_ach_has(key):', '        return key in persistent.vn_ach', '',
+      '    def vn_ach_count():', '        return len(persistent.vn_ach)', '',
+      '    def vn_grant(key):', '        if key not in ACH_INFO or key in persistent.vn_ach:', '            return',
+      '        persistent.vn_ach.add(key)', '        renpy.save_persistent()', '        try:', '            achievement.grant(key)', '            achievement.sync()', '        except Exception:', '            pass',
+      '        info = ACH_INFO[key]', '        renpy.show_screen("vn_ach_popup", info[1], info[2], info[3], _tag="vn_ach_popup")', '',
+      '    def vn_check_progress():');
+    const prog = [];
+    for (const k of ach.all) prog.push('        if endings_total() and endings_count() >= endings_total():', `            vn_grant(${pyStr(k)})`);
+    for (const k of ach.cg) prog.push('        if CG_NAMES and cg_seen_count() >= len(CG_NAMES):', `            vn_grant(${pyStr(k)})`);
+    A.push(...(prog.length ? prog : ['        pass']), '',
+      'transform vn_ach_in:', '    on show:', '        alpha 0.0 xoffset 60', '        easein 0.35 alpha 1.0 xoffset 0', '    on hide:', '        easeout 0.3 alpha 0.0 xoffset 60', '',
+      'screen vn_ach_popup(title, desc, ic):', '    zorder 190', '    frame:', '        at vn_ach_in', '        xalign 1.0', '        yalign 0.0', '        xmargin 24', '        ymargin 24', '        padding (22, 14)',
+      '        hbox:', '            spacing 16', '            text ic size 44 yalign 0.5 color "#ffd24a"', '            vbox:', '                yalign 0.5',
+      `                text _(${pyStr(t('cmp.ach.got'))}) size 18 color "#ffffff99"`, '                text title size 28', '                if desc:', '                    text desc size 20 color "#ffffffcc"',
+      '    timer 4.0 action Hide("vn_ach_popup")', '',
+      'screen achievements():', '    tag menu', '    add Solid("#000000")',
+      `    text _(${pyStr(t('cmp.ach.title'))}) size 56 xalign 0.5 ypos 40`,
+      '    text "%d / %d" % (vn_ach_count(), len(ACHIEVEMENTS)) size 28 xalign 0.5 ypos 112',
+      '    on "show" action Function(vn_check_progress)',
+      '    vpgrid:', '        cols 1', '        spacing 14', '        xalign 0.5', '        ypos 170',
+      '        xysize (min(config.screen_width - 160, 1100), config.screen_height - 300)', '        mousewheel True', '        scrollbars "vertical"',
+      '        for key, title, desc, ic, hidden in ACHIEVEMENTS:', '            $ got = vn_ach_has(key)',
+      '            frame:', '                xfill True', '                padding (22, 14)', '                hbox:', '                    spacing 20',
+      '                    text (ic if got else "?") size 44 yalign 0.5 min_width 56 color ("#ffd24a" if got else "#ffffff44")',
+      '                    vbox:', '                        yalign 0.5', '                        if got or not hidden:',
+      '                            text title size 28 color ("#ffffff" if got else "#ffffff88")', '                            text desc size 20 color ("#ffffffcc" if got else "#ffffff66")',
+      '                        else:', `                            text _(${pyStr(t('cmp.ach.hiddenname'))}) size 28 color "#ffffff55"`,
+      `    textbutton _(${pyStr(t('cmp.extras.back'))}) action Return() xalign 0.5 yalign 0.97`);
+    R.files.push({ path: 'game/achievements.rpy', text: A.join('\n') + '\n' });
+    R.extras.push({ id: 'ach', screen: 'achievements', label: t('cmp.ach.title'), count: ach.list.length });
   }
 
   function finish() {
@@ -561,6 +663,7 @@ function compileProject(over, blobSet) {
       R.blockLabels = [...info.values()].map(I => ({ id: I.n.id, label: I.blk, title: I.n.title, type: I.n.type, idx: I.idx, reach: reachable.has(I.n.id), files: I.files.map(F => ({ id: F.f.id, label: F.label, title: F.f.title || '' })) }));
       R.endingsData = { list: endingNodes.map(n => ({ key: info.get(n.id).key, title: n.title })), rules: Object.fromEntries([...rules].map(([k, r]) => [k, { need: r.need, pool: r.pool }])) };
     } catch (e) { R.blockLabels = []; R.endingsData = { list: [], rules: {} }; }
+    R.achData = { list: ach.on ? ach.list.map(r => ({ key: r.key, title: r.a.title, hidden: !!r.a.hidden })) : [], all: ach.all.slice(), cg: ach.cg.slice() };
     if (R.files.length) R.files.push({ path: 'README.md', text: cmpReadme(R) });
     if (opt.includeDocs && R.files.length) R.files.push({ path: 'docs/build_report.md', text: cmpReportMd(R) });
     return R;

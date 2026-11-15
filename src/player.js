@@ -50,6 +50,7 @@ Object.assign(D, {
 });
 
 TOOL_ITEMS.push({ id: 'player', group: 'play', ic: 'play', key: 'pl.btn', kw: 'play player run test preview novel game playthrough играть плеер проиграть пройти тест новелла игра', run: () => openPlayer() });
+const PL_ACH = {};                                  // полученные достижения по названию проекта (так же живут, пока открыта программа)
 const PL_ENDINGS = {};                              // открытые концовки по названию проекта: живут, пока открыта программа
 const PL_DEF = { locked: true, speed: 1, mute: false, panel: false, tab: 'vars' };
 const plPS = () => { if (!S.play || typeof S.play !== 'object') S.play = {}; for (const k in PL_DEF) if (S.play[k] === undefined) S.play[k] = PL_DEF[k]; return S.play; };
@@ -103,7 +104,8 @@ async function plCompile(st) {
   try { st.prog = plParseScript(files); } catch (e) { return plFatal(st, t('pl.err', e && e.message || e)); }
   const pk = P.name || 'project';
   st.persist = PL_ENDINGS[pk] || (PL_ENDINGS[pk] = new Set());
-  st.g = new PlGame(st.prog, { endings: R.endingsData, persist: st.persist });
+  st.achSet = PL_ACH[pk] || (PL_ACH[pk] = new Set());
+  st.g = new PlGame(st.prog, { endings: R.endingsData, persist: st.persist, ach: R.achData, achPersist: st.achSet });
   st.g.onLabel = lbl => lgLabel(st, lbl);
   st.prog.warns.forEach(w => st.g.warn(w));
   st.body.classList.remove('busy');
@@ -220,7 +222,7 @@ function plShow(st, ev, silent) {
   plSync(st, ev);
   plWhere(st, ev.label);
   for (const n of ev.notices || []) {
-    if (n.type === 'ending') { lgEnding(st, n.key, n.text); plNote(st, t('pl.ending.got', n.text)); } else if (n.type === 'notify') plNote(st, n.text);
+    if (n.type === 'ending') { lgEnding(st, n.key, n.text); plNote(st, t('pl.ending.got', n.text)); } else if (n.type === 'ach') plNote(st, t('pl.ach.got', n.text)); else if (n.type === 'notify') plNote(st, n.text);
   }
   st.box.hidden = true; st.menuEl.hidden = true; st.centerEl.hidden = true; st.endEl.hidden = true;
   st.menuEl.replaceChildren(); st.stage.classList.remove('over');
@@ -440,7 +442,7 @@ function plSide(st) {
     st.prevVars = plClone(g.vars);
     const total = (st.R.endingsData && st.R.endingsData.list.length) || 0;
     body.append(h('div', { class: 'pl-sec' }, total ? t('pl.endings', st.persist.size, total) : ''),
-      total ? h('button', { class: 'btn', onclick: () => { st.persist.clear(); toast(t('pl.endings.reset.done'), 1800); plSide(st); } }, t('pl.endings.reset')) : null,
+      total ? h('button', { class: 'btn', onclick: () => { st.persist.clear(); st.achSet.clear(); toast(t('pl.endings.reset.done'), 1800); plSide(st); } }, t('pl.endings.reset')) : null,
       h('label', { class: 'pl-opt' }, h('input', { type: 'checkbox', checked: ps.locked, onchange: ev => { ps.locked = ev.target.checked; saveSettings(); if (st.ev && st.ev.type === 'menu') plShow(st, st.ev, true); } }), t('pl.opt.locked')));
   } else if (ps.tab === 'hist') {
     const items = g.log.slice(-200);

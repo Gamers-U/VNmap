@@ -16,6 +16,7 @@ const LS_P = 'vnmap.project.v1', LS_S = 'vnmap.settings.v1', LS_B = 'vnmap.lastB
 const SIDES = ['t', 'r', 'b', 'l'];
 const HEX6 = /^#[0-9a-fA-F]{6}$/;
 
+const ACH_TRIGS = ['ending', 'block', 'endings_all', 'cg_all', 'manual'];   // когда выдаётся достижение
 const DEFAULT_BUILD = { mode: 'split', placeholders: true, skipMissingAudio: true, endingCard: true, endingCounter: true, includeUnreachable: true, includeDocs: true, includeSource: true, endingCredits: false, tlMin: 'draft', extras: true };
 const DEFAULT_S = { theme: 'dark', lang: 'ru', grid: 'dots', snap: true, wheel: 'zoom', transition: 'dissolve', echo: true, jumps: true, updRepo: '', updAuto: true, updChecked: 0, updSeen: '', shSeen: '' };
 let S = Object.assign({}, DEFAULT_S);
@@ -145,6 +146,7 @@ function deleteNodes(ids) {
   for (const n of P.nodes) if (n.unlock) n.unlock.from = n.unlock.from.filter(i => !set.has(i));
   for (const id of ids) delete P.sim.reached[id];
   P.cmts = (P.cmts || []).filter(c => !set.has(c.nid));
+  for (const a of P.achs || []) if (set.has(a.ref)) a.ref = '';
   if (set.has(P.startId)) P.startId = '';
   reindex();
 }
@@ -228,7 +230,7 @@ function normalize(p) {
   p.v = 1;
   p.uid = typeof p.uid === 'string' && p.uid.length >= 8 ? p.uid : longId('vn');
   p.name = typeof p.name === 'string' && p.name ? p.name : t('proj.default');
-  for (const k of ['nodes', 'edges', 'characters', 'assets', 'vars', 'members', 'cmts', 'ign']) if (!Array.isArray(p[k])) p[k] = [];
+  for (const k of ['nodes', 'edges', 'characters', 'assets', 'vars', 'members', 'cmts', 'ign', 'achs']) if (!Array.isArray(p[k])) p[k] = [];
   p.tl = normTl(p.tl);
   p.startId = typeof p.startId === 'string' ? p.startId : '';
   p.filesUrl = typeof p.filesUrl === 'string' && /^https?:\/\/\S+$/i.test(p.filesUrl.trim()) ? p.filesUrl.trim().slice(0, 600) : '';   // ссылка на общую папку файлов
@@ -259,6 +261,7 @@ function normalize(p) {
     a.id = a.id || uid('a'); a.kind = STORED_KINDS.includes(a.kind) ? a.kind : 'bg'; a.name = a.name || ''; a.path = a.path || '';
     a.notes = a.notes || ''; a.expr = Array.isArray(a.expr) ? a.expr : []; a.owners = cleanIds(a.owners);
     if (a.kind === 'bg' && a.cg) a.cg = true; else delete a.cg;                 // CG: показывать в галерее
+    if (a.kind === 'music' && a.room === false) a.room = false; else delete a.room;   // музыка: false = не показывать в музыкальной комнате
     a.code = typeof a.code === 'string' ? a.code : ''; a.tpl = typeof a.tpl === 'string' ? a.tpl : ''; a.params = a.params && typeof a.params === 'object' && !Array.isArray(a.params) ? a.params : {};
     const fl = {};
     if (a.files && typeof a.files === 'object') for (const k of Object.keys(a.files)) {
@@ -302,6 +305,18 @@ function normalize(p) {
   const seenX = new Set();
   p.ign = p.ign.filter(x => x && typeof x === 'object' && typeof x.key === 'string' && x.key && x.key.length < 300 && !seenX.has(x.key) && seenX.add(x.key)).slice(0, 2000);
   for (const x of p.ign) { x.by = String(x.by || '').slice(0, 60); x.id = ignId(x.key, x.by); delete x.t; }
+  /* достижения: P.achs = [{ id, title, desc, icon, hidden, key (ID для Steam, пусто = по названию), trig, ref (блок) }] */
+  const seenG = new Set();
+  p.achs = p.achs.filter(a => a && typeof a === 'object').slice(0, 300);
+  for (const a of p.achs) {
+    a.id = typeof a.id === 'string' && a.id && !seenG.has(a.id) ? a.id : uid('g'); seenG.add(a.id);
+    a.title = String(a.title == null ? '' : a.title).slice(0, 120); a.desc = String(a.desc == null ? '' : a.desc).slice(0, 400);
+    a.icon = Array.from(String(a.icon == null ? '' : a.icon).trim()).slice(0, 2).join('');
+    a.hidden = !!a.hidden;
+    a.key = /^[A-Za-z][A-Za-z0-9_]{0,40}$/.test(a.key || '') ? a.key : '';
+    a.trig = ACH_TRIGS.includes(a.trig) ? a.trig : 'manual';
+    a.ref = typeof a.ref === 'string' && ids.has(a.ref) ? a.ref : '';
+  }
   p.edges = p.edges.filter(e => ids.has(e.from) && ids.has(e.to) && e.from !== e.to);
   for (const e of p.edges) {
     e.id = e.id || uid('e'); e.fromSide = SIDES.includes(e.fromSide) ? e.fromSide : 'auto'; e.toSide = SIDES.includes(e.toSide) ? e.toSide : 'auto';
