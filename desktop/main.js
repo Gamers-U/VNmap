@@ -5,6 +5,8 @@
 const { app, BrowserWindow, Menu, dialog, ipcMain, protocol, shell, nativeTheme, net, safeStorage } = require('electron');
 const { GDrive } = require('./gdrive');
 const { Updater, stage: stageUpdate, compareBuild, sha256 } = require('./updater');
+const { MANIFEST, cleanRel, exists, pruneEmptyDirs, writeBuildFiles } = require('./buildwrite');
+const { RenpyHost } = require('./renpy');
 const crypto = require('crypto');
 const path = require('path');
 const fs = require('fs');
@@ -15,7 +17,7 @@ const HOST = 'app';
 const APP_DIR = path.join(__dirname, 'app');
 const PROJECT_EXTS = ['.vnmap', '.zip', '.json'];
 const DEV = process.argv.includes('--dev');
-const BRIDGE = 2;                      // версия «моста» оболочки: страница может потребовать не меньше (data-needs в её отметке сборки)
+const BRIDGE = 3;                      // версия «моста» оболочки: страница может потребовать не меньше (data-needs в её отметке сборки)
 const RECENT_MAX = 12;
 
 protocol.registerSchemesAsPrivileged([{ scheme: SCHEME, privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true } }]);
@@ -51,6 +53,7 @@ const STR = {
     projFilter: 'Проект «Карты новеллы»', allFilter: 'Все файлы', zipFilter: 'ZIP-архив',
     openTitle: 'Открыть проект', saveTitle: 'Сохранить проект', pickDir: 'Куда записать игру',
     pickDirBtn: 'Выбрать папку', ok: 'Готово',
+    rpPickSdk: 'Папка Ren\'Py SDK (где лежит renpy.exe / renpy.sh)', rpPickProj: 'Папка проекта Ren\'Py (внутри неё лежит папка game)', rpCut: '… вывод обрезан …', rpRetry: '↻ Эта версия Ren\'Py не знает --no-launch — повторяю без него',
     overwriteTitle: 'Папка уже содержит файлы',
     overwriteText: n => `В выбранной папке уже есть ${n} файл(ов) с такими же именами. Они будут заменены новой сборкой.`,
     overwriteDetail: 'Файлы, которых нет в этой папке, останутся нетронутыми. Файлы прошлой сборки, которых больше нет в проекте, будут удалены.',
@@ -82,6 +85,7 @@ const STR = {
     projFilter: 'Story Map project', allFilter: 'All files', zipFilter: 'ZIP archive',
     openTitle: 'Open project', saveTitle: 'Save project', pickDir: 'Where to write the game',
     pickDirBtn: 'Choose folder', ok: 'Done',
+    rpPickSdk: 'Ren\'Py SDK folder (the one with renpy.exe / renpy.sh)', rpPickProj: 'Ren\'Py project folder (it contains the game folder)', rpCut: '… output truncated …', rpRetry: '↻ This Ren\'Py does not know --no-launch — retrying without it',
     overwriteTitle: 'The folder already has files',
     overwriteText: n => `The chosen folder already contains ${n} file(s) with the same names. They will be replaced by the new build.`,
     overwriteDetail: 'Other files in the folder stay untouched. Files from the previous build that are no longer in the project will be deleted.',
@@ -181,25 +185,6 @@ function extFilters(name) {
 }
 
 /* запись собранной игры в папку: безопасные относительные пути + манифест для чистки старых файлов */
-const MANIFEST = '.vnmap-build.json';
-function cleanRel(n) {
-  if (typeof n !== 'string' || !n || n.length > 400) return null;
-  const parts = n.replace(/\\/g, '/').split('/');
-  for (const p of parts) {
-    if (!p || p === '.' || p === '..' || /[<>:"|?*\x00-\x1f]/.test(p) || /[. ]$/.test(p)) return null;
-    if (/^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\..*)?$/i.test(p)) return null;   // зарезервировано в Windows
-  }
-  return parts.join('/');
-}
-async function exists(p) { try { await fsp.access(p); return true; } catch (e) { return false; } }
-async function pruneEmptyDirs(dir, root) {
-  let cur = dir;
-  while (cur.startsWith(root + path.sep) && cur !== root) {
-    try { if ((await fsp.readdir(cur)).length) break; await fsp.rmdir(cur); } catch (e) { break; }
-    cur = path.dirname(cur);
-  }
-}
-
 /* ---------- недавние проекты ---------- */
 const recentFile = () => path.join(app.getPath('userData'), 'recent.json');
 function recentLoad() { try { const j = JSON.parse(fs.readFileSync(recentFile(), 'utf8')); return Array.isArray(j) ? j.filter(x => x && typeof x.path === 'string').slice(0, RECENT_MAX * 2) : []; } catch (e) { return []; } }
@@ -324,6 +309,24 @@ function getGd() {
 }
 
 /* ---------- IPC ---------- */
+
+/* ---------- Ren'Py: запуск настоящего движка ---------- */
+async function askOverwrite(n) {
+  const T_ = T();
+  const c = await dialog.showMessageBox(win, { type: 'warning', buttons: [T_.overwrite, T_.cancel], defaultId: 1, cancelId: 1, title: T_.overwriteTitle, message: T_.overwriteText(n), detail: T_.overwriteDetail });
+  return c.response === 0;
+}
+let rpHost = null;
+function getRp() {
+  if (!rpHost) rpHost = new RenpyHost({
+    file: path.join(app.getPath('userData'), 'renpy.json'),
+    emit: ev => { try { if (win && !win.isDestroyed()) win.webContents.send('rp:evt', ev); } catch (e) { /* окно закрывается */ } },
+    confirm: askOverwrite, version: () => app.getVersion(),
+    strings: () => ({ badNames: T().badNames, errWrite: T().errWrite, cut: T().rpCut, retryNoLaunch: T().rpRetry }),
+  });
+  return rpHost;
+}
+
 function registerIpc() {
   const handle = (ch, fn) => ipcMain.handle(ch, async (e, ...a) => { if (!trusted(e)) throw new Error('untrusted'); return fn(e, ...a); });
 
@@ -441,47 +444,29 @@ function registerIpc() {
     if (!Array.isArray(entries) || !entries.length) return null;
     const r = await dialog.showOpenDialog(win, { title: T().pickDir, buttonLabel: T().pickDirBtn, defaultPath: lastDir || app.getPath('documents'), properties: ['openDirectory', 'createDirectory'] });
     if (r.canceled || !r.filePaths[0]) return null;
-    const root = path.resolve(r.filePaths[0]);
-    const items = [], bad = [];
-    for (const en of entries) {
-      const rel = cleanRel(en && en.name); if (!rel) { bad.push(String(en && en.name).slice(0, 80)); continue; }
-      const abs = path.resolve(root, ...rel.split('/'));
-      if (!abs.startsWith(root + path.sep)) { bad.push(rel); continue; }
-      items.push({ rel, abs, data: en.data });
-    }
-    if (bad.length) throw new Error(T().badNames + bad.slice(0, 3).join(', '));
-    let clash = 0;
-    for (const it of items) if (await exists(it.abs)) clash++;
-    if (clash) {
-      const T_ = T();
-      const c = await dialog.showMessageBox(win, { type: 'warning', buttons: [T_.overwrite, T_.cancel], defaultId: 1, cancelId: 1, title: T_.overwriteTitle, message: T_.overwriteText(clash), detail: T_.overwriteDetail });
-      if (c.response !== 0) return null;
-    }
-    /* чистка файлов прошлой сборки (только те, что записали мы и перечислили в манифесте) */
-    let removed = 0;
-    const keep = new Set(items.map(i => i.rel));
-    try {
-      const old = JSON.parse(await fsp.readFile(path.join(root, MANIFEST), 'utf8'));
-      if (old && old.tool === 'vnmap' && Array.isArray(old.files)) {
-        for (const f of old.files) {
-          const rel = cleanRel(f); if (!rel || keep.has(rel)) continue;
-          const abs = path.resolve(root, ...rel.split('/'));
-          if (!abs.startsWith(root + path.sep)) continue;
-          try { await fsp.unlink(abs); removed++; await pruneEmptyDirs(path.dirname(abs), root); } catch (err) { /* уже нет */ }
-        }
-      }
-    } catch (err) { /* манифеста нет — это первая запись */ }
-    let written = 0;
-    try {
-      for (const it of items) {
-        await fsp.mkdir(path.dirname(it.abs), { recursive: true });
-        await fsp.writeFile(it.abs, toBuffer(it.data)); written++;
-      }
-      await fsp.writeFile(path.join(root, MANIFEST), JSON.stringify({ tool: 'vnmap', version: app.getVersion(), time: new Date().toISOString(), files: items.map(i => i.rel) }, null, 1));
-    } catch (err) { throw new Error(T().errWrite + ': ' + err.message); }
-    lastDir = root; saveWinSettings();
-    return { dir: root, written, removed, replaced: clash };
+    const res = await writeBuildFiles(r.filePaths[0], entries, { version: app.getVersion(), clash: 'all', strings: T(), confirm: askOverwrite });
+    if (res) { lastDir = res.dir; saveWinSettings(); }
+    return res;
   });
+
+
+  /* Ren'Py: папки выбирает человек в диалогах; запуск и вывод — в renpy.js */
+  handle('rp:status', async (e, key) => getRp().status(key));
+  handle('rp:pickSdk', async () => {
+    const r = await dialog.showOpenDialog(win, { title: T().rpPickSdk, buttonLabel: T().pickDirBtn, defaultPath: lastDir || app.getPath('home'), properties: ['openDirectory'] });
+    if (r.canceled || !r.filePaths[0]) return null;
+    return getRp().setSdk(r.filePaths[0]);
+  });
+  handle('rp:clearSdk', async () => getRp().clearSdk());
+  handle('rp:pickProject', async (e, key) => {
+    const r = await dialog.showOpenDialog(win, { title: T().rpPickProj, buttonLabel: T().pickDirBtn, defaultPath: lastDir || app.getPath('home'), properties: ['openDirectory'] });
+    if (r.canceled || !r.filePaths[0]) return null;
+    return getRp().setProject(key, r.filePaths[0]);
+  });
+  handle('rp:clearProject', async (e, key) => getRp().clearProject(key));
+  handle('rp:write', async (e, key, entries) => getRp().write(key, entries));
+  handle('rp:start', async (e, key, kind, opts) => getRp().start(key, kind, opts && typeof opts === 'object' ? opts : {}));
+  handle('rp:stop', async (e, id) => getRp().stop(id));
 
   handle('desk:showInFolder', async (e, p) => { if (typeof p === 'string' && p && fs.existsSync(p)) { const st = fs.statSync(p); if (st.isDirectory()) await shell.openPath(p); else shell.showItemInFolder(p); return true; } return false; });
   handle('desk:openExternal', async (e, url) => { try { const u = new URL(url); if (u.protocol === 'https:' || u.protocol === 'http:') { await shell.openExternal(u.href); return true; } } catch (err) { /* нет */ } return false; });
@@ -619,5 +604,6 @@ else {
     if (first) { try { pendingOpen = await readProjectFile(first); } catch (e) { /* нет файла */ } }
     app.on('activate', () => { if (!BrowserWindow.getAllWindows().length) { forceClose = false; createWindow(); } });
   });
+  app.on('before-quit', () => { if (rpHost) rpHost.shutdown(); });
   app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
 }

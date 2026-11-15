@@ -4,9 +4,10 @@
 const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
 const call = (ch, ...a) => ipcRenderer.invoke(ch, ...a);
-const listeners = { cmd: new Set(), open: new Set() };
+const listeners = { cmd: new Set(), open: new Set(), rp: new Set() };
 ipcRenderer.on('desk:cmd', (e, cmd, arg) => listeners.cmd.forEach(fn => { try { fn(cmd, arg); } catch (x) { console.error(x); } }));
 ipcRenderer.on('desk:open', (e, file) => listeners.open.forEach(fn => { try { fn(file); } catch (x) { console.error(x); } }));
+ipcRenderer.on('rp:evt', (e, ev) => listeners.rp.forEach(fn => { try { fn(ev); } catch (x) { console.error(x); } }));
 const sub = (set, fn) => { set.add(fn); return () => set.delete(fn); };
 
 contextBridge.exposeInMainWorld('vnDesktop', {
@@ -57,6 +58,17 @@ contextBridge.exposeInMainWorld('vnDesktop', {
     setToken: tok => call('gh:setToken', tok),
     clearToken: () => call('gh:clearToken'),
     request: o => call('gh:request', o),
+  },
+  renpy: {
+    status: key => call('rp:status', key),
+    pickSdk: () => call('rp:pickSdk'),
+    clearSdk: () => call('rp:clearSdk'),
+    pickProject: key => call('rp:pickProject', key),
+    clearProject: key => call('rp:clearProject', key),
+    write: (key, entries) => call('rp:write', key, entries),
+    start: (key, kind, opts) => call('rp:start', key, kind, opts || {}),
+    stop: id => call('rp:stop', id),
+    onEvent: fn => sub(listeners.rp, fn),
   },
   onCommand: fn => sub(listeners.cmd, fn),
   onOpenFile: fn => sub(listeners.open, fn),

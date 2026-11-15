@@ -1624,3 +1624,39 @@ body.game-mode{background:var(--bg)}
 .me-row:hover{background:var(--hover)}
 .me-row.on{border-color:var(--accent)}
 .me-n{flex:1;min-width:0;font-weight:600}
+
+/* ---- запуск в настоящем Ren'Py ---- */
+.rp-view .card-sec{margin-bottom:14px}
+.rp-ctl{display:block}
+.rp-row{display:grid;grid-template-columns:minmax(120px,170px) minmax(0,1fr) auto;gap:8px 14px;align-items:center;padding:8px 0;border-top:1px solid var(--border)}
+.rp-row:first-of-type{border-top:0}
+.rp-lab{font-weight:600}
+.rp-val{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;min-width:0}
+.rp-path{min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text2)}
+.rp-path.bad{color:var(--danger)}
+.rp-chip{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;font-size:11.5px;background:var(--surface3);color:var(--text2);white-space:nowrap}
+.rp-chip.ok{color:var(--ok)}
+.rp-chip.no{color:var(--warn)}
+.rp-btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.rp-btns.end{justify-content:flex-end}
+.rp-warn{display:flex;gap:6px;align-items:flex-start;margin:8px 0 0;color:var(--warn)}
+.rp-warn svg{flex:none;margin-top:2px}
+.rp-act{display:flex;flex-direction:column}
+.rp-arow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px 16px;align-items:end;padding:10px 0;border-top:1px solid var(--border)}
+.rp-arow:first-child{border-top:0;padding-top:2px}
+.rp-arow .field{margin:0}
+.rp-at .hint{margin-top:2px}
+.rp-sel{width:100%;max-width:380px}
+.rp-pks{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.rp-pk{border:1px solid var(--border-strong);background:transparent;color:var(--text2);border-radius:999px;padding:4px 11px;font-size:12px;cursor:pointer}
+.rp-pk:hover{background:var(--hover)}
+.rp-pk.on{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
+.rp-stat{margin-left:6px}
+.rp-out{height:300px;min-height:160px;resize:vertical;white-space:normal;overflow:auto;padding:12px 14px;line-height:1.5}
+.rp-l{white-space:pre-wrap;overflow-wrap:anywhere;display:block}
+.rp-l.err{color:var(--danger)}
+.rp-l.sys{color:var(--text3)}
+.rp-l.file{color:var(--warn)}
+.rp-go{margin-left:8px;padding:1px 8px;font-size:11.5px;vertical-align:middle}
+.rp-empty{padding:4px 0}
+@media (max-width:760px){.rp-row{grid-template-columns:1fr}.rp-arow{grid-template-columns:1fr}.rp-btns.end{justify-content:flex-start}}

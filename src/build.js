@@ -2,11 +2,11 @@
 /* ====== Окно «Сборка»: проверка, предпросмотр файлов, скачивание ZIP ====== */
 let BLD = null;
 
-async function openBuild() {
+async function openBuild(tab) {
   closePopover();
-  if (BLD && !BLD.m.closed) return;
+  if (BLD && !BLD.m.closed) { if (tab && BLD.res) { BLD.tab = tab; renderBuild(BLD); } return; }
   flushHistory();
-  const st = { tab: 'report', res: null, q: 0, busy: false };
+  const st = { tab: tab || 'report', res: null, q: 0, busy: false };
   BLD = st;
   st.m = openModal({
     cls: 'node-m build-m', onClose: () => { if (BLD === st) BLD = null; flushHistory(); },
@@ -25,7 +25,7 @@ async function bldRecompile(st) {
   if (st.q !== token || st.m.closed) return;
   st.res = compileProject(null, blobs);
   const known = new Set([...st.res.files.map(f => f.path), 'res']);
-  if (st.tab !== 'report' && st.tab !== 'guide' && !known.has(st.tab)) st.tab = 'report';
+  if (st.tab !== 'report' && st.tab !== 'guide' && st.tab !== 'renpy' && !known.has(st.tab)) st.tab = 'report';
   renderBuild(st);
 }
 function bldAfterEdit(st) {
@@ -42,6 +42,7 @@ function renderBuild(st) {
   const bad = R.stats.errors + R.stats.warns;
   st.side.append(h('div', { class: 'fitem top guide-tab' + (st.tab === 'guide' ? ' on' : ''), onclick: () => { st.tab = 'guide'; renderBuild(st); } },
     icon('play', 16), h('span', { class: 'fn' }, t('gd.tab'))),
+    DESK ? h('div', { class: 'fitem top guide-tab' + (st.tab === 'renpy' ? ' on' : ''), onclick: () => { st.tab = 'renpy'; renderBuild(st); } }, icon('zap', 16), h('span', { class: 'fn' }, t('rp.tab'))) : null,
     h('div', { class: 'side-h' }, t('bld.problems')),
     h('div', { class: 'fitem top' + (st.tab === 'report' ? ' on' : ''), onclick: () => { st.tab = 'report'; renderBuild(st); } },
       icon(R.stats.errors ? 'xcircle' : bad ? 'alert' : 'check', 16), h('span', { class: 'fn' }, t('bld.report')), h('span', { class: 'count' }, bad || '✓')));
@@ -65,8 +66,9 @@ function renderBuild(st) {
       icon('image', 16), h('span', { class: 'fn' }, t('bld.res')), h('span', { class: 'count' }, R.bin.length)));
 
   const keep = st.main.scrollTop;
-  st.main.replaceChildren(st.tab === 'report' ? bldReportView(st) : st.tab === 'guide' ? bldGuideView(st) : st.tab === 'res' ? bldResView(st) : bldFileView(st));
+  st.main.replaceChildren(st.tab === 'report' ? bldReportView(st) : st.tab === 'guide' ? bldGuideView(st) : st.tab === 'renpy' ? bldRenpyView(st) : st.tab === 'res' ? bldResView(st) : bldFileView(st));
   st.main.scrollTop = st.tab === 'report' ? keep : 0;
+  if (st.tab !== 'renpy') RP.view = null;
   renderBuildFoot(st);
 }
 
