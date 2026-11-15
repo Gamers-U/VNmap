@@ -3,7 +3,7 @@
 let REG = null;
 const REG_TABS = [
   { id: 'chars', icon: 'users' }, { id: 'team', icon: 'badge' }, { id: 'bg', icon: 'image' }, { id: 'sprite', icon: 'user' },
-  { id: 'audio', icon: 'music' }, { id: 'fx', icon: 'sparkles' }, { id: 'tf', icon: 'motion' }, { id: 'font', icon: 'type' }, { id: 'ach', icon: 'trophy' }, { id: 'vars', icon: 'code' }, { id: 'files', icon: 'file' }
+  { id: 'audio', icon: 'music' }, { id: 'fx', icon: 'sparkles' }, { id: 'tf', icon: 'motion' }, { id: 'font', icon: 'type' }, { id: 'gui', icon: 'palette' }, { id: 'ach', icon: 'trophy' }, { id: 'vars', icon: 'code' }, { id: 'files', icon: 'file' }
 ];
 const AUDIO_KINDS = ['music', 'sfx', 'voice'];
 
@@ -28,6 +28,7 @@ function regCount(id) {
   if (id === 'vars') return P.vars.length;
   if (id === 'team') return P.members.length;
   if (id === 'ach') return P.achs.length;
+  if (id === 'gui') return typeof guiCount === 'function' ? guiCount() : 0;
   return P.assets.filter(a => a.kind === id).length;
 }
 function renderReg() {
@@ -63,11 +64,12 @@ function regView(st) {
     else if (st.tab === 'vars') regVars(st, list, qq);
     else if (st.tab === 'team') regTeam(st, list, qq);
     else if (st.tab === 'ach') regAchs(st, list, qq);
+    else if (st.tab === 'gui') regGui(st, list, qq);
     else if (st.tab === 'fx' || st.tab === 'tf') regFx(st, list, qq);
     else regAssets(st, list, qq);
   };
   q.addEventListener('input', () => { st.q = q.value; fill(); });
-  const addBtn = st.tab === 'files' ? null : h('button', { class: 'btn primary', onclick: ev => (st.tab === 'fx' || st.tab === 'tf' ? fxAddMenu(ev.currentTarget, st.tab) : regAdd(st)) }, icon('plus', 16), t('reg.add'), (st.tab === 'fx' || st.tab === 'tf') ? icon('chevD', 14) : null);
+  const addBtn = st.tab === 'files' || st.tab === 'gui' ? null : h('button', { class: 'btn primary', onclick: ev => (st.tab === 'fx' || st.tab === 'tf' ? fxAddMenu(ev.currentTarget, st.tab) : regAdd(st)) }, icon('plus', 16), t('reg.add'), (st.tab === 'fx' || st.tab === 'tf') ? icon('chevD', 14) : null);
   const upBtn = ['bg', 'sprite', 'audio', 'font'].includes(st.tab) ? h('button', { class: 'btn', 'data-tip': t('reg.upload.tip'), onclick: () => pickFiles(acceptFor(st.tab === 'audio' ? 'music' : st.tab), true, async fl => { await bulkUpload(st.tab, fl); renderReg(); }) }, icon('upload', 16), t('reg.upload')) : null;
   root.append(h('div', { class: 'reg-top' }, h('div', { class: 'reg-h' }, t('reg.tab.' + st.tab), h('span', { class: 'hint' }, t('reg.hint.' + st.tab))), h('div', { class: 'grow' }), q, upBtn, addBtn), list);
   fill();

@@ -127,6 +127,7 @@ function compileProject(over, blobSet) {
     const ext = metaExt(m) || (isImageKind(a.kind) ? 'png' : 'ogg');
     let path;
     if (a.kind === 'font') { path = a.path ? cmpPath(a.path) : 'fonts/' + slug(a.name) + '.' + (metaExt(m) || 'ttf'); path = extOf(path) ? cmpStripExt(path) + '.' + (metaExt(m) || extOf(path)) : path + '.' + (metaExt(m) || 'ttf'); }
+    else if (a.kind === 'gui') path = guiTarget(a);
     else if (a.kind === 'bg') path = (a.path ? cmpStripExt(cmpPath(a.path)) : 'images/bg/' + slug(a.name.replace(/^bg\s+/i, ''))) + '.' + ext;
     else if (a.kind === 'sprite') { const base = a.path ? cmpStripExt(cmpPath(a.path)) : 'images/sprites/' + slug(a.name); path = (key ? base + '_' + slug(key) : base) + '.' + ext; }
     else {
@@ -243,6 +244,7 @@ function compileProject(over, blobSet) {
     add('warn', t('cmp.audio.unknown', lit), ref, { label: t('cmp.fix.addasset'), run: () => { const a = createAsset(/sfx|sound|snd/i.test(lit) ? 'sfx' : 'music', lit); a.path = lit; commit(true); } });
   }
   for (const c of chars) if (c.font) fontPathFor(c.font, c.font);
+  for (const d of GUI_KEYS) if (d.t === 'font' && P.gui && P.gui[d.k]) fontPathFor(P.gui[d.k], P.gui[d.k]);
   for (const a of fontNoFile) add('warn', t('cmp.font.nofile', a.name));
   for (const [ref] of fontUnknown) add('warn', t('cmp.font.unknown', ref));
   for (const [a, set] of usedNoFile) add('warn', t('cmp.audio.nofile', a.name, set.size, opt.skipMissingAudio ? t('cmp.audio.skipped') : ''), null);
@@ -529,6 +531,7 @@ function compileProject(over, blobSet) {
   /* ---------- «дополнительно»: готовые экраны Ren'Py (галерея CG и др.) ---------- */
   R.extras = [];
   if (opt.extras !== false) cmpExtras();
+  cmpGui();
 
   // story/*.rpy
   if (opt.mode !== 'single') for (const I of info.values()) for (const F of I.files) R.files.push({ path: F.path, text: fileBody(I, F), story: true });
@@ -546,6 +549,35 @@ function compileProject(over, blobSet) {
   /** Экраны для меню игры: игрок открывает их кнопкой, которую автор добавляет в navigation (см. подсказку в окне «Сборка»). */
   function cmpExtras() {
     cmpGallery(); cmpMusicRoom(); cmpAchievements();
+  }
+  /* интерфейс игры: значения gui.* и свои пути картинок поверх стандартного gui.rpy. Сами картинки идут в game/gui/ под стандартными именами и заменяют файлы шаблона. */
+  function cmpGui() {
+    const g = guiClean(P.gui), over = {};
+    let imgs = 0;
+    for (const a of P.assets) {
+      if (a.kind !== 'gui' || !assetTarget.has(a.id + '|')) continue;
+      imgs++;
+      const s = guiSlot(a.name), tg = assetTarget.get(a.id + '|');
+      if (s && s.over && tg !== s.path) over[s.k] = tg;
+    }
+    const vals = GUI_KEYS.filter(d => g[d.k] !== undefined);
+    if (imgs) add('info', t('cmp.gui.imgs', imgs));
+    if (!vals.length && !Object.keys(over).length) return;
+    const G = hdr(t('cmp.f.gui'));
+    G.push('# ' + t('cmp.gui.hint'), '# ' + t('cmp.gui.derived'), '', '# ' + t('cmp.gui.early'), 'init -1 python:');
+    if (vals.length) G.push(
+      '    def _gui_set(name, value, derived=()):', '        old = getattr(gui, name, None)', '        for d in derived:',
+      '            if hasattr(gui, d) and getattr(gui, d) == old:', '                setattr(gui, d, value)', '        setattr(gui, name, value)', '');
+    for (const d of vals) {
+      const val = d.t === 'size' ? g[d.k] : pyStr(d.t === 'font' ? fontPathFor(g[d.k], g[d.k]) : g[d.k]), der = GUI_DERIVED[d.k];
+      G.push('    _gui_set(' + pyStr(d.k) + ', ' + val + (der ? ', (' + der.map(pyStr).join(', ') + ',)' : '') + ')');
+    }
+    if (over.main_menu) G.push('    gui.main_menu_background = ' + pyStr(over.main_menu));
+    if (over.game_menu) G.push('    gui.game_menu_background = ' + pyStr(over.game_menu));
+    if (over.window_icon) G.push('    config.window_icon = ' + pyStr(over.window_icon));
+    if (!vals.length) G.push('    pass');
+    R.files.push({ path: 'game/gui_custom.rpy', text: G.join('\n') + '\n' });
+    add('info', t('cmp.gui.file', vals.length + Object.keys(over).length));
   }
   /* галерея CG */
   function cmpGallery() {

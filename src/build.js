@@ -141,7 +141,7 @@ function bldTreeLines(R) {
   const own = R.files.filter(f => f.path.startsWith('game/')).map(f => f.path.slice(5));
   const dirs = new Map(); // каталог -> [{name, note}]
   const top = [];
-  const notes = { 'script.rpy': 'gd.n.script', 'characters.rpy': 'gd.n.chars', 'variables.rpy': 'gd.n.vars', 'endings.rpy': 'gd.n.end', 'assets.rpy': 'gd.n.assets', 'effects.rpy': 'gd.n.fx', 'gallery.rpy': 'gd.n.gallery', 'musicroom.rpy': 'gd.n.music', 'achievements.rpy': 'gd.n.ach' };
+  const notes = { 'script.rpy': 'gd.n.script', 'characters.rpy': 'gd.n.chars', 'variables.rpy': 'gd.n.vars', 'endings.rpy': 'gd.n.end', 'assets.rpy': 'gd.n.assets', 'effects.rpy': 'gd.n.fx', 'gallery.rpy': 'gd.n.gallery', 'musicroom.rpy': 'gd.n.music', 'achievements.rpy': 'gd.n.ach', 'gui_custom.rpy': 'gd.n.gui' };
   const storyDirs = new Map();
   for (const f of own) {
     const parts = f.split('/');

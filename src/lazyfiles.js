@@ -214,7 +214,7 @@ function mfAfterReplace() {
 }
 
 /* ---------- окно ---------- */
-const KIND_MF = k => (k === 'bg' || k === 'sprite') ? 'image' : k === 'font' ? 'type' : 'music';
+const KIND_MF = k => (k === 'bg' || k === 'sprite' || k === 'gui') ? 'image' : k === 'font' ? 'type' : 'music';
 async function openMissingFiles() {
   await mfScan();
   const st = { items: MF.items.slice(), busy: false, stop: false, prog: '', res: '', loose: false, drv: null, drvBusy: false };

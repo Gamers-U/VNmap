@@ -9,12 +9,36 @@ const NODE_TYPES = ['chapter', 'fork', 'ending', 'note'];
 const TYPE_ICON = { chapter: 'book', fork: 'fork', ending: 'flag', note: 'note' };
 const TYPE_COLOR = { chapter: 'blue', fork: 'orange', ending: 'purple', note: 'yellow' };
 const ASSET_KINDS = ['bg', 'sprite', 'music', 'sfx', 'voice', 'fx'];
-const KIND_ICON = { bg: 'image', sprite: 'user', music: 'music', sfx: 'volume', voice: 'mic', fx: 'sparkles', font: 'type', tf: 'motion' };
+const KIND_ICON = { bg: 'image', sprite: 'user', music: 'music', sfx: 'volume', voice: 'mic', fx: 'sparkles', font: 'type', tf: 'motion', gui: 'palette' };
 const VAR_TYPES = ['raw', 'flag', 'choice', 'number'];
-const STORED_KINDS = [...ASSET_KINDS, 'font', 'tf'];
+const STORED_KINDS = [...ASSET_KINDS, 'font', 'tf', 'gui'];
 const LS_P = 'vnmap.project.v1', LS_S = 'vnmap.settings.v1', LS_B = 'vnmap.lastBackup';
 const SIDES = ['t', 'r', 'b', 'l'];
 const HEX6 = /^#[0-9a-fA-F]{6}$/;
+
+/** Настройки интерфейса игры (переменные gui.* из gui.rpy). Не задано — остаётся как в проекте Ren'Py. t: color | size | font; d — значение стандартного шаблона (для образца). */
+const GUI_KEYS = [
+  { k: 'accent_color', t: 'color', d: '#0099cc', g: 'colors' }, { k: 'text_color', t: 'color', d: '#ffffff', g: 'colors' }, { k: 'interface_text_color', t: 'color', d: '#ffffff', g: 'colors' },
+  { k: 'idle_color', t: 'color', d: '#888888', g: 'colors' }, { k: 'idle_small_color', t: 'color', d: '#aaaaaa', g: 'colors' }, { k: 'hover_color', t: 'color', d: '#66c1e0', g: 'colors' },
+  { k: 'selected_color', t: 'color', d: '#ffffff', g: 'colors' }, { k: 'muted_color', t: 'color', d: '#003d52', g: 'colors' }, { k: 'hover_muted_color', t: 'color', d: '#005b7a', g: 'colors' },
+  { k: 'text_size', t: 'size', d: 33, min: 1, g: 'sizes' }, { k: 'name_text_size', t: 'size', d: 45, min: 1, g: 'sizes' }, { k: 'interface_text_size', t: 'size', d: 33, min: 1, g: 'sizes' },
+  { k: 'label_text_size', t: 'size', d: 36, min: 1, g: 'sizes' }, { k: 'notify_text_size', t: 'size', d: 24, min: 1, g: 'sizes' }, { k: 'title_text_size', t: 'size', d: 75, min: 1, g: 'sizes' },
+  { k: 'textbox_height', t: 'size', d: 278, min: 1, g: 'box' }, { k: 'dialogue_xpos', t: 'size', d: 402, min: -4000, g: 'box' }, { k: 'dialogue_ypos', t: 'size', d: 75, min: -4000, g: 'box' },
+  { k: 'dialogue_width', t: 'size', d: 1116, min: 1, g: 'box' }, { k: 'name_xpos', t: 'size', d: 360, min: -4000, g: 'box' }, { k: 'name_ypos', t: 'size', d: 0, min: -4000, g: 'box' },
+  { k: 'text_font', t: 'font', g: 'fonts' }, { k: 'name_text_font', t: 'font', g: 'fonts' }, { k: 'interface_text_font', t: 'font', g: 'fonts' },
+];
+function guiClean(g) {
+  const out = {};
+  if (!g || typeof g !== 'object' || Array.isArray(g)) return out;
+  for (const d of GUI_KEYS) {
+    const v = g[d.k];
+    if (v === undefined || v === null || v === '') continue;
+    if (d.t === 'color') { if (HEX6.test(String(v))) out[d.k] = String(v).toLowerCase(); }
+    else if (d.t === 'size') { const n = Math.round(+v); if (isFinite(n) && n >= d.min && n <= 4000) out[d.k] = n; }
+    else { const s = String(v).trim().slice(0, 200); if (s) out[d.k] = s; }
+  }
+  return out;
+}
 
 const ACH_TRIGS = ['ending', 'block', 'endings_all', 'cg_all', 'manual'];   // когда выдаётся достижение
 const DEFAULT_BUILD = { mode: 'split', placeholders: true, skipMissingAudio: true, endingCard: true, endingCounter: true, includeUnreachable: true, includeDocs: true, includeSource: true, endingCredits: false, tlMin: 'draft', extras: true };
@@ -331,6 +355,7 @@ function normalize(p) {
   const lofs = {};
   if (p.lofs && typeof p.lofs === 'object' && !Array.isArray(p.lofs)) for (const k of Object.keys(p.lofs).slice(0, 600)) { const v = p.lofs[k]; if (Array.isArray(v) && isFinite(v[0]) && isFinite(v[1]) && (Math.round(v[0]) || Math.round(v[1]))) lofs[k] = [Math.round(v[0]), Math.round(v[1])]; }
   p.lofs = lofs;
+  p.gui = guiClean(p.gui);
   return p;
 }
 function emptyProject() {

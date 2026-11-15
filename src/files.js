@@ -66,7 +66,7 @@ const IMG_TYPES = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', web
 const AUD_TYPES = { ogg: 'audio/ogg', opus: 'audio/ogg', mp3: 'audio/mpeg', wav: 'audio/wav', flac: 'audio/flac', m4a: 'audio/mp4', aac: 'audio/aac' };
 const RENPY_IMG = new Set(['png', 'jpg', 'jpeg', 'webp', 'avif', 'svg']);
 const RENPY_AUD = new Set(['ogg', 'opus', 'mp3', 'wav', 'flac']);
-const isImageKind = k => k === 'bg' || k === 'sprite';
+const isImageKind = k => k === 'bg' || k === 'sprite' || k === 'gui';
 const isFontKind = k => k === 'font';
 const hasFilesKind = k => k !== 'fx' && k !== 'tf';
 function extOf(name) { const m = /\.([A-Za-z0-9]+)$/.exec(name || ''); return m ? m[1].toLowerCase() : ''; }
@@ -86,6 +86,11 @@ const assetMeta = (a, key) => (a.files && a.files[key || '']) || null;
 const assetFileCount = a => Object.keys(a.files || {}).length;
 
 async function attachFile(a, key, file) {
+  if (a.kind === 'gui' && typeof guiToPng === 'function') {      // картинки интерфейса Ren'Py ждёт под стандартными именами .png: всё, что не настоящий PNG, переводим в PNG
+    let isPng = false;
+    try { const sig = new Uint8Array(await file.slice(0, 8).arrayBuffer()); isPng = extOf(file.name) === 'png' && sig.length === 8 && sig[0] === 0x89 && sig[1] === 0x50 && sig[2] === 0x4e && sig[3] === 0x47; } catch (e) { /* ниже переведём */ }
+    if (!isPng) { const f2 = await guiToPng(file); if (!f2) { toast(t('file.badtype', file.name), 4200); return false; } file = f2; }
+  }
   const img = isImageKind(a.kind), fnt = isFontKind(a.kind), ext = extOf(file.name);
   const okExt = img ? ext in IMG_TYPES : fnt ? ext in FONT_TYPES : ext in AUD_TYPES;
   if (!okExt && !(!fnt && String(file.type || '').startsWith(img ? 'image/' : 'audio/'))) { toast(t('file.badtype', file.name), 4200); return false; }
