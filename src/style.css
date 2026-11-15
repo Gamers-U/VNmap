@@ -1666,3 +1666,8 @@ body.game-mode{background:var(--bg)}
 .ach-code{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .ach-code code{padding:7px 12px;background:var(--code);border:1px solid var(--border);border-radius:10px;font-family:var(--mono);font-size:12.5px;user-select:all}
 @media (max-width:700px){.ach-top{grid-template-columns:1fr}}
+/* импорт .rpy */
+.rpi-row{grid-template-columns:minmax(120px,.8fr) minmax(160px,1.2fr) 110px minmax(140px,1fr)}
+.rpi-row .di-w{text-align:left}
+.ri-rep{margin:12px 6px 0;font-size:12.5px;color:var(--text2)}
+.ri-rep ul{margin:6px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:3px}
