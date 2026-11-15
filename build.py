@@ -48,7 +48,13 @@ js = js.replace('/*THEMES*/null', json.dumps(themes, ensure_ascii=False))
 # отметка сборки: по ней настольная версия отличает обновление от установленной страницы
 import datetime, hashlib, zipfile
 BUILD_ID = datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%d.%H%M')
-APP_VERSION = json.load(open(os.path.join(ROOT, 'desktop', 'package.json'), encoding='utf-8'))['version']
+# Версия для людей: <линия оболочки>.<номер обновления>, например 1.2.24. Хранится в version.json (номер повышается с каждым выпущенным обновлением).
+_V = json.load(open(os.path.join(ROOT, 'version.json'), encoding='utf-8'))
+APP_VERSION = f"{_V['line']}.{_V['update']}"
+_PKG = os.path.join(ROOT, 'desktop', 'package.json')
+_pk = open(_PKG, encoding='utf-8').read()
+_pk2 = re.sub(r'("version"\s*:\s*")[^"]*(")', lambda m: m.group(1) + APP_VERSION + m.group(2), _pk, count=1)
+if _pk2 != _pk: open(_PKG, 'w', encoding='utf-8').write(_pk2)    # оболочка и установщики несут тот же номер
 SHELL_NEEDS = 1          # какой версии оболочки (bridge) нужна эта страница; растёт, только если без новой оболочки не обойтись
 js = js.replace("'/*BUILD*/'", json.dumps(BUILD_ID)).replace("'/*VERSION*/'", json.dumps(APP_VERSION))
 STAMP = f'<meta name="vnmap-build" content="{BUILD_ID}" data-version="{APP_VERSION}" data-needs="{SHELL_NEEDS}">\n'

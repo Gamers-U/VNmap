@@ -1,22 +1,57 @@
 name: Релиз
 
-# Запуск: поставить тег vX.Y.Z (git tag v1.2.0 && git push --tags)
-# или Actions → «Релиз» → Run workflow (тег вводится вручную).
+# Выпуск собирается сам, когда в main попадает новая версия: номер лежит в version.json ({"line": "1.2", "update": 24} → v1.2.24).
+# Если выпуск с таким номером уже есть, ничего не происходит. Заново собрать вручную: Actions → «Релиз» → Run workflow (галочка «Пересобрать»).
 on:
   push:
-    tags: ['v*']
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'desktop/**'
+      - 'build.py'
+      - 'version.json'
+      - 'release-notes.md'
+      - '.github/workflows/release.yml'
   workflow_dispatch:
     inputs:
-      tag:
-        description: 'Тег выпуска, например v1.2.0'
-        required: true
+      force:
+        description: 'Пересобрать, даже если выпуск с этим номером уже есть'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
 
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
+  plan:
+    name: Какой номер выпускаем
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      build: ${{ steps.v.outputs.build }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FORCE: ${{ github.event.inputs.force }}
+        run: |
+          VERSION=$(python3 -c "import json; v=json.load(open('version.json')); print(v['line']+'.'+str(v['update']))")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if [ "$FORCE" = "true" ] || ! gh release view "v$VERSION" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "build=true" >> "$GITHUB_OUTPUT"; echo "Собираем v$VERSION"
+          else
+            echo "build=false" >> "$GITHUB_OUTPUT"; echo "Выпуск v$VERSION уже есть — пропускаем"
+          fi
+
   page:
     name: Страница и файл обновления
+    needs: plan
+    if: needs.plan.outputs.build == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -25,7 +60,6 @@ jobs:
       - name: Собрать страницу
         env: { PYTHONUTF8: '1' }
         run: |
-          mkdir -p dist
           python build.py
           ls -la dist
       - uses: actions/upload-artifact@v4
@@ -37,6 +71,8 @@ jobs:
 
   shell:
     name: Оболочка (${{ matrix.os }})
+    needs: plan
+    if: needs.plan.outputs.build == 'true'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -79,18 +115,21 @@ jobs:
 
   publish:
     name: Выпуск на GitHub
-    needs: [page, shell]
-    if: ${{ !cancelled() && needs.page.result == 'success' }}   # выпуск делается, даже если одна из систем не собралась
+    needs: [plan, page, shell]
+    if: ${{ !cancelled() && needs.plan.outputs.build == 'true' && needs.page.result == 'success' }}   # выпуск делается, даже если одна из систем не собралась
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with: { path: out, merge-multiple: true }
       - name: Создать или обновить выпуск
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.event.inputs.tag || github.ref_name }}
+          VERSION: ${{ needs.plan.outputs.version }}
         run: |
+          TAG="v$VERSION"
           ls -la out
+          NOTES=release-notes.md; [ -f "$NOTES" ] || echo "Версия $VERSION" > "$NOTES"
           if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             # старые файлы обновления убираем: в выпуске должен остаться один vnmap-update-….zip
             for a in $(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name' | grep '^vnmap-update' || true); do
@@ -99,6 +138,5 @@ jobs:
             gh release upload "$TAG" out/* --clobber --repo "$GITHUB_REPOSITORY"
           else
             gh release create "$TAG" out/* --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
-              --title "Карта новеллы $TAG" \
-              --notes "Установщики и портативные версии оболочки + файл vnmap-update-….zip (его подхватывает кнопка «Обновить» в программе)."
+              --title "Карта новеллы $VERSION" --notes-file "$NOTES" --latest
           fi

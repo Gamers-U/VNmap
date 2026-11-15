@@ -1,7 +1,7 @@
 {
   "name": "vnmap-desktop",
   "productName": "Карта новеллы",
-  "version": "1.2.0",
+  "version": "1.2.24",
   "description": "Конструктор визуальных новелл: карта сюжета, сценарии, ресурсы и компилятор в Ren'Py",
   "author": "Карта новеллы",
   "license": "UNLICENSED",
@@ -24,15 +24,15 @@
     "appId": "app.vnmap.desktop",
     "productName": "Карта новеллы",
     "executableName": "vnmap",
-    "artifactName": "VNMap-${version}-${os}-${arch}.${ext}",
+    "artifactName": "VNMap-${os}-${arch}.${ext}",
     "directories": { "output": "release", "buildResources": "build" },
     "files": ["main.js", "preload.js", "gdrive.js", "updater.js", "google-oauth.json", "package.json", "app/**/*", "build/icon.png"],
     "fileAssociations": [
       { "ext": "vnmap", "name": "Проект «Карты новеллы»", "description": "Проект «Карты новеллы»", "role": "Editor", "icon": "build/icon" }
     ],
     "win": { "target": ["nsis", "portable"], "icon": "build/icon.ico" },
-    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true, "perMachine": false, "artifactName": "VNMap-${version}-win-${arch}-setup.${ext}" },
-    "portable": { "artifactName": "VNMap-${version}-win-${arch}-portable.${ext}" },
+    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true, "perMachine": false, "artifactName": "VNMap-win-${arch}-setup.${ext}" },
+    "portable": { "artifactName": "VNMap-win-${arch}-portable.${ext}" },
     "mac": { "target": ["dmg", "zip"], "icon": "build/icon.icns", "category": "public.app-category.developer-tools" },
     "linux": { "target": ["AppImage"], "icon": "build/icon.png", "category": "Development", "mimeTypes": ["application/x-vnmap"] }
   }

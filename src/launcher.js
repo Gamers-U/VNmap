@@ -103,7 +103,7 @@ async function openLauncher() {
   const showSw = switchEl(S.launcher !== false, v => { S.launcher = v; saveSettings(); }, t('lc.show'));
   const foot = h('div', { class: 'lc-foot' },
     h('button', { class: 'btn', onclick: () => openUpdateDialog() }, icon('download', 16), t('lc.update')),
-    h('span', { class: 'lc-ver' }, t('lc.build', APP_VERSION && APP_VERSION.charAt(0) !== '/' ? APP_VERSION + ' · ' + APP_BUILD : '—')),
+    h('span', { class: 'lc-ver' }, t('lc.build', APP_VERSION && APP_VERSION.charAt(0) !== '/' ? APP_VERSION : APP_BUILD)),
     h('div', { class: 'grow' }), showSw);
 
   root.append(h('div', { class: 'lc-wrap' },
@@ -178,7 +178,7 @@ function openUpdateDialog() {
         const act = I.active;
         /* что сейчас установлено */
         body.append(h('div', { class: 'upd-cur' },
-          h('div', { class: 'upd-row' }, h('span', { class: 'upd-k' }, t('upd.ui')), h('b', t('upd.build', APP_BUILD) + (APP_VERSION && APP_VERSION.charAt(0) !== '/' ? ' · v' + APP_VERSION : '')),
+          h('div', { class: 'upd-row' }, h('span', { class: 'upd-k' }, t('upd.ui')), h('b', APP_VERSION && APP_VERSION.charAt(0) !== '/' ? t('upd.build', APP_VERSION, APP_BUILD) : t('upd.build.nov', APP_BUILD)),
             h('span', { class: 'upd-badge' + (act ? ' on' : '') }, act ? t('upd.src.upd', updWhen(act.time)) : t('upd.src.bundled'))),
           h('div', { class: 'upd-row' }, h('span', { class: 'upd-k' }, t('upd.shell')), h('span', t('upd.shell.v', I.shell, I.electron)))));
         /* обновления с GitHub */
@@ -217,7 +217,7 @@ function openUpdateDialog() {
         if (c) {
           const lab = c.cmp > 0 ? t('upd.cmp.new') : c.cmp === 0 ? t('upd.cmp.same') : t('upd.cmp.old');
           body.append(h('div', { class: 'upd-cand' },
-            h('div', { class: 'upd-row' }, h('b', t('upd.found', c.build) + (c.version ? ' · v' + c.version : '')), h('span', { class: 'upd-badge ' + (c.cmp > 0 ? 'on' : 'warn') }, lab)),
+            h('div', { class: 'upd-row' }, h('b', c.version ? t('upd.found', c.version) + ' (' + c.build + ')' : t('upd.found.nov', c.build)), h('span', { class: 'upd-badge ' + (c.cmp > 0 ? 'on' : 'warn') }, lab)),
             h('div', { class: 'hint' }, t('upd.cand.meta', fmtBytes(c.size), c.source, updShort(c.sha256))),
             c.needsShell ? h('div', { class: 'upd-err' }, icon('alert', 16), h('span', t('upd.needs'))) : null,
             h('div', { class: 'upd-warn' }, icon('alert', 16), h('span', t('upd.warn'))),
@@ -233,7 +233,7 @@ function openUpdateDialog() {
       const checkGh = () => guard(async () => {
         st.msg = '';
         const c = await updCheck();
-        if (c.cmp > 0 || c.needsShell) st.cand = c; else { st.cand = null; st.msg = t('upd.gh.latest', APP_BUILD); }
+        if (c.cmp > 0 || c.needsShell) st.cand = c; else { st.cand = null; st.msg = t('upd.gh.latest', APP_VERSION && APP_VERSION.charAt(0) !== '/' ? APP_VERSION : APP_BUILD); }
       });
       const pickFile = () => guard(async () => { const c = await DESK.update.pickFile(); if (c) st.cand = c; });
       const fromUrl = () => guard(async () => { if (!st.url.trim()) throw new Error(t('upd.url.empty')); st.cand = await DESK.update.fromUrl(st.url.trim(), st.sha.trim()); });
