@@ -82,7 +82,7 @@ function lgStats() {
 const lgRecOn = () => S.logRec !== false;
 function lgBegin(st) {
   lgFinish(st);
-  st.log = { format: 'vnmap-log', v: 1, id: lgId(), uid: P.uid, project: P.name, who: t('lg.me'), at: Date.now(), sec: 0, done: false, end: null, path: [], picks: [], src: 'player', t0: Date.now(), pend: null, saved: false };
+  st.log = { format: 'vnmap-log', v: 1, id: lgId(), uid: P.uid, project: P.name, who: gmWho(), at: Date.now(), sec: 0, done: false, end: null, path: [], picks: [], notes: [], src: isGame() ? 'html' : 'player', t0: Date.now(), pend: null, saved: false };
 }
 function lgLabel(st, lbl) {
   const L = st.log; if (!L || st.noLog || !st.byLabel) return;
@@ -96,6 +96,13 @@ function lgPick(st, text) {
   const L = st.log; if (!L || !L.path.length) return;
   const pk = { b: L.path[L.path.length - 1].b, text: String(text || ''), to: null };
   L.picks.push(pk); L.pend = pk;
+}
+function lgNote(st, text, line) {
+  const L = st.log; if (!L) return;
+  const b = L.path.length ? L.path[L.path.length - 1] : null;
+  const nt = { b: b ? b.b : '', t: Math.round((Date.now() - L.t0) / 100) / 10, text, line: line || '', title: b ? (b.title || '') : '' };
+  (L.notes = L.notes || []).push(nt);
+  if (L.saved) { const all = lgLoad().slice(), x = all.find(z => z.id === L.id); if (x) { x.notes = L.notes; lgStore(all); } }   // журнал уже записан: допишем замечание в него
 }
 function lgEnding(st, key, title) { const L = st.log; if (L) L.end = { key: key || '', title: title || '' }; }
 function lgFinish(st, done) {
@@ -173,6 +180,7 @@ function lgParse(text, name) {
   if (!arr) return null;
   const out = arr.filter(lgValid).map(L => ({ format: 'vnmap-log', v: 1, id: String(L.id || lgId()), uid: L.uid || '', project: L.project || '', who: String(L.who || name || '?').slice(0, 60), at: +L.at, sec: +L.sec || 0, done: !!L.done,
     end: L.end && typeof L.end === 'object' ? { key: String(L.end.key || ''), title: String(L.end.title || '') } : null,
+    notes: (Array.isArray(L.notes) ? L.notes : []).filter(x => x && typeof x.text === 'string').map(x => ({ b: String(x.b || ''), t: +x.t || 0, text: x.text.slice(0, 1000), line: String(x.line || '').slice(0, 160), title: String(x.title || '') })),
     path: L.path.map(p => ({ b: p.b, t: +p.t, title: p.title ? String(p.title) : '' })), picks: (Array.isArray(L.picks) ? L.picks : []).filter(x => x && typeof x.b === 'string').map(x => ({ b: x.b, text: String(x.text || ''), to: x.to || null })), src: L.src === 'html' ? 'html' : 'file' }));
   return out;
 }
@@ -247,6 +255,19 @@ function openTestLog() {
             for (const [tx, c] of f.items) { const pc = Math.round(c / f.total * 100); box.append(h('div', { class: 'lg-pick' }, h('div', { class: 'lg-pt' }, tx || '…'), h('div', { class: 'lg-bar' }, h('i', { style: { width: pc + '%' } })), h('div', { class: 'lg-pn' }, c + ' · ' + pc + '%'))); }
             body.append(box);
           }
+        }
+
+        /* замечания тестеров */
+        const notes = logs.flatMap(L => (L.notes || []).map(n => Object.assign({ who: L.who }, n))).sort((a, b) => a.t - b.t);
+        if (notes.length) {
+          body.append(h('div', { class: 'bs-h' }, t('lg.h.notes')));
+          const nl = h('div', { class: 'bs-list' });
+          for (const n of notes.slice(0, 200)) {
+            const tt = title(n.b) || n.title || '';
+            nl.append(h('button', { class: 'lg-note', 'data-tip': n.b && nodeById(n.b) ? t('lg.focus') : null, onclick: () => { if (n.b && nodeById(n.b)) { m.close(); focusNode(n.b); } } },
+              h('div', { class: 'lg-nh' }, h('b', n.who), tt ? h('span', ' · ' + tt) : null), h('div', { class: 'lg-nt' }, n.text), n.line ? h('div', { class: 'lg-nl' }, '«' + n.line + '»') : null));
+          }
+          body.append(nl);
         }
 
         /* прохождения */

@@ -67,7 +67,7 @@ async function openPlayer(opts) {
   const st = PLAY = { opts, urls: new Map(), binMap: new Map(), ev: null, typing: null, timers: new Set(), auto: false, skip: false, layerEls: new Map(), layerSig: '', mus: null, musFile: '', sfx: [], read: 0, prevVars: {}, gen: 0 };
   st.m = openModal({
     cls: 'play-m', dismiss: false,
-    onClose: () => { lgFinish(st); plCleanup(st); if (PLAY === st) PLAY = null; },
+    onClose: () => { lgFinish(st); plCleanup(st); if (PLAY === st) PLAY = null; if (isGame()) setTimeout(gameAfter, 40); },
     build: m => plBuild(st, m)
   });
   const key = e => plKey(st, e);
@@ -151,11 +151,14 @@ function plBuild(st, m) {
   st.btnSound = tb(ps.mute ? 'stop' : 'volume', t('pl.sound'), () => { ps.mute = !ps.mute; saveSettings(); plMusicVol(st); plBtns(st); }, 'pl-sound');
   const bar = h('div', { class: 'pl-bar' }, st.btnBack, st.btnAuto, st.btnSkip, st.btnSound,
     tb('refresh', t('pl.restart'), () => plRestart(st), 'pl-restart'),
-    tb('list', t('pl.panel'), () => plPanel(st), 'pl-panelbtn'));
+    isGame() && !GAME.debug ? null : tb('list', t('pl.panel'), () => plPanel(st), 'pl-panelbtn'));
   st.where = h('div', { class: 'pl-where' });
   st.openBtn = h('button', { class: 'btn icon', 'data-tip': t('pl.open'), id: 'pl-openblock', hidden: true, onclick: () => { if (st.cur) openNodeModal(st.cur.nid, st.cur.fid); } }, icon('open', 16));
   const fromBtn = h('button', { class: 'btn', id: 'pl-from', 'data-tip': t('pl.from.tip'), onclick: ev => plFromMenu(st, ev.currentTarget) }, icon('target', 15), h('span', t('pl.from')));
-  const head = h('div', { class: 'm-head pl-head' }, h('div', { class: 'm-title' }, icon('play', 16), t('pl.title')), st.where, st.openBtn, h('div', { class: 'grow' }), fromBtn,
+  const G = isGame();
+  const gameBtns = G ? [h('button', { class: 'btn', id: 'pl-note', 'data-tip': t('gm.note.tip'), onclick: () => gmNote(st) }, icon('note', 15), h('span', t('gm.note'))),
+    h('button', { class: 'btn', id: 'pl-savelog', 'data-tip': t('gm.save.tip'), onclick: () => gmSaveLog(st) }, icon('save', 15), h('span', t('gm.save')))] : [];
+  const head = h('div', { class: 'm-head pl-head' }, h('div', { class: 'm-title' }, icon('play', 16), G ? (GAME.title || t('pl.title')) : t('pl.title')), G ? null : st.where, G ? null : st.openBtn, h('div', { class: 'grow' }), ...gameBtns, G ? null : fromBtn,
     h('button', { class: 'btn icon', 'data-tip': t('c.close') + ' (Esc)', onclick: () => m.close() }, icon('x', 18)));
   st.body = h('div', { class: 'pl busy' }, head, h('div', { class: 'pl-main' }, h('div', { class: 'pl-center-col' }, h('div', { class: 'pl-stagewrap' }, st.stage), bar), st.side));
   st.body.prepend(h('div', { class: 'pl-busy' }, h('span', { class: 'spin' }), t('pl.building')));
@@ -192,7 +195,7 @@ function plKey(st, e) {
   else if (k === 'ArrowLeft' || k === 'Backspace' || k === 'PageUp' || k === 'ArrowUp') { e.preventDefault(); e.stopPropagation(); plBack(st); }
   else if (k === 'a' || k === 'A' || k === 'ф' || k === 'Ф') { plToggle(st, 'auto'); }
   else if (k === 's' || k === 'S' || k === 'ы' || k === 'Ы') { plToggle(st, 'skip'); }
-  else if (k === 'h' || k === 'H' || k === 'р' || k === 'Р') { plPanel(st); }
+  else if (k === 'h' || k === 'H' || k === 'р' || k === 'Р') { if (!isGame() || GAME.debug) plPanel(st); }
 }
 
 /* ---------- ход игры ---------- */
@@ -303,7 +306,7 @@ function plEnd(st, ev) {
     total ? h('div', { class: 'pl-end-s' }, t('pl.endings', st.persist.size, total)) : null,
     h('div', { class: 'pl-end-a' },
       h('button', { class: 'btn primary', onclick: () => plRestart(st) }, icon('refresh', 16), t('pl.again')),
-      h('button', { class: 'btn', onclick: ev2 => plFromMenu(st, ev2.currentTarget) }, icon('target', 16), t('pl.from')),
+      isGame() ? h('button', { class: 'btn', onclick: () => gmSaveLog(st) }, icon('save', 16), t('gm.save')) : h('button', { class: 'btn', onclick: ev2 => plFromMenu(st, ev2.currentTarget) }, icon('target', 16), t('pl.from')),
       h('button', { class: 'btn', onclick: () => st.m.close() }, t('pl.close'))));
 }
 function plNote(st, text) {

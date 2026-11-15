@@ -8,7 +8,7 @@ DIST = os.path.join(ROOT, 'dist')
 os.makedirs(DIST, exist_ok=True)
 
 JS_ORDER = ['util.js', 'merge.js', 'i18n.js', 'model.js', 'geom.js', 'canvas.js', 'modal.js', 'nodemodal.js',
-            'script.js', 'text.js', 'effects.js', 'flags.js', 'jumps.js', 'condbuilder.js', 'members.js', 'files.js', 'registry.js', 'compiler.js', 'translate.js', 'tlui.js', 'build.js', 'tools.js', 'toolsmenu.js', 'playeng.js', 'player.js', 'autorun.js', 'testlog.js', 'analysis.js', 'layout.js', 'mappdf.js', 'notes.js', 'palette.js','replicas.js','rename.js','checks.js','branchstats.js','varstate.js','charpage.js','resources.js', 'digest.js', 'prose.js','branches.js','brlink.js','texted.js','docimport.js','winctl.js','docedit.js','pull.js','lazyfiles.js','ghopen.js', 'helptools.js', 'desktop.js', 'launcher.js', 'drive.js', 'collab.js', 'sharefile.js', 'github.js', 'app.js']
+            'script.js', 'text.js', 'effects.js', 'flags.js', 'jumps.js', 'condbuilder.js', 'members.js', 'files.js', 'registry.js', 'compiler.js', 'translate.js', 'tlui.js', 'build.js', 'tools.js', 'toolsmenu.js', 'playeng.js', 'player.js', 'autorun.js', 'testlog.js', 'gamemode.js', 'analysis.js', 'layout.js', 'mappdf.js', 'notes.js', 'palette.js','replicas.js','rename.js','checks.js','branchstats.js','varstate.js','charpage.js','resources.js', 'digest.js', 'prose.js','branches.js','brlink.js','texted.js','docimport.js','winctl.js','docedit.js','pull.js','lazyfiles.js','ghopen.js', 'helptools.js', 'desktop.js', 'launcher.js', 'drive.js', 'collab.js', 'sharefile.js', 'github.js', 'app.js']
 
 def kebab(s):
     return re.sub(r'([A-Z])', lambda m: '-' + m.group(1).lower(), s)
@@ -65,24 +65,31 @@ fonts = ('<link rel="preconnect" href="https://fonts.googleapis.com">'
          '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
          '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">')
 
-fragment = (
-    '<title>Карта новеллы</title>\n' + fonts + '\n<style>\n' + css + '\n</style>\n' + body +
-    '\n<script>\n' + js + '\n</script>\n'
-)
-open(os.path.join(DIST, 'artifact.html'), 'w', encoding='utf-8').write(fragment)
+def make_fragment(js_text):
+    return (
+        '<title>Карта новеллы</title>\n' + fonts + '\n<style>\n' + css + '\n</style>\n' + body +
+        '\n<script>\n' + js_text + '\n</script>\n'
+    )
 
-standalone = (
-    '<!doctype html>\n<html lang="ru" data-theme="dark">\n<head>\n<meta charset="utf-8">\n'
-    '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n'
-    + fragment + '\n</head>\n</html>\n'
-)
-# в самостоятельном файле body должен быть настоящим <body>
-standalone = (
-    '<!doctype html>\n<html lang="ru" data-theme="dark">\n<head>\n<meta charset="utf-8">\n' + STAMP +
-    '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n'
-    '<title>Карта новеллы</title>\n' + fonts + '\n<style>\n' + css + '\n</style>\n</head>\n<body>\n' + body +
-    '\n<script>\n' + js + '\n</script>\n</body>\n</html>\n'
-)
+def make_standalone(js_text):
+    # в самостоятельном файле body должен быть настоящим <body>
+    return (
+        '<!doctype html>\n<html lang="ru" data-theme="dark">\n<head>\n<meta charset="utf-8">\n' + STAMP +
+        '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n'
+        '<title>Карта новеллы</title>\n' + fonts + '\n<style>\n' + css + '\n</style>\n</head>\n<body>\n' + body +
+        '\n<script>\n' + js_text + '\n</script>\n</body>\n</html>\n'
+    )
+
+# шаблон «HTML-игры для тестеров»: сама страница без шаблона, сжатая и вложенная в итоговую страницу (первый проход без неё)
+import gzip, base64
+GAMETPL = "'/*GAMETPL*/'"
+_tpl = make_standalone(js.replace(GAMETPL, "''"))
+_b64 = base64.b64encode(gzip.compress(_tpl.encode('utf-8'), 9, mtime=0)).decode('ascii')
+js = js.replace(GAMETPL, json.dumps(_b64))
+
+fragment = make_fragment(js)
+open(os.path.join(DIST, 'artifact.html'), 'w', encoding='utf-8').write(fragment)
+standalone = make_standalone(js)
 open(os.path.join(DIST, 'vnmap.html'), 'w', encoding='utf-8').write(standalone)
 open(os.path.join(DIST, 'bundle.js'), 'w', encoding='utf-8').write(js)
 print('built', len(fragment) // 1024, 'KB artifact;', len(standalone) // 1024, 'KB standalone')

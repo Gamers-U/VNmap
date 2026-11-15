@@ -1,4 +1,12 @@
 'use strict';
+/* null, undefined и false как дочерние узлы пропускаются (иначе браузер напишет на странице «null») */
+(function () {
+  for (const k of ['append', 'prepend', 'replaceChildren']) {
+    const orig = Element.prototype[k];
+    Element.prototype[k] = function (...a) { return orig.apply(this, a.filter(x => x != null && x !== false)); };
+  }
+})();
+
 /* ====== Утилиты: DOM-помощники, иконки, измерение текста, всплывающие окна ====== */
 const SVGNS = 'http://www.w3.org/2000/svg';
 const THEMES = /*THEMES*/null;

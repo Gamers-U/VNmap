@@ -365,6 +365,7 @@ let _saveTimer = null;
 function scheduleSave() { clearTimeout(_saveTimer); _saveTimer = setTimeout(saveNow, 700); if (typeof deskDirty === 'function') deskDirty(); if (typeof ghDirty === 'function') ghDirty(); }
 function saveNow() {
   clearTimeout(_saveTimer);
+  if (typeof GAME !== 'undefined' && GAME) return;                 // в HTML-игре для тестеров проект не сохраняется
   const ok = lsSet(LS_P, JSON.stringify(P));
   setSaveState(ok ? 'saved' : 'error');
 }

@@ -161,6 +161,7 @@ function onKey(e) {
 
 /* ---------- запуск ---------- */
 function boot() {
+  if (typeof GAME !== 'undefined' && GAME) { gameBoot(); return; }
   loadSettings();
   applyTheme();
   let p = loadProject(), first = false;

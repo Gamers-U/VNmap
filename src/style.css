@@ -1593,3 +1593,26 @@ body.win-moving{user-select:none;cursor:grabbing}body.win-moving iframe{pointer-
 .lg-sr.cut{color:var(--warn)}
 .edge.heat-cold{opacity:.3}
 @media (max-width:760px){.lg-r{grid-template-columns:1.6fr 1fr .6fr .8fr;gap:6px;font-size:12.5px}.lg-s{grid-template-columns:1fr auto}.lg-sd,.lg-sr{grid-column:1 / -1}.lg-pick{grid-template-columns:1fr 1fr 70px}}
+
+/* ---- HTML-игра для тестеров ---- */
+body.game-mode #stage,body.game-mode #topbar,body.game-mode #ftb,body.game-mode #zoombar,body.game-mode #statusbar,body.game-mode #hint{display:none!important}
+body.game-mode{background:var(--bg)}
+.game-screen{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;background:var(--bg);overflow:auto}
+.game-card{width:min(520px,100%);display:flex;flex-direction:column;gap:14px;padding:26px 26px 24px;border-radius:22px;background:var(--surface);border:1px solid var(--border);box-shadow:0 12px 50px rgba(0,0,0,.3)}
+.game-t{font-size:26px;font-weight:750;letter-spacing:-.01em;line-height:1.2;overflow-wrap:anywhere}
+.game-s{color:var(--text3);font-size:13px;margin-top:-8px}
+.game-card p{margin:0;line-height:1.5;color:var(--text2)}
+.game-l{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600}
+.game-card .btn.lg{padding:11px 18px;font-size:15px;justify-content:center}
+.game-card .row-actions{display:flex;flex-wrap:wrap;gap:10px}
+.gm-body{display:flex;flex-direction:column;gap:10px}
+.lg-note{display:block;text-align:left;width:100%;background:none;border:0;color:inherit;font:inherit;padding:9px 10px;border-radius:12px;cursor:pointer}
+.lg-note:hover{background:var(--hover)}
+.lg-nh{color:var(--text3);font-size:12.5px}.lg-nh b{color:var(--text)}
+.lg-nt{margin-top:2px;line-height:1.45}
+.lg-nl{margin-top:3px;color:var(--text3);font-size:12.5px;font-style:italic;overflow-wrap:anywhere}
+.modal.gm-dlg{width:min(580px,100%);max-width:100%}
+.gm-body{min-width:0}
+.gm-body .ar-f{flex-wrap:wrap}.gm-body .ar-f .inp:not(.num){flex:1;min-width:0}
+.gm-body .ar-chk{flex-wrap:wrap}
+.gm-body .row-actions{display:flex;gap:8px;align-items:center}
