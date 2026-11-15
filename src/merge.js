@@ -27,7 +27,7 @@ const mgClone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)
 function mgEntities(p) {
   const M = new Map();
   const tl = p.tl || {};
-  M.set('meta', { name: p.name || '', startId: p.startId || '', uid: p.uid || '', filesUrl: p.filesUrl || '', build: mgClone(p.build) || {}, base: tl.base || '', lofs: mgClone(p.lofs) || {}, gui: mgClone(p.gui) || {} });
+  M.set('meta', { name: p.name || '', startId: p.startId || '', uid: p.uid || '', filesUrl: p.filesUrl || '', build: mgClone(p.build) || {}, base: tl.base || '', lofs: mgClone(p.lofs) || {}, gui: mgClone(p.gui) || {}, acl: mgClone(p.acl) || {} });
   for (const n of p.nodes || []) {
     const rest = Object.assign({}, n); delete rest.files;
     rest.fileIds = (n.files || []).map(f => f.id);
@@ -55,7 +55,7 @@ function mgHash(o) {
 function mgBuild(M, ref) {
   const out = mgClone(ref) || {};
   const meta = M.get('meta') || {};
-  out.name = meta.name; out.startId = meta.startId; out.filesUrl = meta.filesUrl || ''; out.uid = meta.uid || out.uid; out.build = mgClone(meta.build) || out.build; out.lofs = mgClone(meta.lofs) || {}; out.gui = mgClone(meta.gui) || {};
+  out.name = meta.name; out.startId = meta.startId; out.filesUrl = meta.filesUrl || ''; out.uid = meta.uid || out.uid; out.build = mgClone(meta.build) || out.build; out.lofs = mgClone(meta.lofs) || {}; out.gui = mgClone(meta.gui) || {}; out.acl = mgClone(meta.acl) || {};
   const refOrder = arr => (arr || []).map(x => x.id);
   const list = (pre, refArr) => {
     const have = [...M.keys()].filter(k => k.startsWith(pre + '/')).map(k => k.slice(pre.length + 1));

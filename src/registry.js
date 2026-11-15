@@ -67,6 +67,7 @@ function regView(st) {
     else if (st.tab === 'gui') regGui(st, list, qq);
     else if (st.tab === 'fx' || st.tab === 'tf') regFx(st, list, qq);
     else regAssets(st, list, qq);
+    if (typeof aclRegFreeze === 'function') aclRegFreeze(st, list, root);
   };
   q.addEventListener('input', () => { st.q = q.value; fill(); });
   const addBtn = st.tab === 'files' || st.tab === 'gui' ? null : h('button', { class: 'btn primary', onclick: ev => (st.tab === 'fx' || st.tab === 'tf' ? fxAddMenu(ev.currentTarget, st.tab) : regAdd(st)) }, icon('plus', 16), t('reg.add'), (st.tab === 'fx' || st.tab === 'tf') ? icon('chevD', 14) : null);

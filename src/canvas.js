@@ -198,6 +198,7 @@ function onPointerDown(e) {
   if (ae && ae !== document.body && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) ae.blur();
   hideTip(); cancelAnim();
   if (UI.connectMode && e.button === 0) {
+    if (!aclGuard('map')) { endConnectMode(); e.preventDefault(); return; }
     const nEl = tg.closest('[data-nid]');
     if (nEl && nEl.dataset.nid !== UI.connectMode) {
       const ed = addEdge(UI.connectMode, nEl.dataset.nid, 'auto', 'auto');
@@ -208,12 +209,12 @@ function onPointerDown(e) {
   const anchorEl = tg.closest('.anchor'), nodeEl = tg.closest('[data-nid]'), edgeEl = tg.closest('[data-eid]'), wpEl = tg.closest('.wp');
   if (e.button === 1) { e.preventDefault(); startPan(e); return; }
   if (e.button !== 0) return;
-  if (wpEl && UI.edge) { startWpDrag(e, wpEl); return; }
-  if (anchorEl && nodeEl) { startConnectDrag(e, nodeEl.dataset.nid, anchorEl.dataset.anchor); return; }
+  if (wpEl && UI.edge) { if (!aclGuard('map')) return; startWpDrag(e, wpEl); return; }
+  if (anchorEl && nodeEl) { if (!aclGuard('map')) return; startConnectDrag(e, nodeEl.dataset.nid, anchorEl.dataset.anchor); return; }
   const lblEl = tg.closest('[data-lkey]');                     // плашка у «эха» или стрелки по коду
-  if (lblEl && !nodeEl) { drag = { type: 'plbl', key: lblEl.dataset.lkey, lo0: lofOf(lblEl.dataset.lkey).slice(), sx: e.clientX, sy: e.clientY, moved: false }; attach(); return; }
+  if (lblEl && !nodeEl) { if (!aclCan('map')) return; drag = { type: 'plbl', key: lblEl.dataset.lkey, lo0: lofOf(lblEl.dataset.lkey).slice(), sx: e.clientX, sy: e.clientY, moved: false }; attach(); return; }
   if (nodeEl) { startNodeDrag(e, nodeEl, tg); return; }
-  if (edgeEl && tg.closest('.e-label') && edgeById(edgeEl.dataset.eid)) {        // плашку с названием можно перетащить
+  if (edgeEl && tg.closest('.e-label') && edgeById(edgeEl.dataset.eid) && aclCan('map')) {        // плашку с названием можно перетащить
     const ed = edgeById(edgeEl.dataset.eid);
     drag = { type: 'elbl', id: ed.id, lo0: (ed.lo || [0, 0]).slice(), sx: e.clientX, sy: e.clientY, moved: false }; attach(); return;
   }
@@ -296,6 +297,7 @@ function onMove(e) {
       if (!d.moved && dist < 3) return; d.moved = true;
       v.x = d.vx + (e.clientX - d.sx); v.y = d.vy + (e.clientY - d.sy); applyView(); break;
     case 'node': {
+      if (!aclCan('map')) { if (dist > 6) aclToast(['map']); return; }
       if (!d.moved) { if (dist < 4) return; d.moved = true; document.body.classList.add('dragging'); }
       const base = d.starts.get(d.id); if (!base) return;
       const sn = x => S.snap ? snapTo(x, GRID) : Math.round(x);
@@ -479,6 +481,7 @@ function moveTip(x, y) {
 
 /* ---------- действия над нодами ---------- */
 function createNodeAt(type, wx, wy) {
+  if (!aclGuard('map')) return null;
   const n = addNode(type, wx - NODE_W / 2, wy - 40);
   commit(true); renderAll(); setSel([n.id]);
   return n;
@@ -490,6 +493,7 @@ function freeSpot(x, y, w = NODE_W, hh = 120) {
   return { x, y };
 }
 function addLinked(nid) {
+  if (!aclGuard('map')) return;
   const a = nodeById(nid); if (!a) return;
   const z = nodeSize(a);
   const sp = freeSpot(a.x + z.w + 160, a.y, NODE_W, 160);
@@ -501,12 +505,14 @@ function addLinked(nid) {
   const sx = n.x * v.k + v.x, sy = n.y * v.k + v.y;
   if (sx + nz.w * v.k > r.width - 40 || sy + nz.h * v.k > r.height - 40 || sx < 40 || sy < 90) centerOn(n.x + nz.w / 2, n.y + nz.h / 2, v.k);
 }
-function setNodesColor(ids, color) { ids.forEach(id => { const n = nodeById(id); if (n) n.color = color; }); commit(true); ids.forEach(refreshNode); }
+function setNodesColor(ids, color) { if (!aclGuard('map')) return; ids.forEach(id => { const n = nodeById(id); if (n) n.color = color; }); commit(true); ids.forEach(refreshNode); }
 function setNodesType(ids, type) {
+  if (!aclGuard('map')) return;
   ids.forEach(id => { const n = nodeById(id); if (!n) return; n.type = type; if (type !== 'note' && !n.files.length) n.files.push(newFile()); });
   commit(true); renderAll();
 }
 function deleteSelection() {
+  if (!aclGuard('map')) return;
   if (UI.edge) { deleteEdge(UI.edge); UI.edge = null; commit(true); renderAll(); toastUndo(t('toast.deleted.edge')); return; }
   const ids = [...UI.sel]; if (!ids.length) return;
   closeModalsFor(ids);
@@ -519,6 +525,7 @@ function toastUndo(msg) {
   setTimeout(() => { el.classList.remove('in'); setTimeout(() => el.remove(), 260); }, 5200);
 }
 function duplicateSelection() {
+  if (!aclGuard('map')) return;
   const ids = [...UI.sel]; if (!ids.length) return;
   const nid = duplicateNodes(ids); commit(true); renderAll(); setSel(nid);
 }
@@ -530,7 +537,7 @@ function reverseEdge(id) {
 function resetEdgeLabel(id) { const e = edgeById(id); if (!e) return; e.lo = null; commit(true); renderEdges(); buildToolbar(); positionToolbar(); }
 function straightenEdge(id) { const e = edgeById(id); if (!e) return; e.pts = []; commit(true); renderEdges(); buildToolbar(); positionToolbar(); }
 function nudgeSelection(dx, dy) {
-  if (!UI.sel.size) return;
+  if (!UI.sel.size || !aclCan('map')) return;
   UI.sel.forEach(id => { const n = nodeById(id); if (n) { n.x += dx; n.y += dy; const el = NODE_EL.get(id); if (el) el.setAttribute('transform', `translate(${n.x} ${n.y})`); } });
   for (const ed of P.edges) if (ed.pts && ed.pts.length && UI.sel.has(ed.from) && UI.sel.has(ed.to)) ed.pts = ed.pts.map(q => [q[0] + dx, q[1] + dy]);
   scheduleEdges(); positionToolbar(); commit(false);

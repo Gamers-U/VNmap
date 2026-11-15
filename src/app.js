@@ -92,6 +92,7 @@ function updateStatus() {
   el.replaceChildren(h('div', { class: 'bar' },
     h('button', { class: 'btn stat', 'data-tip': t('top.stats.tip'), onclick: () => openStats() },
       h('span', t('status.blocks', st.nodes)), h('span', { class: 'sep-dot' }, '·'), h('span', t('status.files', st.files)), h('span', { class: 'sep-dot' }, '·'), h('span', { class: 'strong' }, Math.round(st.pct * 100) + '%')),
+    typeof aclChip === 'function' ? aclChip() : null,
     DESK ? [deskStatusChip(), driveChip(), ghChip(), updChip()]
       : [h('button', { class: 'btn stat' + (stale ? ' warn' : ''), 'data-tip': t('status.backup.tip'), onclick: () => exportJSON() }, icon('save', 15), UI.lastBackup ? t('status.backup', ago(UI.lastBackup)) : t('status.nobackup')), ghChip()]));
 }
@@ -118,6 +119,7 @@ function onProjectReplaced() {
   const pn = $('#proj-name'); if (pn) pn.value = P.name;
   updateStatus(); updateUndoButtons();
   if (typeof mfAfterReplace === 'function') mfAfterReplace();
+  if (typeof aclAutoJoin === 'function') aclAutoJoin();
 }
 
 /* ---------- горячие клавиши ---------- */

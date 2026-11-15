@@ -10,7 +10,7 @@ function openTranslate(langId) {
   const st = TLW = { lang: langId || (P.tl.langs[0] && P.tl.langs[0].id) || null, q: '', f: 'all', scope: 'all', page: 0, only: 'all', units: null };
   st.m = openModal({
     cls: 'node-m tl-m', onClose: () => { if (TLW === st) TLW = null; stopPreview(); flushHistory(); scheduleRender(); },
-    build: m => { st.m = m; st.root = h('div', { class: 'm-wrap' }); renderTl(); return st.root; }
+    build: m => { st.m = m; st.root = h('div', { class: 'm-wrap' }); renderTl(); if (typeof aclWatch === 'function') aclWatch(st.root, () => 'tr'); return st.root; }
   });
   return st.m;
 }

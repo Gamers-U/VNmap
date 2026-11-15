@@ -22,6 +22,7 @@ Object.assign(D, {
 
 /* ---------- общие действия ---------- */
 function addNodeAtCenter(tp) {
+  if (typeof aclGuard === 'function' && !aclGuard('map')) return null;
   const r = stage.getBoundingClientRect(), w = toWorld(r.left + r.width / 2, r.top + r.height / 2);
   const sp = freeSpot(snapTo(w.x - NODE_W / 2, GRID), snapTo(w.y - 60, GRID));
   const n = addNode(tp, sp.x, sp.y); commit(true); renderAll(); setSel([n.id]);

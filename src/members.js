@@ -149,6 +149,7 @@ function openTeamMenu(anchor) {
 /* ---------- вкладка реестра «Участники» ---------- */
 function regTeam(st, list, qq) {
   const items = P.members.filter(m => !qq || (m.name + ' ' + m.contact + ' ' + m.notes + ' ' + m.roles.map(roleLabel).join(' ')).toLowerCase().includes(qq));
+  if (typeof aclTeamCard === 'function') list.append(aclTeamCard());
   list.append(h('div', { class: 'team-top' },
     h('div', { class: 'hint' }, t('team.intro')),
     h('button', { class: 'btn', onclick: () => openCredits() }, icon('list', 16), t('team.credits'))));
@@ -181,6 +182,7 @@ function regTeam(st, list, qq) {
     list.append(regCard(m.id, [
       h('div', { class: 'grid2' }, field(t('team.name'), nameInp), field(t('team.contact'), bindInput(m, 'contact', { ph: t('team.contact.ph'), onChange: () => commit() }))),
       field(t('team.roles'), rolesBox),
+      typeof aclMemberExtras === 'function' ? aclMemberExtras(m) : null,
       h('div', { class: 'team-load' }, h('div', { class: 'team-lt' }, parts.length ? parts.join(' · ') : t('team.stat.none')), stt.files ? bar : null),
       h('div', { class: 'team-acts' },
         h('button', { class: 'btn sm', onclick: () => { setMemberFilter(m.id); REG.m.close(); } }, icon('target', 14), t('team.show')),
@@ -277,6 +279,7 @@ function meId() {
 }
 const meMember = () => memberById(meId());
 function meSet(id) {
+  if (id && typeof aclMayClaim === 'function' && !aclMayClaim(memberById(id))) { toast(t('acl.claim.no'), 4200); return false; }       // права: чужого участника с привязанным входом выбрать нельзя
   if (!S.me || typeof S.me !== 'object') S.me = {};
   if (!id) { delete S.me[P.uid]; saveSettings(); return; }
   S.me[P.uid] = id;
@@ -287,6 +290,7 @@ function meSet(id) {
     m.ids = [...new Set([...(m.ids || []), ...ids])].slice(0, 6);
   }
   saveSettings(); commit(true); AUTH_SIG = null;
+  return true;
 }
 /** Перед каждым шагом истории: главы, которые изменились после прошлого шага, подписываются тем, кто сейчас работает. */
 const authSig = f => { const c = Object.assign({}, f); delete c.by; delete c.ed; delete c.edt; return JSON.stringify(c); };
@@ -307,7 +311,7 @@ function openMeDialog() {
       const paint = () => {
         const me = meId(), ids = meIdentities();
         box.replaceChildren(h('h3', t('me.title')), h('p', { class: 'hint' }, t('me.intro')),
-          h('div', { class: 'me-list' }, P.members.map(x => h('button', { class: 'me-row' + (x.id === me ? ' on' : ''), onclick: () => { meSet(x.id); toast(t('me.done', x.name), 2600); m.close(); if (REG && !REG.m.closed) renderReg(); } },
+          h('div', { class: 'me-list' }, P.members.map(x => h('button', { class: 'me-row' + (x.id === me ? ' on' : ''), onclick: () => { if (meSet(x.id) === false) return; toast(t('me.done', x.name), 2600); m.close(); if (REG && !REG.m.closed) renderReg(); if (typeof updateStatus === 'function') updateStatus(); } },
             memberAv(x, 26), h('span', { class: 'me-n' }, x.name, x.roles.length ? h('span', { class: 'mi-sub' }, ' · ' + x.roles.map(roleLabel).slice(0, 2).join(', ')) : null), x.id === me ? icon('check', 16) : null))),
           h('div', { class: 'hint' }, ids.length ? t('me.ids', ids.join(', ')) : t('me.noids')),
           h('div', { class: 'row-actions' },

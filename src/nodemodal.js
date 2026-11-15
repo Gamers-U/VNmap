@@ -20,6 +20,7 @@ function openNodeModal(nid, fid) {
       st.side = h('div', { class: 'm-side' });
       st.main = h('div', { class: 'm-main' });
       renderHead(st); renderSide(st); renderMain(st);
+      if (typeof aclWatch === 'function') { aclWatch(st.head, () => 'map'); aclWatch(st.main, () => (st.sel === 'node' ? 'map' : 'text')); }
       return h('div', { class: 'm-wrap' }, st.head, h('div', { class: 'm-body' }, st.side, st.main));
     }
   });

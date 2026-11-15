@@ -171,6 +171,7 @@ function openChapterEditor(opts = {}) {
       const tb = h('div', { class: 'te-tb' });
       const pre = h('pre', { class: 'te-pre', 'aria-hidden': 'true' });
       const ta = h('textarea', { class: 'te-ta', id: 'te-ta', spellcheck: 'true', placeholder: t('te.ph'), autocomplete: 'off' });
+      if (typeof aclOn === 'function' && aclOn() && !aclCan('text')) ta.readOnly = true;                  // права доступа: только чтение
       const ed = h('div', { class: 'te-ed' }, h('div', { class: 'te-edin' }, pre, ta));
       const dock = h('div', { class: 'te-fork', hidden: true });
       const foot = h('div', { class: 'm-foot te-foot' });

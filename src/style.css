@@ -1739,3 +1739,19 @@ body.game-mode{background:var(--bg)}
 .gui-slot .field{margin:2px 0 0}
 .gui-st{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 6px}.gui-p{margin-left:auto;font-size:11px;color:var(--text3)}
 .gui-slot .upl-thumb{width:64px;height:40px}.gui-slot .upl-thumb img{object-fit:contain}
+
+/* права доступа */
+.acl-ro>*{pointer-events:none}
+.acl-ro{opacity:.74;user-select:text}
+.acl-keep,.acl-ro .acl-keep{pointer-events:auto;opacity:1}
+.acl-note{display:flex;align-items:center;gap:8px;padding:9px 12px;margin:0 0 10px;border-radius:12px;background:color-mix(in srgb,var(--warn) 13%,transparent);color:var(--text2);font-size:12.5px;line-height:1.4}
+.acl-note svg{flex:none;color:var(--warn)}
+.acl-card{margin-bottom:12px}
+.acl-h{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.acl-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:10px 0 6px}
+.acl-you{font-weight:600;color:var(--text)}
+.acl-honest{margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.acl-roles{margin:8px 0 2px;font-size:12.5px;color:var(--text2)}.acl-roles summary{cursor:pointer;font-weight:600}
+.acl-rls{display:flex;flex-direction:column;gap:5px;margin-top:8px}.acl-rl b{color:var(--text)}
+.acl-mx{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px;margin:2px 0 10px}.acl-mx .field{margin:0}
+.acl-chip{color:var(--accent)}.acl-chip.ro{color:var(--warn)}

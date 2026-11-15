@@ -273,6 +273,7 @@ function normalize(p) {
     m.roles = [...new Set((Array.isArray(m.roles) ? m.roles : []).map(r => String(r).trim().slice(0, 40)).filter(Boolean))].slice(0, 10);
     m.ids = [...new Set((Array.isArray(m.ids) ? m.ids : []).map(x => String(x).trim().slice(0, 80)).filter(Boolean))].slice(0, 6);
     m.contact = String(m.contact || '').slice(0, 160); m.notes = String(m.notes || '').slice(0, 600); m.credit = m.credit !== false;
+    if (m.access !== 'owner' && m.access !== 'editor' && m.access !== 'observer') delete m.access;
   }
   const cleanIds = a => [...new Set((Array.isArray(a) ? a : []).filter(x => typeof x === 'string' && seenM.has(x)))];
   for (const l of p.tl.langs) l.owners = cleanIds(l.owners);
@@ -356,6 +357,7 @@ function normalize(p) {
   if (p.lofs && typeof p.lofs === 'object' && !Array.isArray(p.lofs)) for (const k of Object.keys(p.lofs).slice(0, 600)) { const v = p.lofs[k]; if (Array.isArray(v) && isFinite(v[0]) && isFinite(v[1]) && (Math.round(v[0]) || Math.round(v[1]))) lofs[k] = [Math.round(v[0]), Math.round(v[1])]; }
   p.lofs = lofs;
   p.gui = guiClean(p.gui);
+  p.acl = p.acl && typeof p.acl === 'object' && p.acl.on ? (p.acl.corp ? { on: true, corp: true } : { on: true }) : {};
   return p;
 }
 function emptyProject() {
@@ -378,7 +380,8 @@ let AUTH_SIG = null;                      // подписи глав для уч
 function histPush() {
   clearTimeout(HIST.timer); HIST.timer = null;
   if (typeof authStamp === 'function') authStamp();
-  const j = snapJSON();
+  let j = snapJSON();
+  if (HIST.stack[HIST.i] !== j && typeof aclGate === 'function' && aclGate()) j = snapJSON();       // права доступа: запрещённое откатывается до записи шага
   if (HIST.stack[HIST.i] !== j) {
     HIST.stack.splice(HIST.i + 1);
     HIST.stack.push(j); HIST.i = HIST.stack.length - 1;

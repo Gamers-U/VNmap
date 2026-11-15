@@ -328,6 +328,7 @@ function openDocEditor(opts = {}) {
       const info = h('div', { class: 'te-info' }), banners = h('div', { class: 'de-banners' });
       const tb = h('div', { class: 'te-tb de-tb' });
       const root = h('div', { class: 'de-root', id: 'de-root', contenteditable: 'true', spellcheck: 'true', role: 'textbox', 'aria-multiline': 'true' });
+      if (typeof aclOn === 'function' && aclOn() && !aclCan('text')) root.setAttribute('contenteditable', 'false');      // права доступа: только чтение
       root.style.setProperty('--lab-note', JSON.stringify(t('de.k.note')));
       root.style.setProperty('--lab-fork', JSON.stringify(t('de.k.fork')));
       root.style.setProperty('--lab-cmd', JSON.stringify('@'));
