@@ -1,0 +1,11 @@
+# собирается из src/ командой python3 build.py
+dist/
+desktop/app/index.html
+# сборки и кэш
+desktop/release/
+desktop/release-portable/
+desktop/.cache/
+desktop/node_modules/
+__pycache__/
+# личный ключ Google (см. desktop/README.md); образец лежит в desktop/google-oauth.example.json
+desktop/google-oauth.json

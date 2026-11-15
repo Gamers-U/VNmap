@@ -1,0 +1,100 @@
+name: Релиз
+
+# Запуск: поставить тег vX.Y.Z (git tag v1.2.0 && git push --tags)
+# или Actions → «Релиз» → Run workflow (тег вводится вручную).
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Тег выпуска, например v1.2.0'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  page:
+    name: Страница и файл обновления
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - name: Собрать страницу
+        env: { PYTHONUTF8: '1' }
+        run: |
+          mkdir -p dist
+          python build.py
+          ls -la dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: page
+          path: |
+            dist/vnmap-update-*.zip
+            dist/vnmap.html
+
+  shell:
+    name: Оболочка (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Собрать страницу для оболочки
+        env: { PYTHONUTF8: '1' }
+        run: python build.py
+      - name: Ключ Google (необязательно)
+        shell: bash
+        env:
+          GOOGLE_OAUTH_JSON: ${{ secrets.GOOGLE_OAUTH_JSON }}
+        run: |
+          if [ -n "$GOOGLE_OAUTH_JSON" ]; then printf '%s' "$GOOGLE_OAUTH_JSON" > desktop/google-oauth.json; echo "ключ Google вложен"; else echo "ключа Google нет: каждый вводит свой в настройках"; fi
+      - name: Установщики
+        working-directory: desktop
+        shell: bash
+        run: |
+          npm install --no-audit --no-fund
+          case "${{ matrix.os }}" in
+            windows-latest) npx electron-builder --win --x64 --publish never ;;
+            ubuntu-latest)  npx electron-builder --linux --x64 --publish never ;;
+            macos-latest)   npx electron-builder --mac --x64 --arm64 --publish never ;;
+          esac
+          ls -la release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: shell-${{ matrix.os }}
+          path: |
+            desktop/release/*.exe
+            desktop/release/*.AppImage
+            desktop/release/*.dmg
+            desktop/release/*.zip
+
+  publish:
+    name: Выпуск на GitHub
+    needs: [page, shell]
+    if: ${{ !cancelled() && needs.page.result == 'success' }}   # выпуск делается, даже если одна из систем не собралась
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { path: out, merge-multiple: true }
+      - name: Создать или обновить выпуск
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.inputs.tag || github.ref_name }}
+        run: |
+          ls -la out
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$TAG" out/* --clobber --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "$TAG" out/* --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+              --title "Карта новеллы $TAG" \
+              --notes "Установщики и портативные версии оболочки + файл vnmap-update-….zip (его подхватывает кнопка «Обновить» в программе)."
+          fi

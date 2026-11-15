@@ -1,0 +1,623 @@
+'use strict';
+/* Карта новеллы — десктопная оболочка (Electron).
+   Всё приложение — это тот же index.html. Оболочка добавляет то, чего нет у страницы в браузере:
+   настоящие файлы проекта, диалоги ОС, запись собранной игры прямо в папку, меню, ассоциацию .vnmap. */
+const { app, BrowserWindow, Menu, dialog, ipcMain, protocol, shell, nativeTheme, net, safeStorage } = require('electron');
+const { GDrive } = require('./gdrive');
+const { Updater, stage: stageUpdate, compareBuild, sha256 } = require('./updater');
+const crypto = require('crypto');
+const path = require('path');
+const fs = require('fs');
+const fsp = fs.promises;
+
+const SCHEME = 'vnmap';
+const HOST = 'app';
+const APP_DIR = path.join(__dirname, 'app');
+const PROJECT_EXTS = ['.vnmap', '.zip', '.json'];
+const DEV = process.argv.includes('--dev');
+const BRIDGE = 2;                      // версия «моста» оболочки: страница может потребовать не меньше (data-needs в её отметке сборки)
+const RECENT_MAX = 12;
+
+protocol.registerSchemesAsPrivileged([{ scheme: SCHEME, privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true } }]);
+app.setName('VNMap');
+app.setPath('userData', path.join(app.getPath('appData'), 'VNMap'));
+const updater = new Updater({ bundledDir: APP_DIR, userData: app.getPath('userData'), bridge: BRIDGE });
+let overrideDir = null;                 // папка с установленным обновлением страницы (или null — работает встроенная)
+let bootNotice = null;                // что рассказать странице после запуска: откат, обновление
+let launcherPending = !process.argv.includes('--no-launcher');   // показать стартовый экран при первом запуске окна
+let lastUpdateUrl = '';
+let staged = null;                    // кандидат на обновление, ожидающий подтверждения
+
+/* ---------- состояние ---------- */
+let win = null;
+let lang = 'ru';
+let projectPath = '';                 // файл, к которому привязан проект
+let lastDir = '';                     // последняя папка в диалогах
+let uiState = { name: '', dirty: false, bound: false };
+let pendingOpen = null;               // файл, который просили открыть до готовности окна
+let rendererReady = false;
+let forceClose = false;
+let closing = false;
+let pendingOpenPath = null;           // файл из «Открыть с помощью» на macOS до готовности приложения
+
+const STR = {
+  ru: {
+    appName: 'Карта новеллы',
+    file: 'Файл', edit: 'Правка', view: 'Вид', help: 'Справка', window: 'Окно',
+    new: 'Новый проект…', open: 'Открыть проект…', save: 'Сохранить', saveAs: 'Сохранить как…', copy: 'Сохранить копию…',
+    build: 'Сборка игры…', drive: 'Google Диск…', quit: 'Выход', theme: 'Сменить тему', langRu: 'Русский', langEn: 'English', language: 'Язык',
+    helpOpen: 'Справка по программе', renpy: 'Сайт Ren\'Py', about: 'О программе', zoomReset: 'Масштаб интерфейса: 100%',
+    zoomIn: 'Крупнее', zoomOut: 'Мельче', fullscreen: 'Полный экран', reload: 'Перезагрузить', devtools: 'Инструменты разработчика',
+    projFilter: 'Проект «Карты новеллы»', allFilter: 'Все файлы', zipFilter: 'ZIP-архив',
+    openTitle: 'Открыть проект', saveTitle: 'Сохранить проект', pickDir: 'Куда записать игру',
+    pickDirBtn: 'Выбрать папку', ok: 'Готово',
+    overwriteTitle: 'Папка уже содержит файлы',
+    overwriteText: n => `В выбранной папке уже есть ${n} файл(ов) с такими же именами. Они будут заменены новой сборкой.`,
+    overwriteDetail: 'Файлы, которых нет в этой папке, останутся нетронутыми. Файлы прошлой сборки, которых больше нет в проекте, будут удалены.',
+    overwrite: 'Заменить', cancel: 'Отмена',
+    unsavedTitle: 'Сохранить изменения?',
+    unsavedText: n => `Проект «${n}» изменён и ещё не записан в файл.`,
+    saveBtn: 'Сохранить', dontSave: 'Не сохранять',
+    aboutText: v => `Карта новеллы ${v}\nКонструктор визуальных новелл: карта сюжета, сценарии, ресурсы и компилятор в Ren'Py.\n\nDesktop-версия на Electron ${process.versions.electron}, Chromium ${process.versions.chrome}.\nШрифт Inter — SIL Open Font License.`,
+    errWrite: 'Не удалось записать файл',
+    badNames: 'Недопустимые имена файлов в сборке: ',
+    launcher: 'Стартовый экран…', update: 'Обновить программу…',
+    updTitle: 'Файл обновления', updFilter: 'Обновление (ZIP или index.html)',
+    updErr: {
+      empty: 'Файл пустой.', 'zip-too-big': 'Файл слишком большой для обновления.', 'bad-size': 'Размер файла не похож на страницу программы.',
+      'zip-bad': 'Архив повреждён или не открывается.', 'zip-encrypted': 'Архив защищён паролем.', 'zip-method': 'Архив упакован неподдерживаемым способом.',
+      'no-index': 'В архиве нет файла index.html.', 'not-html': 'Это не файл обновления: нужен ZIP-архив или index.html.',
+      'no-stamp': 'Это не страница «Карты новеллы»: в ней нет отметки сборки.', 'hash-mismatch': 'Контрольная сумма не совпала: файл повреждён или изменён.',
+      'needs-shell': 'Для этого обновления нужна более новая оболочка программы. Один раз переустановите программу.', 'bad-url': 'Нужна ссылка, которая начинается с https://',
+      'http-fail': 'Не удалось скачать файл', 'too-big': 'Файл слишком большой.', 'gh-no-asset': 'В последнем выпуске на GitHub нет файла vnmap-update-….zip.', 'no-staged': 'Сначала выберите файл обновления.', 'timeout': 'Сервер слишком долго не отвечает.',
+    },
+  },
+  en: {
+    appName: 'Story Map',
+    file: 'File', edit: 'Edit', view: 'View', help: 'Help', window: 'Window',
+    new: 'New project…', open: 'Open project…', save: 'Save', saveAs: 'Save as…', copy: 'Save a copy…',
+    build: 'Build game…', drive: 'Google Drive…', quit: 'Quit', theme: 'Toggle theme', langRu: 'Русский', langEn: 'English', language: 'Language',
+    helpOpen: 'Help', renpy: 'Ren\'Py website', about: 'About', zoomReset: 'Interface zoom: 100%',
+    zoomIn: 'Zoom in', zoomOut: 'Zoom out', fullscreen: 'Full screen', reload: 'Reload', devtools: 'Developer tools',
+    projFilter: 'Story Map project', allFilter: 'All files', zipFilter: 'ZIP archive',
+    openTitle: 'Open project', saveTitle: 'Save project', pickDir: 'Where to write the game',
+    pickDirBtn: 'Choose folder', ok: 'Done',
+    overwriteTitle: 'The folder already has files',
+    overwriteText: n => `The chosen folder already contains ${n} file(s) with the same names. They will be replaced by the new build.`,
+    overwriteDetail: 'Other files in the folder stay untouched. Files from the previous build that are no longer in the project will be deleted.',
+    overwrite: 'Replace', cancel: 'Cancel',
+    unsavedTitle: 'Save changes?',
+    unsavedText: n => `Project “${n}” has changes that are not saved to a file yet.`,
+    saveBtn: 'Save', dontSave: 'Don\'t save',
+    aboutText: v => `Story Map ${v}\nVisual novel builder: story map, scripts, assets and a Ren'Py compiler.\n\nDesktop edition on Electron ${process.versions.electron}, Chromium ${process.versions.chrome}.\nInter font — SIL Open Font License.`,
+    errWrite: 'Could not write the file',
+    badNames: 'Invalid file names in the build: ',
+    launcher: 'Start screen…', update: 'Update the app…',
+    updTitle: 'Update file', updFilter: 'Update (ZIP or index.html)',
+    updErr: {
+      empty: 'The file is empty.', 'zip-too-big': 'The file is too large for an update.', 'bad-size': 'The file size does not look like the app page.',
+      'zip-bad': 'The archive is damaged or cannot be opened.', 'zip-encrypted': 'The archive is password-protected.', 'zip-method': 'The archive uses an unsupported compression.',
+      'no-index': 'There is no index.html in the archive.', 'not-html': 'This is not an update file: a ZIP archive or index.html is needed.',
+      'no-stamp': 'This is not a Story Map page: it has no build stamp.', 'hash-mismatch': 'Checksum mismatch: the file is damaged or was changed.',
+      'needs-shell': 'This update needs a newer app shell. Reinstall the app once.', 'bad-url': 'The link must start with https://',
+      'http-fail': 'Could not download the file', 'too-big': 'The file is too large.', 'gh-no-asset': 'The latest GitHub release has no vnmap-update-….zip file.', 'no-staged': 'Choose an update file first.', 'timeout': 'The server takes too long to answer.',
+    },
+  },
+};
+const T = () => STR[lang] || STR.ru;
+
+/* ---------- настройки окна ---------- */
+const settingsFile = () => path.join(app.getPath('userData'), 'window.json');
+function loadWinSettings() { try { return JSON.parse(fs.readFileSync(settingsFile(), 'utf8')); } catch (e) { return {}; } }
+function saveWinSettings() {
+  if (!win || win.isDestroyed()) return;
+  try {
+    const b = win.getNormalBounds();
+    fs.writeFileSync(settingsFile(), JSON.stringify({ bounds: b, max: win.isMaximized(), lang, lastDir, projectPath, updateUrl: lastUpdateUrl }));
+  } catch (e) { /* не страшно */ }
+}
+
+/* ---------- безопасность ---------- */
+const isOwnUrl = url => { try { const u = new URL(url); return u.protocol === SCHEME + ':' && u.host === HOST; } catch (x) { return false; } };
+const trusted = e => !!(e && e.senderFrame && isOwnUrl(e.senderFrame.url));
+const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.woff2': 'font/woff2', '.png': 'image/png', '.svg': 'image/svg+xml', '.txt': 'text/plain; charset=utf-8' };
+const CSP = "default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob: data:; font-src 'self' data:; connect-src 'self' blob: data:; worker-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'";
+
+function registerProtocol() {
+  protocol.handle(SCHEME, async req => {
+    try {
+      const u = new URL(req.url);
+      if (u.host !== HOST) return new Response('not found', { status: 404 });
+      let rel = decodeURIComponent(u.pathname);
+      if (rel === '/' || rel === '') rel = '/index.html';
+      /* установленное обновление важнее встроенной страницы; чего в нём нет (например, шрифтов), берём из встроенной */
+      let base = APP_DIR, file = path.normalize(path.join(APP_DIR, rel));
+      if (overrideDir) {
+        const f2 = path.normalize(path.join(overrideDir, rel));
+        if (f2.startsWith(overrideDir + path.sep) && fs.existsSync(f2)) { base = overrideDir; file = f2; }
+      }
+      if (file !== base && !file.startsWith(base + path.sep)) return new Response('forbidden', { status: 403 });
+      const buf = await fsp.readFile(file);
+      return new Response(buf, { headers: { 'Content-Type': MIME[path.extname(file).toLowerCase()] || 'application/octet-stream', 'Content-Security-Policy': CSP, 'Cache-Control': 'no-cache' } });
+    } catch (e) { return new Response('not found', { status: 404 }); }
+  });
+}
+
+/* ---------- файлы ---------- */
+const isProjectFile = p => PROJECT_EXTS.includes(path.extname(p).toLowerCase());
+function findFileArg(argv) {
+  for (const a of argv.slice(1)) {
+    if (!a || a.startsWith('-')) continue;
+    if (isProjectFile(a)) { try { if (fs.statSync(a).isFile()) return path.resolve(a); } catch (e) { /* нет такого */ } }
+  }
+  return null;
+}
+async function readProjectFile(p) {
+  const buf = await fsp.readFile(p);
+  return { name: path.basename(p), path: p, bytes: new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength) };
+}
+async function atomicWrite(p, data) {
+  const tmp = p + '.tmp-' + process.pid;
+  await fsp.writeFile(tmp, data);
+  try { await fsp.rename(tmp, p); }
+  catch (e) { try { await fsp.copyFile(tmp, p); } finally { await fsp.rm(tmp, { force: true }); } }
+}
+const toBuffer = d => (typeof d === 'string' ? Buffer.from(d, 'utf8') : Buffer.from(d.buffer ? d.buffer : d, d.byteOffset || 0, d.byteLength));
+function safeFileName(n) { return String(n || 'project').replace(/[\\/:*?"<>|\x00-\x1f]+/g, '_').replace(/^\.+/, '').slice(0, 120) || 'project'; }
+const filtersFor = (names) => {
+  const T_ = T(), out = [];
+  if (names.includes('vnmap')) out.push({ name: T_.projFilter, extensions: ['vnmap'] });
+  if (names.includes('zip')) out.push({ name: T_.zipFilter, extensions: ['zip'] });
+  if (names.includes('json')) out.push({ name: 'JSON', extensions: ['json'] });
+  if (names.includes('all')) out.push({ name: T_.allFilter, extensions: ['*'] });
+  return out;
+};
+function extFilters(name) {
+  const e = path.extname(name).slice(1).toLowerCase();
+  const map = { vnmap: ['vnmap', 'all'], zip: ['zip', 'all'], json: ['json', 'all'], svg: [], md: [], txt: [] };
+  if (e in map && map[e].length) return filtersFor(map[e]);
+  if (e) return [{ name: e.toUpperCase(), extensions: [e] }, ...filtersFor(['all'])];
+  return filtersFor(['all']);
+}
+
+/* запись собранной игры в папку: безопасные относительные пути + манифест для чистки старых файлов */
+const MANIFEST = '.vnmap-build.json';
+function cleanRel(n) {
+  if (typeof n !== 'string' || !n || n.length > 400) return null;
+  const parts = n.replace(/\\/g, '/').split('/');
+  for (const p of parts) {
+    if (!p || p === '.' || p === '..' || /[<>:"|?*\x00-\x1f]/.test(p) || /[. ]$/.test(p)) return null;
+    if (/^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\..*)?$/i.test(p)) return null;   // зарезервировано в Windows
+  }
+  return parts.join('/');
+}
+async function exists(p) { try { await fsp.access(p); return true; } catch (e) { return false; } }
+async function pruneEmptyDirs(dir, root) {
+  let cur = dir;
+  while (cur.startsWith(root + path.sep) && cur !== root) {
+    try { if ((await fsp.readdir(cur)).length) break; await fsp.rmdir(cur); } catch (e) { break; }
+    cur = path.dirname(cur);
+  }
+}
+
+/* ---------- недавние проекты ---------- */
+const recentFile = () => path.join(app.getPath('userData'), 'recent.json');
+function recentLoad() { try { const j = JSON.parse(fs.readFileSync(recentFile(), 'utf8')); return Array.isArray(j) ? j.filter(x => x && typeof x.path === 'string').slice(0, RECENT_MAX * 2) : []; } catch (e) { return []; } }
+function recentSave(list) { try { fs.writeFileSync(recentFile(), JSON.stringify(list.slice(0, RECENT_MAX))); } catch (e) { /* не страшно */ } }
+function recentAdd(p) {
+  if (!p || path.extname(p).toLowerCase() !== '.vnmap') return;
+  recentSave([{ path: p, time: Date.now() }, ...recentLoad().filter(x => x.path !== p)]);
+}
+async function recentInfo() {
+  const out = [];
+  for (const r of recentLoad().slice(0, RECENT_MAX)) {
+    const e = { path: r.path, name: path.basename(r.path).replace(/\.vnmap$/i, ''), dir: path.dirname(r.path), time: +r.time || 0, exists: false, size: 0, mtime: 0 };
+    try { const st = await fsp.stat(r.path); if (st.isFile()) { e.exists = true; e.size = st.size; e.mtime = st.mtimeMs; } } catch (x) { /* файла больше нет */ }
+    out.push(e);
+  }
+  return out;
+}
+
+/* ---------- GitHub ---------- */
+const GH_BASE = (() => { const m = DEV && process.env.VNMAP_GITHUB_MOCK; return m && /^http:\/\/127\.0\.0\.1:\d+$/.test(m) ? m : 'https://api.github.com'; })();
+
+/* ---------- обновление страницы программы ---------- */
+const MAX_DOWNLOAD = 120 * 1048576;
+const updMsg = code => (T().updErr && T().updErr[code]) || code;
+function updFail(e) { const err = new Error(updMsg(e && e.message)); err.code = e && e.message; return err; }
+function stageResult(cand, source) {
+  const token = crypto.randomBytes(12).toString('hex');
+  staged = { token, cand, source, at: Date.now() };
+  const act = updater.active(), bun = updater.bundled(), cur = (act && act.build) || (bun && bun.build) || '';
+  return { token, build: cand.build, version: cand.version, size: cand.size, sha256: cand.sha256, source, cmp: cur ? compareBuild(cand.build, cur) : 1, needs: cand.needs, needsShell: cand.needs > BRIDGE };
+}
+async function fetchLimited(url, limit) {
+  const ac = new AbortController(), timer = setTimeout(() => ac.abort(), 90000);
+  try {
+    const res = await net.fetch(url, { signal: ac.signal, redirect: 'follow', cache: 'no-store', headers: { 'Cache-Control': 'no-cache' } });   // GitHub разрешает кэшировать сведения о выпуске на минуту: после публикации нужна свежая версия
+    const fin = (() => { try { return new URL(res.url || url); } catch (e) { return null; } })();
+    if (!res.ok || !fin || !(fin.protocol === 'https:' || (DEV && fin.protocol === 'http:' && fin.hostname === '127.0.0.1'))) throw new Error('http-fail');
+    const len = +res.headers.get('content-length') || 0; if (len > limit) throw new Error('too-big');
+    const chunks = []; let got = 0; const rd = res.body.getReader();
+    for (;;) { const { done, value } = await rd.read(); if (done) break; got += value.length; if (got > limit) { ac.abort(); throw new Error('too-big'); } chunks.push(Buffer.from(value)); }
+    return Buffer.concat(chunks);
+  } catch (e) { if (e && e.name === 'AbortError') throw new Error('timeout'); throw e; } finally { clearTimeout(timer); }
+}
+async function downloadUpdate(url, expect) {
+  let u; try { u = new URL(String(url || '').trim()); } catch (e) { throw new Error('bad-url'); }
+  const devHttp = DEV && u.protocol === 'http:' && u.hostname === '127.0.0.1';
+  if (u.protocol !== 'https:' && !devHttp) throw new Error('bad-url');
+  const gh = /^https:\/\/github\.com\/([\w.-]+)\/([\w.-]+?)(?:\.git)?\/?$/.exec(u.href);
+  if (gh) {
+    const info = JSON.parse((await fetchLimited(`${GH_BASE}/repos/${gh[1]}/${gh[2]}/releases/latest`, 4 * 1048576)).toString('utf8'));
+    const a = (info.assets || []).find(x => /^vnmap-update.*\.(zip|html)$/i.test(x.name || ''));
+    if (!a || !(/^https:\/\//.test(a.browser_download_url || '') || (DEV && /^http:\/\/127\.0\.0\.1:\d+\//.test(a.browser_download_url || '')))) throw new Error('gh-no-asset');
+    u = new URL(a.browser_download_url);
+  }
+  if (GH_BASE !== 'https://api.github.com' && u.host === 'raw.githubusercontent.com') u = new URL(GH_BASE + '/raw' + u.pathname);   // только автотесты
+  let buf = await fetchLimited(u.href, MAX_DOWNLOAD);
+  if (buf[0] === 0x7b) {   // «{» — это файл-указатель: { "url": "...zip", "sha256": "..." }
+    let m; try { m = JSON.parse(buf.toString('utf8')); } catch (e) { throw new Error('not-html'); }
+    const t2 = new URL(String(m.url || ''), u);
+    if (t2.protocol !== 'https:' && !(DEV && t2.protocol === 'http:' && t2.hostname === '127.0.0.1')) throw new Error('bad-url');
+    if (!expect && typeof m.sha256 === 'string') expect = m.sha256;
+    u = t2; buf = await fetchLimited(u.href, MAX_DOWNLOAD);
+  }
+  expect = String(expect || '').trim().toLowerCase();
+  if (expect && sha256(buf) !== expect) throw new Error('hash-mismatch');
+  return { buf, name: path.basename(u.pathname) || 'update', host: u.host };
+}
+
+/* ---------- GitHub: запросы к API и токен доступа ----------
+   Окно программы само в сеть не ходит (его защита это запрещает), поэтому все запросы к GitHub делает оболочка.
+   Токен хранится только здесь (зашифрованным средствами системы, если они есть) и странице не передаётся. */
+const ghFile = () => path.join(app.getPath('userData'), 'github.json');
+const GH_PATH = /^\/(?:user|repos\/[\w.-]+\/[\w.-]+(?:\/[\w%.~!$&'()*+,;=:@/-]*)?)(?:\?[\w%.~!$&'()*+,;=:@/?-]*)?$/;
+const GH_MAX = 110 * 1048576;
+let ghTok = null, ghLogin = '', ghEnc = true;
+function ghLoad() {
+  ghTok = null; ghLogin = '';
+  try {
+    const j = JSON.parse(fs.readFileSync(ghFile(), 'utf8')), raw = Buffer.from(String(j.tok || ''), 'base64');
+    ghLogin = String(j.login || ''); ghEnc = j.enc !== false;
+    if (raw.length) ghTok = ghEnc ? safeStorage.decryptString(raw) : raw.toString('utf8');
+  } catch (e) { ghTok = null; }
+}
+function ghSave() {
+  if (!ghTok) { try { fs.rmSync(ghFile(), { force: true }); } catch (e) { /* уже нет */ } return; }
+  ghEnc = safeStorage.isEncryptionAvailable();
+  const buf = ghEnc ? safeStorage.encryptString(ghTok) : Buffer.from(ghTok, 'utf8');
+  fs.writeFileSync(ghFile(), JSON.stringify({ tok: buf.toString('base64'), enc: ghEnc, login: ghLogin }), { mode: 0o600 });
+}
+async function ghRequest(o) {
+  o = o || {};
+  const method = String(o.method || 'GET').toUpperCase(), pth = String(o.path || '');
+  if (!['GET', 'PUT'].includes(method) || !GH_PATH.test(pth) || pth.includes('..')) throw new Error('gh:bad_request:запрос не разрешён');
+  const headers = { Accept: o.raw ? 'application/vnd.github.raw+json' : 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28', 'User-Agent': 'VNMap', 'Cache-Control': 'no-cache', Pragma: 'no-cache' };   // GitHub разрешает кэшировать ответы на минуту: нам нужна свежая версия файла
+  if (ghTok) headers.Authorization = 'Bearer ' + ghTok;
+  if (o.etag) headers['If-None-Match'] = String(o.etag).slice(0, 200);
+  let body;
+  if (o.body != null) { body = typeof o.body === 'string' ? o.body : JSON.stringify(o.body); headers['Content-Type'] = 'application/json'; if (body.length > GH_MAX) throw new Error('gh:too_big:файл слишком большой для GitHub'); }
+  const ac = new AbortController(), timer = setTimeout(() => ac.abort(), 90000);
+  try {
+    const res = await net.fetch(GH_BASE + pth, { method, headers, body, signal: ac.signal, redirect: 'follow', cache: 'no-store' });
+    const text = await res.text();
+    if (text.length > GH_MAX) throw new Error('gh:too_big:ответ GitHub слишком большой');
+    return { status: res.status, etag: res.headers.get('etag') || '', remaining: res.headers.get('x-ratelimit-remaining') || '', text };
+  } catch (e) {
+    if (e && /^gh:/.test(e.message)) throw e;
+    throw new Error('gh:network:' + (e && e.name === 'AbortError' ? 'сервер слишком долго не отвечает' : 'нет связи с GitHub'));
+  } finally { clearTimeout(timer); }
+}
+
+/* ---------- Google Диск ---------- */
+let gd = null;
+function testEndpoints() {
+  /* Только для автотестов: имитация Google на localhost, и только вместе с флагом --dev. */
+  const base = DEV && process.env.VNMAP_GOOGLE_MOCK;
+  if (!base || !/^http:\/\/127\.0\.0\.1:\d+$/.test(base)) return undefined;
+  return { auth: base + '/o/oauth2/v2/auth', token: base + '/token', revoke: base + '/revoke', api: base + '/drive/v3', upload: base + '/upload/drive/v3' };
+}
+function getGd() {
+  if (!gd) gd = new GDrive({ dir: app.getPath('userData'), defaultsPath: path.join(__dirname, 'google-oauth.json'), net, safeStorage, openUrl: u => shell.openExternal(u), endpoints: testEndpoints() });
+  return gd;
+}
+
+/* ---------- IPC ---------- */
+function registerIpc() {
+  const handle = (ch, fn) => ipcMain.handle(ch, async (e, ...a) => { if (!trusted(e)) throw new Error('untrusted'); return fn(e, ...a); });
+
+  handle('desk:ready', async () => {
+    rendererReady = true; const o = pendingOpen; pendingOpen = null;
+    const launcher = launcherPending && !o; launcherPending = false;
+    const notice = bootNotice; bootNotice = null;
+    updater.markBooted();                 // страница дошла до связи с оболочкой: установленное обновление считается рабочим
+    return { platform: process.platform, version: app.getVersion(), bridge: BRIDGE, open: o, path: projectPath, launcher, notice };
+  });
+
+  handle('desk:recent', async () => recentInfo());
+  handle('desk:recentForget', async (e, p) => { recentSave(recentLoad().filter(x => x.path !== p)); return recentInfo(); });
+  handle('desk:recentClear', async () => { recentSave([]); return []; });
+
+  /* обновление страницы: файл или ссылка → проверка → подтверждение страницей → установка и перезагрузка */
+  handle('upd:info', async () => ({ ...updater.info(), shell: app.getVersion(), electron: process.versions.electron, url: lastUpdateUrl }));
+  handle('upd:pickFile', async () => {
+    const r = await dialog.showOpenDialog(win, { title: T().updTitle, defaultPath: lastDir || app.getPath('downloads'), properties: ['openFile'], filters: [{ name: T().updFilter, extensions: ['zip', 'html', 'htm'] }, ...filtersFor(['all'])] });
+    if (r.canceled || !r.filePaths[0]) return null;
+    try {
+      const st = await fsp.stat(r.filePaths[0]); if (st.size > MAX_DOWNLOAD) throw new Error('too-big');
+      const cand = stageUpdate(await fsp.readFile(r.filePaths[0]), r.filePaths[0]);
+      return stageResult(cand, path.basename(r.filePaths[0]));
+    } catch (e) { throw updFail(e); }
+  });
+  handle('upd:fromUrl', async (e, url, expect) => {
+    try {
+      const d = await downloadUpdate(url, expect);
+      const cand = stageUpdate(d.buf, d.name);
+      lastUpdateUrl = String(url).trim().slice(0, 400); saveWinSettings();
+      return stageResult(cand, d.host + '/' + d.name);
+    } catch (e2) { throw updFail(e2); }
+  });
+  handle('upd:apply', async (e, token) => {
+    if (!staged || staged.token !== token || Date.now() - staged.at > 10 * 60 * 1000) throw updFail(new Error('no-staged'));
+    const st = staged; staged = null;
+    try { await updater.install(st.cand, st.source); } catch (err) { throw updFail(err); }
+    overrideDir = updater.activeDir(); bootNotice = { updated: st.cand.build, version: st.cand.version };
+    saveWinSettings();
+    setTimeout(() => { if (win && !win.isDestroyed()) { rendererReady = false; win.webContents.reloadIgnoringCache(); } }, 150);
+    return true;
+  });
+  handle('upd:reset', async () => {
+    await updater.reset(); overrideDir = null; bootNotice = { reset: true };
+    setTimeout(() => { if (win && !win.isDestroyed()) { rendererReady = false; win.webContents.reloadIgnoringCache(); } }, 150);
+    return true;
+  });
+
+  /* GitHub */
+  handle('gh:status', async () => ({ hasToken: !!ghTok, login: ghLogin, encrypted: ghEnc && safeStorage.isEncryptionAvailable() }));
+  handle('gh:setToken', async (e, tok) => {
+    tok = String(tok || '').trim();
+    if (!/^[\w-]{20,255}$/.test(tok)) throw new Error('gh:auth:Это не похоже на токен GitHub');
+    const prev = { tok: ghTok, login: ghLogin };
+    ghTok = tok;
+    try {
+      const r = await ghRequest({ path: '/user' });
+      if (r.status !== 200) throw new Error('gh:auth:GitHub не принял токен (код ' + r.status + ')');
+      ghLogin = String((JSON.parse(r.text) || {}).login || ''); ghSave();
+      return { login: ghLogin };
+    } catch (err) { ghTok = prev.tok; ghLogin = prev.login; throw err; }
+  });
+  handle('gh:clearToken', async () => { ghTok = null; ghLogin = ''; ghSave(); return true; });
+  handle('gh:request', async (e, o) => ghRequest(o));
+
+  handle('desk:setLang', async (e, l) => { if (l === 'ru' || l === 'en') { lang = l; buildMenu(); applyTitle(); saveWinSettings(); } return true; });
+
+  handle('desk:setState', async (e, st) => {
+    uiState = { name: String(st && st.name || ''), dirty: !!(st && st.dirty), bound: !!(st && st.bound) };
+    applyTitle(); return true;
+  });
+
+  /* «Сохранить как…» / «Сохранить копию…» / скачивание любых файлов */
+  handle('desk:saveFile', async (e, name, data) => {
+    const base = safeFileName(name);
+    const def = path.join(lastDir || app.getPath('documents'), base);
+    const r = await dialog.showSaveDialog(win, { title: T().saveTitle, defaultPath: def, filters: extFilters(base) });
+    if (r.canceled || !r.filePath) return null;
+    try { await atomicWrite(r.filePath, toBuffer(data)); } catch (err) { throw new Error(T().errWrite + ': ' + err.message); }
+    lastDir = path.dirname(r.filePath); saveWinSettings();
+    return { path: r.filePath };
+  });
+
+  /* сохранить проект: в привязанный файл или (saveAs / первый раз) через диалог */
+  handle('desk:saveProject', async (e, name, data, saveAs) => {
+    let target = !saveAs && projectPath ? projectPath : '';
+    if (!target) {
+      let base = safeFileName(name); base = base.replace(/\.(vnmap|zip|json)$/i, '').replace(/\.vnmap$/i, '') + '.vnmap';
+      const def = projectPath ? path.join(path.dirname(projectPath), base) : path.join(lastDir || app.getPath('documents'), base);
+      const r = await dialog.showSaveDialog(win, { title: T().saveTitle, defaultPath: def, filters: filtersFor(['vnmap', 'all']) });
+      if (r.canceled || !r.filePath) return null;
+      target = /\.[A-Za-z0-9]+$/.test(path.basename(r.filePath)) ? r.filePath : r.filePath + '.vnmap';
+    }
+    try { await atomicWrite(target, toBuffer(data)); } catch (err) { throw new Error(T().errWrite + ': ' + err.message); }
+    projectPath = target; lastDir = path.dirname(target); saveWinSettings(); recentAdd(target);
+    return { path: target, name: path.basename(target) };
+  });
+
+  handle('desk:bind', async (e, p) => { projectPath = typeof p === 'string' && path.extname(p).toLowerCase() === '.vnmap' ? p : ''; saveWinSettings(); return projectPath; });
+  handle('desk:unbind', async () => { projectPath = ''; saveWinSettings(); return true; });
+  /* лёгкая проверка «файл проекта изменился?» для совместной работы через общий файл */
+  handle('desk:stat', async () => { if (!projectPath) return null; try { const st = await fsp.stat(projectPath); return { sig: Math.round(st.mtimeMs) + ':' + st.size, size: st.size, mtime: st.mtimeMs }; } catch (err) { return null; } });
+
+  handle('desk:openDialog', async () => {
+    const r = await dialog.showOpenDialog(win, { title: T().openTitle, defaultPath: lastDir || app.getPath('documents'), properties: ['openFile'], filters: [{ name: T().projFilter, extensions: ['vnmap', 'zip', 'json'] }, ...filtersFor(['all'])] });
+    if (r.canceled || !r.filePaths[0]) return null;
+    lastDir = path.dirname(r.filePaths[0]); saveWinSettings(); recentAdd(r.filePaths[0]);
+    return readProjectFile(r.filePaths[0]);
+  });
+  handle('desk:readPath', async (e, p) => { if (typeof p !== 'string' || !isProjectFile(p)) return null; try { const f = await readProjectFile(p); recentAdd(p); return f; } catch (err) { return null; } });
+
+  /* запись собранной игры */
+  handle('desk:writeBuild', async (e, entries, opts) => {
+    if (!Array.isArray(entries) || !entries.length) return null;
+    const r = await dialog.showOpenDialog(win, { title: T().pickDir, buttonLabel: T().pickDirBtn, defaultPath: lastDir || app.getPath('documents'), properties: ['openDirectory', 'createDirectory'] });
+    if (r.canceled || !r.filePaths[0]) return null;
+    const root = path.resolve(r.filePaths[0]);
+    const items = [], bad = [];
+    for (const en of entries) {
+      const rel = cleanRel(en && en.name); if (!rel) { bad.push(String(en && en.name).slice(0, 80)); continue; }
+      const abs = path.resolve(root, ...rel.split('/'));
+      if (!abs.startsWith(root + path.sep)) { bad.push(rel); continue; }
+      items.push({ rel, abs, data: en.data });
+    }
+    if (bad.length) throw new Error(T().badNames + bad.slice(0, 3).join(', '));
+    let clash = 0;
+    for (const it of items) if (await exists(it.abs)) clash++;
+    if (clash) {
+      const T_ = T();
+      const c = await dialog.showMessageBox(win, { type: 'warning', buttons: [T_.overwrite, T_.cancel], defaultId: 1, cancelId: 1, title: T_.overwriteTitle, message: T_.overwriteText(clash), detail: T_.overwriteDetail });
+      if (c.response !== 0) return null;
+    }
+    /* чистка файлов прошлой сборки (только те, что записали мы и перечислили в манифесте) */
+    let removed = 0;
+    const keep = new Set(items.map(i => i.rel));
+    try {
+      const old = JSON.parse(await fsp.readFile(path.join(root, MANIFEST), 'utf8'));
+      if (old && old.tool === 'vnmap' && Array.isArray(old.files)) {
+        for (const f of old.files) {
+          const rel = cleanRel(f); if (!rel || keep.has(rel)) continue;
+          const abs = path.resolve(root, ...rel.split('/'));
+          if (!abs.startsWith(root + path.sep)) continue;
+          try { await fsp.unlink(abs); removed++; await pruneEmptyDirs(path.dirname(abs), root); } catch (err) { /* уже нет */ }
+        }
+      }
+    } catch (err) { /* манифеста нет — это первая запись */ }
+    let written = 0;
+    try {
+      for (const it of items) {
+        await fsp.mkdir(path.dirname(it.abs), { recursive: true });
+        await fsp.writeFile(it.abs, toBuffer(it.data)); written++;
+      }
+      await fsp.writeFile(path.join(root, MANIFEST), JSON.stringify({ tool: 'vnmap', version: app.getVersion(), time: new Date().toISOString(), files: items.map(i => i.rel) }, null, 1));
+    } catch (err) { throw new Error(T().errWrite + ': ' + err.message); }
+    lastDir = root; saveWinSettings();
+    return { dir: root, written, removed, replaced: clash };
+  });
+
+  handle('desk:showInFolder', async (e, p) => { if (typeof p === 'string' && p && fs.existsSync(p)) { const st = fs.statSync(p); if (st.isDirectory()) await shell.openPath(p); else shell.showItemInFolder(p); return true; } return false; });
+  handle('desk:openExternal', async (e, url) => { try { const u = new URL(url); if (u.protocol === 'https:' || u.protocol === 'http:') { await shell.openExternal(u.href); return true; } } catch (err) { /* нет */ } return false; });
+
+  /* Google Диск: страница получает только результаты, токены остаются здесь */
+  handle('gd:status', async () => getGd().status());
+  handle('gd:getConfig', async () => getGd().configInfo());
+  handle('gd:setConfig', async (e, c) => getGd().setConfig(c));
+  handle('gd:signIn', async () => getGd().signIn());
+  handle('gd:cancelSignIn', async () => { getGd().cancelSignIn(); return true; });
+  handle('gd:signOut', async () => getGd().signOut());
+  handle('gd:about', async () => getGd().about());
+  handle('gd:find', async (e, f) => getGd().find(f));
+  handle('gd:folder', async (e, name, parentId, props) => getGd().createFolder(name, parentId, props));
+  handle('gd:update', async (e, id, patch) => getGd().update(id, patch || {}));
+  handle('gd:trash', async (e, id) => getGd().trash(id));
+  handle('gd:get', async (e, id) => getGd().get(id));
+  handle('gd:upload', async (e, o) => getGd().upload(o || {}));
+  handle('gd:download', async (e, id) => getGd().download(id));
+
+  ipcMain.on('desk:closeNow', e => { if (!trusted(e)) return; forceClose = true; closing = false; if (win && !win.isDestroyed()) win.close(); });
+}
+
+/* ---------- окно ---------- */
+function applyTitle() {
+  if (!win || win.isDestroyed()) return;
+  const T_ = T();
+  const dot = uiState.bound && uiState.dirty ? '● ' : '';
+  win.setTitle(uiState.name ? `${dot}${uiState.name} — ${T_.appName}` : T_.appName);
+  if (process.platform === 'darwin') win.setDocumentEdited(!!(uiState.bound && uiState.dirty));
+}
+function send(cmd, arg) { if (win && !win.isDestroyed()) win.webContents.send('desk:cmd', cmd, arg); }
+
+function buildMenu() {
+  const T_ = T(), mac = process.platform === 'darwin';
+  const item = (label, cmd, accelerator, arg) => ({ label, accelerator, click: () => send(cmd, arg) });
+  const tpl = [];
+  if (mac) tpl.push({ label: app.name, submenu: [{ label: T_.about, click: showAbout }, { type: 'separator' }, { role: 'hide' }, { role: 'hideOthers' }, { role: 'unhide' }, { type: 'separator' }, { role: 'quit' }] });
+  tpl.push({
+    label: T_.file, submenu: [
+      item(T_.launcher, 'launcher', 'CmdOrCtrl+Shift+H'), { type: 'separator' },
+      item(T_.new, 'new', 'CmdOrCtrl+N'), item(T_.open, 'open', 'CmdOrCtrl+O'), { type: 'separator' },
+      item(T_.save, 'save', 'CmdOrCtrl+S'), item(T_.saveAs, 'saveas', 'CmdOrCtrl+Shift+S'), item(T_.copy, 'copy'), { type: 'separator' },
+      item(T_.build, 'build', 'CmdOrCtrl+B'), item(T_.drive, 'drive'),
+      ...(mac ? [] : [{ type: 'separator' }, { label: T_.quit, role: 'quit' }]),
+    ],
+  });
+  tpl.push({ label: T_.edit, submenu: [{ role: 'cut' }, { role: 'copy' }, { role: 'paste' }, { role: 'selectAll' }] });
+  tpl.push({
+    label: T_.view, submenu: [
+      item(T_.theme, 'theme'),
+      { label: T_.language, submenu: [{ label: T_.langRu, type: 'radio', checked: lang === 'ru', click: () => send('lang', 'ru') }, { label: T_.langEn, type: 'radio', checked: lang === 'en', click: () => send('lang', 'en') }] },
+      { type: 'separator' },
+      { label: T_.zoomIn, role: 'zoomIn' }, { label: T_.zoomOut, role: 'zoomOut' }, { label: T_.zoomReset, role: 'resetZoom' },
+      { type: 'separator' }, { label: T_.fullscreen, role: 'togglefullscreen' },
+      ...(DEV ? [{ type: 'separator' }, { label: T_.reload, role: 'reload' }, { label: T_.devtools, role: 'toggleDevTools' }] : []),
+    ],
+  });
+  tpl.push({
+    label: T_.help, submenu: [
+      item(T_.helpOpen, 'help'), item(T_.update, 'update'),
+      { label: T_.renpy, click: () => shell.openExternal('https://www.renpy.org/') },
+      ...(mac ? [] : [{ type: 'separator' }, { label: T_.about, click: showAbout }]),
+    ],
+  });
+  Menu.setApplicationMenu(Menu.buildFromTemplate(tpl));
+}
+function showAbout() {
+  dialog.showMessageBox(win, { type: 'info', title: T().about, message: T().appName, detail: T().aboutText(app.getVersion()), buttons: ['OK'], icon: path.join(__dirname, 'build', 'icon.png') });
+}
+
+function createWindow() {
+  const s = loadWinSettings();
+  if (s.lang === 'ru' || s.lang === 'en') lang = s.lang;
+  if (typeof s.lastDir === 'string') lastDir = s.lastDir;
+  if (typeof s.updateUrl === 'string') lastUpdateUrl = s.updateUrl;
+  if (typeof s.projectPath === 'string' && s.projectPath && fs.existsSync(s.projectPath)) projectPath = s.projectPath;
+  const b = s.bounds && s.bounds.width >= 800 && s.bounds.height >= 560 ? s.bounds : { width: 1360, height: 860 };
+  win = new BrowserWindow({
+    ...b, minWidth: 900, minHeight: 600, show: false, title: T().appName,
+    backgroundColor: nativeTheme.shouldUseDarkColors ? '#1c1c1e' : '#f2f2f7',
+    icon: path.join(__dirname, 'build', 'icon.png'),
+    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true, spellcheck: false, devTools: DEV },
+  });
+  if (s.max) win.maximize();
+  win.once('ready-to-show', () => win.show());
+  win.webContents.setWindowOpenHandler(({ url }) => { try { const u = new URL(url); if (u.protocol === 'https:' || u.protocol === 'http:') shell.openExternal(u.href); } catch (e) { /* нет */ } return { action: 'deny' }; });
+  win.webContents.on('will-navigate', (e, url) => { if (!isOwnUrl(url)) e.preventDefault(); });
+  win.webContents.on('will-attach-webview', e => e.preventDefault());
+  win.webContents.session.setPermissionRequestHandler((wc, perm, cb) => cb(perm === 'clipboard-sanitized-write'));
+  win.webContents.session.setPermissionCheckHandler((wc, perm) => perm === 'clipboard-sanitized-write');
+  win.on('resize', () => { clearTimeout(win._sv); win._sv = setTimeout(saveWinSettings, 600); });
+  win.on('move', () => { clearTimeout(win._sv); win._sv = setTimeout(saveWinSettings, 600); });
+  win.on('close', async e => {
+    saveWinSettings();
+    if (forceClose || !(uiState.bound && uiState.dirty)) return;
+    e.preventDefault();
+    if (closing) return;
+    closing = true;
+    const T_ = T();
+    const r = await dialog.showMessageBox(win, { type: 'question', buttons: [T_.saveBtn, T_.dontSave, T_.cancel], defaultId: 0, cancelId: 2, title: T_.unsavedTitle, message: T_.unsavedTitle, detail: T_.unsavedText(uiState.name || T_.appName) });
+    if (r.response === 0) {
+      send('save-quit');
+      setTimeout(() => { closing = false; }, 15000);   // если страница не ответила — можно попробовать снова
+    } else if (r.response === 1) { forceClose = true; closing = false; win.close(); }
+    else closing = false;
+  });
+  win.on('closed', () => { win = null; rendererReady = false; });
+  win.loadURL(`${SCHEME}://${HOST}/index.html`);
+}
+
+async function openPath(p) {
+  if (!p) return;
+  let f; try { f = await readProjectFile(p); } catch (e) { return; }
+  recentAdd(p);
+  if (win && rendererReady) { if (win.isMinimized()) win.restore(); win.focus(); win.webContents.send('desk:open', f); }
+  else pendingOpen = f;
+}
+
+/* ---------- запуск ---------- */
+const gotLock = app.requestSingleInstanceLock();
+if (!gotLock) { app.quit(); }
+else {
+  app.on('second-instance', (e, argv) => { const p = findFileArg(argv); if (win) { if (win.isMinimized()) win.restore(); win.focus(); } if (p) openPath(p); });
+  app.on('open-file', (e, p) => { e.preventDefault(); if (app.isReady()) openPath(p); else pendingOpenPath = p; });
+  app.whenReady().then(async () => {
+    /* прошлое обновление не запустилось — возвращаем встроенную страницу и скажем об этом */
+    const rb = updater.checkBoot(); if (rb) bootNotice = rb;
+    overrideDir = updater.activeDir();
+    registerProtocol(); registerIpc(); ghLoad();
+    const s = loadWinSettings(); if (s.lang === 'ru' || s.lang === 'en') lang = s.lang;
+    const first = pendingOpenPath || findFileArg(process.argv);
+    if (first) launcherPending = false;     // программу открыли двойным щелчком по проекту: стартовый экран не нужен
+    buildMenu(); createWindow();
+    if (first) { try { pendingOpen = await readProjectFile(first); } catch (e) { /* нет файла */ } }
+    app.on('activate', () => { if (!BrowserWindow.getAllWindows().length) { forceClose = false; createWindow(); } });
+  });
+  app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
+}
