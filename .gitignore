@@ -9,3 +9,4 @@ desktop/node_modules/
 __pycache__/
 # личный ключ Google (см. desktop/README.md); образец лежит в desktop/google-oauth.example.json
 desktop/google-oauth.json
+shots/
