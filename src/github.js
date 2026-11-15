@@ -234,7 +234,7 @@ async function ghTryMerge(m, rem) {
   }
   return false;
 }
-const ghDone = () => { GHS.remote = null; GHS.retryN = 0; ghSetPhase('idle'); if (gmeta() && strHash(contentJSON()) !== gmeta().sigHash) { GHS.dirtyFlag = true; ghDirty(); } };
+const ghDone = () => { GHS.remote = null; GHS.retryN = 0; ghSetPhase('idle'); if (gmeta() && strHash(contentJSON()) !== gmeta().sigHash) { GHS.dirtyFlag = true; ghDirty(); } if (typeof rvAfterSync === 'function') rvAfterSync(); };
 
 /* ---------- один круг синхронизации ---------- */
 async function ghCycle({ manual = false } = {}) {
@@ -475,8 +475,9 @@ function renderGhPanel(st) {
         field(t('gh.f.branch'), inp('branch', t('gh.f.branch.ph'))),
         h('div', { class: 'row-actions left' },
           h('button', { class: 'btn primary', id: 'gh-connect', disabled: st.busy, onclick: () => guard(async () => { if (await ghConnect(st.draft)) st.hist = null; }) }, icon('upload', 15), t('gh.connect')),
-          h('button', { class: 'btn', id: 'gh-join', disabled: st.busy, onclick: () => guard(async () => { if (await ghJoin(st.draft)) st.hist = null; }) }, icon('download', 15), t('gh.join'))),
-        h('div', { class: 'hint' }, t('gh.join.h')));
+          h('button', { class: 'btn', id: 'gh-join', disabled: st.busy, onclick: () => guard(async () => { if (await ghJoin(st.draft)) { st.hist = null; if (st.draft.author) await rvStartBranch(); } }) }, icon('download', 15), t('gh.join'))),
+        h('div', { class: 'hint' }, t('gh.join.h')),
+        switchEl(!!st.draft.author, v => { st.draft.author = v; }, t('rv.join.author')));
     } else {
       st.statusEl = h('div', { class: 'dr-status' });
       card.append(h('div', { class: 'opt-row' }, h('div', { class: 'opt-t' }, h('div', { class: 'mono' }, m.repo + ' · ' + m.path + (m.branch ? ' · ' + m.branch : '')), h('div', { class: 'hint' }, m.priv === false ? t('gh.public') : t('gh.private')))), st.statusEl,
@@ -507,6 +508,7 @@ function renderGhPanel(st) {
       }
       parts.push(hc);
     }
+    if (on && typeof rvPanelCards === 'function') parts.splice(parts.indexOf(card) + 1, 0, ...rvPanelCards(st, m, guard));
   }
   st.root.replaceChildren(...parts);
   renderGhStatus(st);

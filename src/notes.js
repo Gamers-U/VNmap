@@ -73,7 +73,7 @@ function cmPanel(nid, fid) {
       return h('div', { class: 'cm-item' + (c.done ? ' done' : ''), 'data-cmid': c.id },
         h('span', { class: 'cm-av', style: { background: cmColor(c.by), color: onColor(cmColor(c.by)) } }, initials(who)),
         h('div', { class: 'cm-body' },
-          h('div', { class: 'cm-meta' }, h('b', who), h('span', ' · ' + ago(c.t)), ft ? h('span', { class: 'cm-on' }, t('cm.file', ft)) : null),
+          h('div', { class: 'cm-meta' }, h('b', who), c.rv ? h('span', { class: 'cm-rv' }, t('rv.note.tag')) : null, h('span', ' · ' + ago(c.t)), ft ? h('span', { class: 'cm-on' }, t('cm.file', ft)) : null),
           h('div', { class: 'cm-text' }, c.text)),
         h('div', { class: 'cm-act' },
           h('button', { class: 'btn icon sm' + (c.done ? ' on' : ''), 'data-tip': c.done ? t('cm.reopen') : t('cm.done'), onclick: () => { cmToggle(c); render(); } }, icon(c.done ? 'undo' : 'check', 15)),

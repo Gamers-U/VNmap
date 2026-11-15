@@ -300,6 +300,8 @@ function normalize(p) {
   for (const c of p.cmts) {
     c.id = typeof c.id === 'string' && c.id && !seenK.has(c.id) ? c.id : uid('k'); seenK.add(c.id);
     c.fid = typeof c.fid === 'string' && fileIds.has(c.fid) ? c.fid : ''; c.by = String(c.by || '').slice(0, 60); c.t = isFinite(c.t) ? +c.t : 0; c.text = c.text.slice(0, 2000); c.done = !!c.done;
+    if (c.rv) c.rv = 1; else delete c.rv;                      // замечание проверяющего (ветки авторов): rv — признак, to — кому
+    if (c.to) c.to = String(c.to).slice(0, 60); else delete c.to;
   }
   /* скрытые замечания проверки сюжета: id получается из ключа, поэтому одно и то же замечание, скрытое двумя людьми, не двоится */
   const seenX = new Set();

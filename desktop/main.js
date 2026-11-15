@@ -19,7 +19,7 @@ const HOST = 'app';
 const APP_DIR = path.join(__dirname, 'app');
 const PROJECT_EXTS = ['.vnmap', '.zip', '.json'];
 const DEV = process.argv.includes('--dev');
-const BRIDGE = 4;                      // версия «моста» оболочки: страница может потребовать не меньше (data-needs в её отметке сборки)
+const BRIDGE = 5;                      // версия «моста» оболочки: страница может потребовать не меньше (data-needs в её отметке сборки)
 const RECENT_MAX = 12;
 
 protocol.registerSchemesAsPrivileged([{ scheme: SCHEME, privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true } }]);
@@ -279,7 +279,12 @@ function ghSave() {
 async function ghRequest(o) {
   o = o || {};
   const method = String(o.method || 'GET').toUpperCase(), pth = String(o.path || '');
-  if (!['GET', 'PUT'].includes(method) || !GH_PATH.test(pth) || pth.includes('..')) throw new Error('gh:bad_request:запрос не разрешён');
+  /* GET и PUT — чтение и запись файла проекта; POST — только создание ветки (/git/refs, имя refs/heads/…): ветка автора для проверки правок */
+  let postOk = false;
+  if (method === 'POST' && /^\/repos\/[\w.-]+\/[\w.-]+\/git\/refs$/.test(pth) && o.body != null) {
+    try { const b = typeof o.body === 'string' ? JSON.parse(o.body) : o.body; postOk = !!b && typeof b.ref === 'string' && /^refs\/heads\/[\w./-]{1,100}$/.test(b.ref) && !b.ref.includes('..') && /^[0-9a-f]{40}$/i.test(String(b.sha || '')); } catch (e) { postOk = false; }
+  }
+  if (!(['GET', 'PUT'].includes(method) || postOk) || !GH_PATH.test(pth) || pth.includes('..')) throw new Error('gh:bad_request:запрос не разрешён');
   const headers = { Accept: o.raw ? 'application/vnd.github.raw+json' : 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28', 'User-Agent': 'VNMap', 'Cache-Control': 'no-cache', Pragma: 'no-cache' };   // GitHub разрешает кэшировать ответы на минуту: нам нужна свежая версия файла
   if (ghTok) headers.Authorization = 'Bearer ' + ghTok;
   if (o.etag) headers['If-None-Match'] = String(o.etag).slice(0, 200);

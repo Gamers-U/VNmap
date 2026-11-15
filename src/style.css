@@ -1671,3 +1671,44 @@ body.game-mode{background:var(--bg)}
 .rpi-row .di-w{text-align:left}
 .ri-rep{margin:12px 6px 0;font-size:12.5px;color:var(--text2)}
 .ri-rep ul{margin:6px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:3px}
+
+/* ---------- ветки авторов и проверка правок ---------- */
+.modal.rv-m{width:min(900px,100%);height:min(820px,100%)}
+.rv-sum{margin:8px 0 6px;font-size:13px}
+.rv-top{margin:6px 0 4px}
+.rv-grp{border:1px solid var(--border);border-radius:14px;margin:10px 0;overflow:hidden;background:var(--surface)}
+.rv-gh{display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--surface2)}
+.rv-gh .dot{width:10px;height:10px;border-radius:50%;flex:none}
+.rv-row{display:flex;gap:12px;align-items:flex-start;padding:10px 12px;border-top:1px solid var(--border)}
+.rv-row.dec-accept{background:color-mix(in srgb,var(--ok) 9%,transparent)}
+.rv-row.dec-return{background:color-mix(in srgb,var(--warn) 11%,transparent)}
+.rv-row.dec-reject{opacity:.6}
+.rv-row.dismissed{opacity:.7}
+.rv-t{flex:1;min-width:0}
+.rv-line{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.rv-line b{font-weight:650;overflow-wrap:anywhere}
+.rv-pill{font-size:10.5px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;padding:2px 7px;border-radius:999px;background:var(--surface3);color:var(--text2)}
+.rv-pill.new{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok)}
+.rv-pill.del{background:var(--danger-soft);color:var(--danger)}
+.rv-pill.edit{background:var(--accent-soft);color:var(--accent)}
+.rv-acts{display:flex;gap:4px;flex:none;flex-wrap:wrap;justify-content:flex-end}
+.rv-b{display:inline-flex;align-items:center;gap:5px;height:28px;padding:0 9px;border-radius:9px;border:1px solid var(--border);background:var(--surface);color:var(--text2);font-weight:600;font-size:12px;cursor:pointer}
+.rv-b:hover{background:var(--hover)}
+.rv-b.accept.on{background:var(--ok);border-color:var(--ok);color:#fff}
+.rv-b.return.on{background:var(--warn);border-color:var(--warn);color:#fff}
+.rv-b.reject.on{background:var(--danger);border-color:var(--danger);color:#fff}
+.rv-det{margin-top:6px}
+.rv-det summary{cursor:pointer;color:var(--accent);font-size:12px;font-weight:600}
+.rv-diff{margin-top:6px;border:1px solid var(--border);border-radius:10px;overflow:auto;max-height:280px;font-size:12px;line-height:1.5;background:var(--surface2)}
+.rv-diff>div{padding:0 10px;white-space:pre-wrap;overflow-wrap:anywhere}
+.rv-diff .rv-dl{color:var(--text3);font-size:11px;padding-top:4px;font-family:var(--font)}
+.rv-diff .add{background:color-mix(in srgb,var(--ok) 15%,transparent)}
+.rv-diff .del{background:color-mix(in srgb,var(--danger) 14%,transparent)}
+.rv-diff .more{color:var(--text3);font-style:italic}
+.rv-cm{padding:8px 12px 12px;border-top:1px dashed var(--border);background:color-mix(in srgb,var(--warn) 7%,transparent)}
+.rv-ta{width:100%;resize:vertical}
+.rv-foot{display:flex;align-items:center;gap:12px;padding:10px 16px;border-top:1px solid var(--border);background:var(--surface);flex:none}
+.rv-foot:empty{display:none}
+.rv-fc{flex:1}
+.rv-brow .dr-t{min-width:0}
+.cm-rv{margin-left:6px;font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:999px;background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}
