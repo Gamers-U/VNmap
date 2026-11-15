@@ -92,6 +92,10 @@ jobs:
         run: |
           ls -la out
           if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            # старые файлы обновления убираем: в выпуске должен остаться один vnmap-update-….zip
+            for a in $(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name' | grep '^vnmap-update' || true); do
+              gh release delete-asset "$TAG" "$a" --yes --repo "$GITHUB_REPOSITORY"
+            done
             gh release upload "$TAG" out/* --clobber --repo "$GITHUB_REPOSITORY"
           else
             gh release create "$TAG" out/* --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
