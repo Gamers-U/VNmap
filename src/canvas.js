@@ -106,6 +106,7 @@ function renderNodes() {
     if (isDimmed(n.id)) el.classList.add('dim');
     NODE_EL.set(n.id, el); gNodes.append(el);
   }
+  if (typeof LGH !== 'undefined' && LGH.on) lgHeatNodes();
 }
 function renderEdges() {
   gEdges.replaceChildren(); EDGE_EL.clear();
@@ -118,6 +119,7 @@ function renderEdges() {
   }
   renderEchoes(); renderJumps();
   renderHandles();
+  if (typeof LGH !== 'undefined' && LGH.on) lgHeatEdges();
 }
 function refreshNode(id) {
   const n = nodeById(id), old = NODE_EL.get(id);
@@ -125,6 +127,7 @@ function refreshNode(id) {
   const el = buildNode(n, pal(), true);
   el.setAttribute('class', old.getAttribute('class'));
   old.replaceWith(el); NODE_EL.set(id, el);
+  if (typeof LGH !== 'undefined' && LGH.on) lgHeatNode(id);
   scheduleEdges(); positionToolbar();
 }
 function renderAll() { renderEdges(); renderNodes(); if (typeof updateStatus === 'function') updateStatus(); buildToolbar(); if (typeof collabMarks === 'function') collabMarks(); }

@@ -1568,3 +1568,28 @@ body.win-moving{user-select:none;cursor:grabbing}body.win-moving iframe{pointer-
 .ar-rs svg{flex:none;margin-top:3px}
 .ar-rend{color:var(--text);font-weight:600}
 @media (max-width:760px){.ar-rh{grid-template-columns:1fr auto}.ar-ra{grid-column:1 / -1}.ar-rtime{text-align:left}}
+
+/* ---- журнал прохождений и тепловая карта ---- */
+.modal.lg-m{width:min(940px,100%)}
+.lg-legend{position:fixed;left:50%;bottom:78px;transform:translateX(-50%);z-index:60;display:flex;gap:10px;align-items:center;padding:7px 8px 7px 14px;border-radius:999px;background:var(--surface);border:1px solid var(--border);box-shadow:0 6px 24px rgba(0,0,0,.28);max-width:calc(100vw - 24px);flex-wrap:wrap;justify-content:center}
+.lg-lt{display:flex;gap:7px;align-items:center;font-weight:600;font-size:13px}
+.lg-grad{width:90px;height:8px;border-radius:5px;border:1px solid var(--border)}
+.lg-r{display:grid;grid-template-columns:minmax(120px,2.4fr) 1.3fr .7fr .8fr;gap:10px;align-items:center;padding:8px;border-radius:12px;text-align:left;font-size:13.5px;font-variant-numeric:tabular-nums}
+.lg-row{background:none;border:0;color:inherit;font:inherit;cursor:pointer;width:100%}
+.lg-row:hover{background:var(--hover)}
+.lg-th{color:var(--text3);font-size:12px;padding-top:2px;padding-bottom:2px}
+.lg-bt{font-weight:600;min-width:0;overflow-wrap:anywhere}
+.lg-bad{color:var(--warn);font-weight:700}
+.lg-fork{margin:6px 0 12px;padding:10px 12px;border-radius:14px;background:var(--surface2)}
+.lg-ft{font-weight:650;margin-bottom:6px}
+.lg-pick{display:grid;grid-template-columns:minmax(100px,1.6fr) 2fr 90px;gap:10px;align-items:center;font-size:13px;padding:3px 0}
+.lg-bar{height:8px;border-radius:5px;background:var(--hover);overflow:hidden}
+.lg-bar i{display:block;height:100%;background:var(--accent);border-radius:5px}
+.lg-pn{text-align:right;color:var(--text2);font-variant-numeric:tabular-nums}
+.lg-s{display:grid;grid-template-columns:minmax(90px,1fr) minmax(150px,1.6fr) 2fr auto;gap:10px;align-items:center;padding:7px 8px;border-radius:12px;font-size:13px}
+.lg-s:hover{background:var(--hover)}
+.lg-who{background:none;border:0;color:var(--accent);font:inherit;font-weight:650;text-align:left;cursor:pointer;padding:0}
+.lg-sd{color:var(--text3)}
+.lg-sr.cut{color:var(--warn)}
+.edge.heat-cold{opacity:.3}
+@media (max-width:760px){.lg-r{grid-template-columns:1.6fr 1fr .6fr .8fr;gap:6px;font-size:12.5px}.lg-s{grid-template-columns:1fr auto}.lg-sd,.lg-sr{grid-column:1 / -1}.lg-pick{grid-template-columns:1fr 1fr 70px}}

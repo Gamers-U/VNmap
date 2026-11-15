@@ -67,7 +67,7 @@ async function openPlayer(opts) {
   const st = PLAY = { opts, urls: new Map(), binMap: new Map(), ev: null, typing: null, timers: new Set(), auto: false, skip: false, layerEls: new Map(), layerSig: '', mus: null, musFile: '', sfx: [], read: 0, prevVars: {}, gen: 0 };
   st.m = openModal({
     cls: 'play-m', dismiss: false,
-    onClose: () => { plCleanup(st); if (PLAY === st) PLAY = null; },
+    onClose: () => { lgFinish(st); plCleanup(st); if (PLAY === st) PLAY = null; },
     build: m => plBuild(st, m)
   });
   const key = e => plKey(st, e);
@@ -104,6 +104,7 @@ async function plCompile(st) {
   const pk = P.name || 'project';
   st.persist = PL_ENDINGS[pk] || (PL_ENDINGS[pk] = new Set());
   st.g = new PlGame(st.prog, { endings: R.endingsData, persist: st.persist });
+  st.g.onLabel = lbl => lgLabel(st, lbl);
   st.prog.warns.forEach(w => st.g.warn(w));
   st.body.classList.remove('busy');
   const fromNode = st.opts.fromNode;
@@ -114,14 +115,14 @@ function plFatal(st, text) {
   st.body.classList.remove('busy');
   st.stage.replaceChildren(h('div', { class: 'pl-fatal' }, icon('alert', 22), h('div', text)));
 }
-function plRestart(st) { plClearTimers(st); st.read = 0; st.layerSig = ''; st.layerEls.clear(); st.scene.replaceChildren(st.fade); st.prevVars = {}; plShow(st, st.g.begin('start')); }
+function plRestart(st) { lgBegin(st); plClearTimers(st); st.read = 0; st.layerSig = ''; st.layerEls.clear(); st.scene.replaceChildren(st.fade); st.prevVars = {}; plShow(st, st.g.begin('start')); }
 function plStartNode(st, nid) {
   const b = (st.R.blockLabels || []).find(x => x.id === nid);
   if (!b) { toast(t('pl.nodef', (nodeById(nid) || {}).title || '?'), 4200); return; }
   plStartLabel(st, b.label, b.title);
 }
 function plStartLabel(st, label, title) {
-  plClearTimers(st); st.read = 0; st.layerSig = ''; st.layerEls.clear(); st.scene.replaceChildren(st.fade); st.prevVars = {};
+  lgBegin(st); plClearTimers(st); st.read = 0; st.layerSig = ''; st.layerEls.clear(); st.scene.replaceChildren(st.fade); st.prevVars = {};
   if (title) toast(t('pl.start.at', title), 2200);
   plShow(st, st.g.begin(label));
 }
@@ -207,16 +208,16 @@ function plBack(st) {
   if (!st.g || !st.g.canBack) return;
   plClearTimers(st); st.skip = false; st.auto = false;
   st.layerSig = '';
-  const ev = st.g.back(); if (ev) plShow(st, ev, true);
+  st.noLog = true; let ev; try { ev = st.g.back(); } finally { st.noLog = false; } if (ev) plShow(st, ev, true);
 }
-function plChoose(st, idx) { plClearTimers(st); st.skip = false; plShow(st, st.g.choose(idx)); }
+function plChoose(st, idx) { const it = st.ev && st.ev.items && st.ev.items.find(x => x.idx === idx); if (it) lgPick(st, it.text); plClearTimers(st); st.skip = false; plShow(st, st.g.choose(idx)); }
 function plShow(st, ev, silent) {
   if (st.dead || !ev) return;
   st.ev = ev;
   plSync(st, ev);
   plWhere(st, ev.label);
   for (const n of ev.notices || []) {
-    if (n.type === 'ending') plNote(st, t('pl.ending.got', n.text)); else if (n.type === 'notify') plNote(st, n.text);
+    if (n.type === 'ending') { lgEnding(st, n.key, n.text); plNote(st, t('pl.ending.got', n.text)); } else if (n.type === 'notify') plNote(st, n.text);
   }
   st.box.hidden = true; st.menuEl.hidden = true; st.centerEl.hidden = true; st.endEl.hidden = true;
   st.menuEl.replaceChildren(); st.stage.classList.remove('over');
@@ -291,6 +292,7 @@ function plMenu(st, ev) {
   st.stage.classList.add('over');
 }
 function plEnd(st, ev) {
+  if (ev.type === 'end') lgFinish(st, true);
   st.skip = false; st.auto = false;
   st.endEl.hidden = false; st.stage.classList.add('over');
   const total = (st.R.endingsData && st.R.endingsData.list.length) || 0;
