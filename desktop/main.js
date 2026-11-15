@@ -7,6 +7,8 @@ const { GDrive } = require('./gdrive');
 const { Updater, stage: stageUpdate, compareBuild, sha256 } = require('./updater');
 const { MANIFEST, cleanRel, exists, pruneEmptyDirs, writeBuildFiles } = require('./buildwrite');
 const { RenpyHost } = require('./renpy');
+const { ShellUpdater } = require('./selfupdate');
+const { spawn } = require('child_process');
 const crypto = require('crypto');
 const path = require('path');
 const fs = require('fs');
@@ -17,7 +19,7 @@ const HOST = 'app';
 const APP_DIR = path.join(__dirname, 'app');
 const PROJECT_EXTS = ['.vnmap', '.zip', '.json'];
 const DEV = process.argv.includes('--dev');
-const BRIDGE = 3;                      // версия «моста» оболочки: страница может потребовать не меньше (data-needs в её отметке сборки)
+const BRIDGE = 4;                      // версия «моста» оболочки: страница может потребовать не меньше (data-needs в её отметке сборки)
 const RECENT_MAX = 12;
 
 protocol.registerSchemesAsPrivileged([{ scheme: SCHEME, privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true } }]);
@@ -310,6 +312,30 @@ function getGd() {
 
 /* ---------- IPC ---------- */
 
+/* ---------- обновление самой оболочки (установленной программы) ----------
+   Репозиторий задан здесь, а не страницей: замена программы — самое рискованное действие, адрес подставить не должен никто. */
+const SHELL_REPO = 'Gamers-U/VNmap';
+let suHost = null, suFile = '';
+function getSu() {
+  if (!suHost) suHost = new ShellUpdater({
+    version: app.getVersion(), platform: process.platform, arch: process.arch,
+    env: { APPIMAGE: process.env.APPIMAGE, PORTABLE_EXECUTABLE_FILE: process.env.PORTABLE_EXECUTABLE_FILE },
+    repo: SHELL_REPO, apiBase: GH_BASE, fetch: (u, o) => net.fetch(u, o),
+    dir: path.join(app.getPath('userData'), 'shell-update'), downloads: app.getPath('downloads'), allowHttp: DEV && GH_BASE !== 'https://api.github.com',
+  });
+  return suHost;
+}
+async function suApply() {
+  const plan = await getSu().plan(suFile);
+  if (plan.run) { const c = spawn(plan.run[0], plan.run[1], { detached: true, stdio: 'ignore' }); c.on('error', () => { }); c.unref(); }
+  else if (plan.relaunch) {
+    /* новая копия стартует уже после выхода этой: иначе её не пустит защита от второго запуска */
+    const c = spawn('/bin/sh', ['-c', 'sleep 1.5; exec "$0"', plan.relaunch], { detached: true, stdio: 'ignore' }); c.on('error', () => { }); c.unref();
+  } else if (plan.reveal) { shell.showItemInFolder(plan.reveal); }
+  if (plan.quit) setTimeout(() => { forceClose = true; closing = false; app.quit(); }, 400);
+  return { quit: !!plan.quit, reveal: plan.reveal || '' };
+}
+
 /* ---------- Ren'Py: запуск настоящего движка ---------- */
 async function askOverwrite(n) {
   const T_ = T();
@@ -449,6 +475,16 @@ function registerIpc() {
     return res;
   });
 
+
+
+  /* обновление оболочки: проверка → скачивание с прогрессом → установка */
+  handle('su:check', async () => { const c = await getSu().check(); return { current: c.current, latest: c.latest, tag: c.tag, htmlUrl: c.htmlUrl, newer: c.newer, newLine: c.newLine, mode: c.mode, name: c.asset ? c.asset.name : '', size: c.asset ? c.asset.size : 0, notes: c.notes, portable: !!process.env.PORTABLE_EXECUTABLE_FILE, platform: process.platform }; });
+  handle('su:download', async () => {
+    const d = await getSu().download((got, total) => { try { if (win && !win.isDestroyed()) win.webContents.send('su:evt', { got, total }); } catch (e) { /* окно закрывается */ } });
+    suFile = d.file;
+    return { name: d.name, size: d.size, verified: d.verified, mode: d.mode };
+  });
+  handle('su:apply', async () => { if (!suFile) throw new Error('su-noasset'); return suApply(); });
 
   /* Ren'Py: папки выбирает человек в диалогах; запуск и вывод — в renpy.js */
   handle('rp:status', async (e, key) => getRp().status(key));

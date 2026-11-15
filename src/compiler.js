@@ -492,6 +492,10 @@ function compileProject(over, blobSet) {
     R.files.push({ path: 'game/assets.rpy', text: A.join('\n') + '\n' });
   }
 
+  /* ---------- «дополнительно»: готовые экраны Ren'Py (галерея CG и др.) ---------- */
+  R.extras = [];
+  if (opt.extras !== false) cmpExtras();
+
   // story/*.rpy
   if (opt.mode !== 'single') for (const I of info.values()) for (const F of I.files) R.files.push({ path: F.path, text: fileBody(I, F), story: true });
 
@@ -504,6 +508,42 @@ function compileProject(over, blobSet) {
   if (opt.includeSource) R.files.push({ path: 'source/' + slug(P.name) + '.vnmap.json', text: JSON.stringify(P, null, 1) });
 
   return finish();
+
+  /** Экраны для меню игры: игрок открывает их кнопкой, которую автор добавляет в navigation (см. подсказку в окне «Сборка»). */
+  function cmpExtras() {
+    const W = 320, H = 180;
+    /* галерея CG */
+    const cgs = P.assets.filter(a => a.kind === 'bg' && a.cg && (a.name || '').trim());
+    const items = [];
+    for (const a of cgs) {
+      const nm = cmpImageName(a.name), file = assetTarget.get(a.id + '|');
+      if (!file && !opt.placeholders) { add('warn', t('cmp.cg.nofile', a.name)); continue; }
+      if (!file) add('info', t('cmp.cg.ph', a.name));
+      items.push({ nm, file, a });
+    }
+    if (cgs.length && !items.length) return;
+    if (items.length) {
+      const G = hdr(t('cmp.f.gallery'));
+      G.push('# ' + t('cmp.cg.hint'), '', 'init python:', '    cg_gallery = Gallery()', '    cg_gallery.transition = dissolve', '    CG_ITEMS = []', '    CG_NAMES = []', '');
+      items.forEach((it, i) => {
+        const key = 'cg' + (i + 1);
+        const thumb = it.file ? `im.Scale(${pyStr(it.file)}, ${W}, ${H})` : `Fixed(Solid("${PH_COLORS[hashStr(it.nm) % PH_COLORS.length]}", xsize=${W}, ysize=${H}), Text(${pyStr(it.nm)}, size=26, color="#ffffffcc", xalign=0.5, yalign=0.5), xsize=${W}, ysize=${H})`;
+        G.push(`    cg_gallery.button(${pyStr(key)})`, `    cg_gallery.unlock_image(${pyStr(it.nm)})`, `    CG_ITEMS.append((${pyStr(key)}, ${thumb}))`, `    CG_NAMES.append(${pyStr(it.nm)})`, '');
+      });
+      G.push(
+        `    CG_LOCKED = Fixed(Solid("#1d1d26", xsize=${W}, ysize=${H}), Text("?", size=64, color="#ffffff55", xalign=0.5, yalign=0.5), xsize=${W}, ysize=${H})`, '',
+        '    def cg_seen_count():', '        return len([n for n in CG_NAMES if renpy.seen_image(tuple(n.split()))])', '',
+        'screen cg_gallery():', '    tag menu', '    add Solid("#000000")',
+        `    text _(${pyStr(t('cmp.cg.title'))}) size 56 xalign 0.5 ypos 40`,
+        '    text "%d / %d" % (cg_seen_count(), len(CG_NAMES)) size 28 xalign 0.5 ypos 112',
+        '    vpgrid:', '        cols 3', '        spacing 24', '        xalign 0.5', '        ypos 170',
+        '        xysize (config.screen_width - 160, config.screen_height - 300)', '        mousewheel True', '        scrollbars "vertical"',
+        '        for key, thumb in CG_ITEMS:', '            add cg_gallery.make_button(key, thumb, locked=CG_LOCKED)',
+        `    textbutton _(${pyStr(t('cmp.extras.back'))}) action Return() xalign 0.5 yalign 0.97`);
+      R.files.push({ path: 'game/gallery.rpy', text: G.join('\n') + '\n' });
+      R.extras.push({ id: 'cg', screen: 'cg_gallery', label: t('cmp.cg.title'), count: items.length });
+    }
+  }
 
   function finish() {
     const sev = { error: 0, warn: 1, info: 2 };

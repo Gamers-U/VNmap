@@ -96,7 +96,9 @@ function bldReportView(st) {
     sw('endingCard', t('bld.opt.card')), sw('endingCounter', t('bld.opt.count')),
     P.members.length ? sw('endingCredits', t('bld.opt.credits'), t('bld.opt.credits.h')) : null,
     P.tl.langs.length ? h('div', { class: 'opt-row' }, segmented(['draft', 'review', 'done'].map(k => ({ value: k, label: t('bld.tlmin.' + k) })), o.tlMin || 'draft', v => setOpt('tlMin', v)), h('div', { class: 'opt-t' }, h('div', {}, t('bld.opt.tlmin')), h('div', { class: 'hint' }, t('bld.opt.tlmin.h')))) : null,
+    sw('extras', t('bld.opt.extras'), t('bld.opt.extras.h')),
     sw('includeUnreachable', t('bld.opt.unreach'), t('bld.opt.unreach.h')), sw('includeDocs', t('bld.opt.docs')), sw('includeSource', t('bld.opt.src'))));
+  root.append(bldExtrasCard(R));
 
   /* отчёт */
   root.append(h('div', { class: 'sec-head', style: { marginTop: '4px' } }, icon(R.stats.errors ? 'xcircle' : R.items.length ? 'alert' : 'check', 16), h('b', t('bld.problems')),
@@ -139,7 +141,7 @@ function bldTreeLines(R) {
   const own = R.files.filter(f => f.path.startsWith('game/')).map(f => f.path.slice(5));
   const dirs = new Map(); // каталог -> [{name, note}]
   const top = [];
-  const notes = { 'script.rpy': 'gd.n.script', 'characters.rpy': 'gd.n.chars', 'variables.rpy': 'gd.n.vars', 'endings.rpy': 'gd.n.end', 'assets.rpy': 'gd.n.assets', 'effects.rpy': 'gd.n.fx' };
+  const notes = { 'script.rpy': 'gd.n.script', 'characters.rpy': 'gd.n.chars', 'variables.rpy': 'gd.n.vars', 'endings.rpy': 'gd.n.end', 'assets.rpy': 'gd.n.assets', 'effects.rpy': 'gd.n.fx', 'gallery.rpy': 'gd.n.gallery' };
   const storyDirs = new Map();
   for (const f of own) {
     const parts = f.split('/');

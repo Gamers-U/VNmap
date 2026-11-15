@@ -159,6 +159,7 @@ function regAssets(st, list, qq) {
     if (st.tab === 'audio') row1.unshift(field(t('as.f.kind'), segmented(AUDIO_KINDS.map(k => ({ value: k, label: t('kind1.' + k) })), a.kind, v => { a.kind = v; commit(true); renderReg(); })));
     body.push(h('div', { class: st.tab === 'audio' ? 'grid3' : 'grid2' }, row1));
     if (a.kind === 'sprite') body.push(field(t('as.f.expr'), exprEditor(a)));
+    if (a.kind === 'bg') body.push(h('div', { class: 'opt-row' }, switchEl(!!a.cg, v => { if (v) a.cg = true; else delete a.cg; commit(true); }), h('div', { class: 'opt-t' }, h('div', {}, t('as.cg')), h('div', { class: 'hint' }, t('as.cg.h')))));
     if (hasFilesKind(a.kind)) body.push(field(t('as.f.files.h'), assetFilesUI(a)));
     if (a.kind === 'font') body.push(fontSample(a));
     body.push(h('div', { class: 'grid2' }, field(t('as.f.notes'), bindInput(a, 'notes', { onChange: () => commit() })),

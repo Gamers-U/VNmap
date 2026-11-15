@@ -147,6 +147,7 @@ function deskInit() {
   DESK.onCommand(deskCommand);
   if (typeof driveInit === 'function') driveInit();
   if (typeof updAutoStart === 'function') updAutoStart();
+  if (typeof updShellAuto === 'function') updShellAuto();
   DESK.onOpenFile(f => deskOpenFile(f));
   DESK.setLang(S.lang).catch(() => { });
   if (document.fonts && document.fonts.load) Promise.all(['400 14px Inter', '500 14px Inter', '600 14px Inter', '700 14px Inter'].map(f => document.fonts.load(f))).then(() => { clearMeasure(); reindex(); renderAll(); }).catch(() => { });

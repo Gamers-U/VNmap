@@ -128,13 +128,13 @@ function updShort(hex) { return String(hex || '').slice(0, 16); }
 /* ---------- проверка обновлений на GitHub ----------
    Берём последний выпуск (Releases) репозитория; запасной путь — файл update.json в корне репозитория.
    Скачивание и проверку файла делает оболочка (окно программы само в сеть не ходит), поэтому менять оболочку не нужно. */
-const UPDATE_REPO_DEFAULT = '';        // «владелец/репозиторий» по умолчанию; в окне обновления его можно поменять
-const UPD = { cand: null, avail: null, busy: false };
+const UPDATE_REPO_DEFAULT = 'Gamers-U/VNmap';        // «владелец/репозиторий» по умолчанию; в окне обновления его можно поменять
+const UPD = { cand: null, avail: null, busy: false, shell: null };
 function updRepoNorm(x) {
   const m = /^(?:https?:\/\/github\.com\/)?([A-Za-z0-9][A-Za-z0-9-]{0,38})\/([\w.-]{1,100}?)(?:\.git)?\/?$/.exec(String(x || '').trim());
   return m ? m[1] + '/' + m[2] : '';
 }
-const updRepo = () => updRepoNorm(S.updRepo) || updRepoNorm(UPDATE_REPO_DEFAULT);
+const updRepo = () => (String(S.updRepo || '').trim() ? updRepoNorm(S.updRepo) : updRepoNorm(UPDATE_REPO_DEFAULT));   // пусто — репозиторий по умолчанию; непонятный текст — ошибка, а не молчаливая подмена
 /** Спрашивает GitHub о новой версии. Возвращает кандидата (его можно сразу устанавливать) или бросает ошибку. */
 async function updCheck() {
   const repo = updRepo();
@@ -161,13 +161,13 @@ function updAutoStart() {
   }, 6000);
 }
 function updChip() {
-  if (!UPD.avail) return null;
-  return h('button', { class: 'btn stat warn upd-chip', 'data-tip': t('upd.chip.tip'), onclick: () => openUpdateDialog() }, icon('download', 15), t('upd.chip', UPD.avail.build));
+  if (!UPD.avail && !UPD.shell) return null;
+  return h('button', { class: 'btn stat warn upd-chip', 'data-tip': t('upd.chip.tip'), onclick: () => openUpdateDialog() }, icon('download', 15), UPD.avail ? t('upd.chip', UPD.avail.build) : t('upd.su.chip', UPD.shell.latest));
 }
 function openUpdateDialog() {
   if (!DESK || !DESK.update) { toast(t('upd.noshell'), 5000); return; }
   MODALS.filter(m => m.tag === 'update').forEach(m => m.close());
-  const st = { info: null, cand: null, busy: false, err: '', url: '', sha: '', msg: '' };
+  const st = { info: null, cand: null, busy: false, err: '', url: '', sha: '', msg: '', su: null, suMsg: '', suProg: null };
   const m = openModal({
     cls: 'upd-m', build: m => {
       const body = h('div', { class: 'm-pad upd' });
@@ -196,6 +196,8 @@ function openUpdateDialog() {
                 h('span', { class: 'hint' }, S.updChecked ? t('upd.gh.last', fmtTime(S.updChecked)) : t('upd.gh.never'))));
           })(),
           st.msg ? h('div', { class: 'hint upd-ok' }, icon('check', 14), ' ', st.msg) : null));
+        /* сама программа (оболочка) */
+        body.append(updShellSection(st, guard, render));
         /* способы обновить */
         body.append(h('details', { class: 'upd-other', open: !updRepo() }, h('summary', t('upd.other')), h('div', { class: 'upd-sec' },
           h('div', { class: 'upd-h' }, t('upd.how')),
@@ -248,7 +250,7 @@ function openUpdateDialog() {
         if (!(await confirmDlg({ title: t('upd.reset.q'), text: t('upd.reset.t'), ok: t('upd.reset') }))) return;
         guard(async () => { flushHistory(); saveNow(); if (DS.path && DS.dirty) await deskSave({ silent: true }); await DESK.update.reset(); });
       };
-      DESK.update.info().then(i => { st.info = i; render(); if (UPD.avail && updRepo()) checkGh(); }).catch(e => { st.err = deskErr(e); st.info = { active: null, shell: '?', electron: '?', url: '' }; render(); });
+      DESK.update.info().then(i => { st.info = i; render(); if (UPD.avail && updRepo()) checkGh(); if (DESK.shellUpdate) DESK.shellUpdate.check().then(c => { st.su = c; UPD.shell = c.newLine ? c : null; render(); }).catch(() => { }); }).catch(e => { st.err = deskErr(e); st.info = { active: null, shell: '?', electron: '?', url: '' }; render(); });
       render();
       return h('div', { class: 'm-wrap' }, modalHead(t('upd.title'), m), body);
     }

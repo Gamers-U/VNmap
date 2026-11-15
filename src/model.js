@@ -16,8 +16,8 @@ const LS_P = 'vnmap.project.v1', LS_S = 'vnmap.settings.v1', LS_B = 'vnmap.lastB
 const SIDES = ['t', 'r', 'b', 'l'];
 const HEX6 = /^#[0-9a-fA-F]{6}$/;
 
-const DEFAULT_BUILD = { mode: 'split', placeholders: true, skipMissingAudio: true, endingCard: true, endingCounter: true, includeUnreachable: true, includeDocs: true, includeSource: true, endingCredits: false, tlMin: 'draft' };
-const DEFAULT_S = { theme: 'dark', lang: 'ru', grid: 'dots', snap: true, wheel: 'zoom', transition: 'dissolve', echo: true, jumps: true, updRepo: '', updAuto: true, updChecked: 0, updSeen: '' };
+const DEFAULT_BUILD = { mode: 'split', placeholders: true, skipMissingAudio: true, endingCard: true, endingCounter: true, includeUnreachable: true, includeDocs: true, includeSource: true, endingCredits: false, tlMin: 'draft', extras: true };
+const DEFAULT_S = { theme: 'dark', lang: 'ru', grid: 'dots', snap: true, wheel: 'zoom', transition: 'dissolve', echo: true, jumps: true, updRepo: '', updAuto: true, updChecked: 0, updSeen: '', shSeen: '' };
 let S = Object.assign({}, DEFAULT_S);
 let P = null;
 const UI = {
@@ -258,6 +258,7 @@ function normalize(p) {
   for (const a of p.assets) {
     a.id = a.id || uid('a'); a.kind = STORED_KINDS.includes(a.kind) ? a.kind : 'bg'; a.name = a.name || ''; a.path = a.path || '';
     a.notes = a.notes || ''; a.expr = Array.isArray(a.expr) ? a.expr : []; a.owners = cleanIds(a.owners);
+    if (a.kind === 'bg' && a.cg) a.cg = true; else delete a.cg;                 // CG: показывать в галерее
     a.code = typeof a.code === 'string' ? a.code : ''; a.tpl = typeof a.tpl === 'string' ? a.tpl : ''; a.params = a.params && typeof a.params === 'object' && !Array.isArray(a.params) ? a.params : {};
     const fl = {};
     if (a.files && typeof a.files === 'object') for (const k of Object.keys(a.files)) {

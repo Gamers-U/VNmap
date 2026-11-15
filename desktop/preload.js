@@ -4,10 +4,11 @@
 const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
 const call = (ch, ...a) => ipcRenderer.invoke(ch, ...a);
-const listeners = { cmd: new Set(), open: new Set(), rp: new Set() };
+const listeners = { cmd: new Set(), open: new Set(), rp: new Set(), su: new Set() };
 ipcRenderer.on('desk:cmd', (e, cmd, arg) => listeners.cmd.forEach(fn => { try { fn(cmd, arg); } catch (x) { console.error(x); } }));
 ipcRenderer.on('desk:open', (e, file) => listeners.open.forEach(fn => { try { fn(file); } catch (x) { console.error(x); } }));
 ipcRenderer.on('rp:evt', (e, ev) => listeners.rp.forEach(fn => { try { fn(ev); } catch (x) { console.error(x); } }));
+ipcRenderer.on('su:evt', (e, ev) => listeners.su.forEach(fn => { try { fn(ev); } catch (x) { console.error(x); } }));
 const sub = (set, fn) => { set.add(fn); return () => set.delete(fn); };
 
 contextBridge.exposeInMainWorld('vnDesktop', {
@@ -58,6 +59,12 @@ contextBridge.exposeInMainWorld('vnDesktop', {
     setToken: tok => call('gh:setToken', tok),
     clearToken: () => call('gh:clearToken'),
     request: o => call('gh:request', o),
+  },
+  shellUpdate: {
+    check: () => call('su:check'),
+    download: () => call('su:download'),
+    apply: () => call('su:apply'),
+    onProgress: fn => sub(listeners.su, fn),
   },
   renpy: {
     status: key => call('rp:status', key),
