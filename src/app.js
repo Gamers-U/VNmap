@@ -24,6 +24,7 @@ function buildChrome() {
       tbtn('wand', t('tools.btn'), t('tools.tip'), b => toolsMenu(b), 'tools-btn')),
     h('div', { class: 'grow' }),
     h('div', { class: 'bar' },
+      tbtn('play', t('pl.btn'), t('pl.tip'), () => openPlayer(), 'pl-top-btn'),
       tbtn('type', t('te.top'), t('te.top.tip'), () => { const id = [...UI.sel][0], n = id && nodeById(id); openTextEditor(n && n.type !== 'note' ? { nodeId: n.id } : {}); }, 'te-top-btn'),
       tbtn('layers', t('top.registry'), t('top.registry.tip'), () => openRegistry()),
       tbtn('chart', t('top.stats'), t('top.stats.tip'), () => openStats()),

@@ -607,6 +607,7 @@ function nodeMenu(id) {
     !multi ? { label: t('tb.open'), icon: 'open', onClick: () => openNodeModal(id) } : null,
     { swatches: { value: multi ? null : n.color, onPick: c => setNodesColor(ids, c) } },
     { sep: true },
+    !multi && n.type !== 'note' ? { label: t('pl.menu.node'), icon: 'play', onClick: () => openPlayer({ fromNode: id }) } : null,
     !multi ? { label: t('tb.addLinked'), icon: 'addLinked', onClick: () => addLinked(id) } : null,
     !multi ? { label: t('tb.connect'), icon: 'link', onClick: () => startConnectMode(id) } : null,
     { label: t('tb.duplicate'), icon: 'copy', kbd: 'Ctrl+D', onClick: duplicateSelection },

@@ -517,6 +517,10 @@ function compileProject(over, blobSet) {
       assetFiles: R.bin.length, images: imgDefs.size, bytes, errors: R.items.filter(i => i.level === 'error').length, warns: R.items.filter(i => i.level === 'warn').length
     };
     R.start = start ? start.id : null;
+    try {      // для встроенного плеера: какая метка какому блоку принадлежит и правила концовок
+      R.blockLabels = [...info.values()].map(I => ({ id: I.n.id, label: I.blk, title: I.n.title, type: I.n.type, idx: I.idx, reach: reachable.has(I.n.id), files: I.files.map(F => ({ id: F.f.id, label: F.label, title: F.f.title || '' })) }));
+      R.endingsData = { list: endingNodes.map(n => ({ key: info.get(n.id).key, title: n.title })), rules: Object.fromEntries([...rules].map(([k, r]) => [k, { need: r.need, pool: r.pool }])) };
+    } catch (e) { R.blockLabels = []; R.endingsData = { list: [], rules: {} }; }
     if (R.files.length) R.files.push({ path: 'README.md', text: cmpReadme(R) });
     if (opt.includeDocs && R.files.length) R.files.push({ path: 'docs/build_report.md', text: cmpReportMd(R) });
     return R;

@@ -37,8 +37,21 @@ function ghStatusErr(r) {
   return ghFail('server', t('gh.err.server', r.status));
 }
 
+/** Кнопки «скачать свежую оболочку» для старой оболочки: ссылка по системе + страница выпусков. */
+function ghShellButtons() {
+  const ua = (navigator.userAgent || '') + ' ' + (navigator.platform || '');
+  const base = 'https://github.com/Gamers-U/VNmap/releases/latest/download/';
+  const dl = /Mac/i.test(ua) ? [['VNMap-mac-arm64.dmg', 'gh.dl.macA'], ['VNMap-mac-x64.dmg', 'gh.dl.macI']]
+    : /Linux|X11/i.test(ua) && !/Win/i.test(ua) ? [['VNMap-linux-x86_64.AppImage', 'gh.dl.lin']]
+    : [['VNMap-win-x64-setup.exe', 'gh.dl.win'], ['VNMap-win-x64-portable.exe', 'gh.dl.winp']];
+  return h('div', { class: 'row-actions left', style: { marginTop: '8px', flexWrap: 'wrap' } },
+    dl.map(([f, k]) => h('a', { class: 'btn primary', href: base + f, target: '_blank', rel: 'noopener' }, icon('download', 15), t(k))),
+    h('a', { class: 'btn', href: 'https://github.com/Gamers-U/VNmap/releases/latest', target: '_blank', rel: 'noopener' }, t('gh.dl.all')));
+}
+
 /* ---------- запросы ---------- */
 async function ghReq(method, path, o = {}) {
+  if (DESK && !GHD) throw ghFail('oldshell', t('gh.oldshell'));      // старая оболочка не умеет ходить на GitHub: не пытаемся из страницы
   if (GHD) return GHD.request({ method, path, body: o.body, raw: !!o.raw, etag: o.etag || '' });
   const tok = lsGet(LS_GHT);
   const headers = { Accept: o.raw ? 'application/vnd.github.raw+json' : 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' };
@@ -408,7 +421,7 @@ function renderGhPanel(st) {
 
   /* 1. доступ */
   const acc = h('div', { class: 'card-sec' }, h('div', { class: 'sec-head' }, icon('lock', 16), h('b', t('gh.acc'))));
-  if (DESK && !GHD) acc.append(h('div', { class: 'hint warn-t' }, t('gh.oldshell')));
+  if (DESK && !GHD) acc.append(h('div', { class: 'hint warn-t' }, t('gh.oldshell')), ghShellButtons());
   else if (!GHS.st.hasToken) {
     acc.append(h('div', { class: 'hint', style: { marginBottom: '10px' } }, t('gh.acc.t')),
       h('details', { class: 'dr-steps', open: true }, h('summary', t('gh.steps.h')),
