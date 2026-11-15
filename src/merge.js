@@ -154,6 +154,11 @@ function mgMergeVal(b, l, r, path, cf, depth) {
 function mgMergeObj(b, l, r, path, cf, depth) {
   const out = {};
   const keys = new Set([...Object.keys(l), ...Object.keys(r)]);
+  if (keys.has('edt') || keys.has('ed')) {                 // «кто последним правил»: побеждает более поздняя правка, конфликта тут не бывает
+    const rWins = (+r.edt || 0) > (+l.edt || 0), src = rWins ? r : l;
+    if (src.ed !== undefined) out.ed = src.ed; if (src.edt !== undefined) out.edt = src.edt;
+    keys.delete('ed'); keys.delete('edt');
+  }
   for (const k of keys) {
     const v = mgMergeVal(b[k], l[k], r[k], path + '.' + k, cf, depth || 0);
     if (v !== undefined) out[k] = v;

@@ -884,6 +884,7 @@ HELP.ru.push(
     'Выделите стрелку: на её сегментах появятся точки. Потяните точку, чтобы добавить или передвинуть изгиб, и линия пройдёт где нужно. Начало и конец стрелки можно привязать к любой стороне блока (точки по краям блока).'] },
   { h: 'Участники, роли и титры', items: [
     'Кнопка «Команда» на панели: участники проекта с цветом и ролями (сценарист, художник, композитор, озвучка и свои). Участника можно назначить ответственным за блок, файл сценария, ресурс или озвучку персонажа.',
+    'Кто я в проекте: «Команда» → «Выбрать, кто я…» (или `Ctrl+K` → «Выбрать, кто я…»). Вы один раз выбираете себя среди участников, и дальше блоки и главы, которые вы создаёте и правите, подписываются вашим именем: у блока появляется значок создателя, а в окне блока строка «создал… · правил…». «Показать мои блоки» оставляет на карте только блоки, к которым вы причастны. Логин GitHub и аккаунт совместной комнаты запоминаются у участника, поэтому на другом вашем компьютере программа узнаёт вас сама. Правки, пришедшие от других, вам не приписываются.',
     'На карте можно оставить только то, что относится к выбранному человеку, и посмотреть нагрузку. Из ролей и назначений при сборке собираются титры игры.'] },
   { h: 'Перевод и озвучка', items: [
     'Кнопка «Перевод» (глобус) открывает таблицу: добавьте язык, и каждая реплика, вариант выбора, подпись и имя персонажа получат строку для перевода. Логика игры не меняется: переводится только текст (и, если нужно, озвучка).',
@@ -908,6 +909,7 @@ HELP.en.push(
     'Select an arrow: dots appear on its segments. Drag a dot to add or move a bend so the line goes where you want. The start and end of an arrow can be attached to any side of a block (the dots on the block’s edge).'] },
   { h: 'Members, roles and credits', items: [
     'The Team button on the toolbar lists project members with a color and roles (writer, artist, composer, voice and your own). A member can be assigned to a block, a script file, an asset or a character’s voice.',
+    'Who I am: Team → “Choose who I am…” (or `Ctrl+K` → “Choose who I am…”). You pick yourself among the members once, and from then on blocks and chapters you create and edit are signed with your name: a block gets a creator badge, and the block window shows “created by… · edited by…”. “Show my blocks” leaves only the blocks you are involved in. Your GitHub login and shared-room account are remembered for the member, so the app recognises you on your other computer. Changes that come from other people are not attributed to you.',
     'The map can show only what belongs to a chosen person, and shows workload. The build assembles the game credits from roles and assignments.'] },
   { h: 'Translation and voice', items: [
     'The Translate button (globe) opens a table: add a language and every line of dialogue, choice, caption and character name gets a row to translate. The game logic does not change: only text (and optionally voice) is translated.',

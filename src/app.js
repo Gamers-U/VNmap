@@ -112,6 +112,7 @@ function setLang(l) {
   clearMeasure(); reindex(); buildChrome(); renderAll(); refreshNodeModal();
 }
 function onProjectReplaced() {
+  AUTH_SIG = null;
   renderAll(); applyView(); refreshNodeModal();
   if (REG && !REG.m.closed) renderReg();
   const pn = $('#proj-name'); if (pn) pn.value = P.name;

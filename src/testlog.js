@@ -31,6 +31,8 @@ Object.assign(D, {
 
 TOOL_ITEMS.push({ id: 'testlog', group: 'play', ic: 'chart', key: 'lg.btn', kw: 'log heat map heatmap testers playthrough statistics drop analytics журнал тепловая карта тестеры прохождения статистика бросили', run: () => openTestLog() });
 
+TOOL_ITEMS.push({ id: 'whoami', group: 'team', ic: 'user', key: 'me.pick', kw: 'me who am i identity member author mine my blocks я кто я участник мои блоки авторство', run: () => openMeDialog() });
+
 const LG_MAX = 400;
 const LG_CACHE = { uid: '', list: null, stats: null, ver: 0 };
 const LGH = { on: false, metric: 'reach' };

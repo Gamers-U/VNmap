@@ -17,6 +17,14 @@ const fileOwners = (n, f) => (f.owners && f.owners.length ? f.owners : n.owners 
 function nodeMemberIds(n) {
   const s = new Set(n.owners || []);
   (n.files || []).forEach(f => (f.owners || []).forEach(x => s.add(x)));
+  if (!s.size && n.by) s.add(n.by);                 // ответственный не назначен: показываем того, кто блок создал
+  return [...s].filter(id => memberById(id));
+}
+/** Все, кто причастен к блоку: ответственные, создатель блока и глав, последний правивший главу. */
+function nodeAuthorIds(n) {
+  const s = new Set(nodeMemberIds(n));
+  if (n.by) s.add(n.by);
+  (n.files || []).forEach(f => { if (f.by) s.add(f.by); if (f.ed) s.add(f.ed); });
   return [...s].filter(id => memberById(id));
 }
 const nextMemberColor = () => { const cols = COLOR_NAMES.filter(c => c !== 'gray'); return cols[P.members.length % cols.length]; };
@@ -39,7 +47,7 @@ function memberStats(m) {
   let nodes = 0, files = 0, done = 0, w = 0;
   for (const n of P.nodes) {
     if (n.type === 'note') continue;
-    let mine = (n.owners || []).includes(m.id);
+    let mine = (n.owners || []).includes(m.id) || (!(n.owners || []).length && n.by === m.id);
     for (const f of n.files) if (fileOwners(n, f).includes(m.id)) { files++; mine = true; if (f.status === 'done') done++; w += STATUS_W[f.status] || 0; }
     if (mine) nodes++;
   }
@@ -49,7 +57,7 @@ function memberStats(m) {
 /* ---------- фильтр на карте ---------- */
 function isDimmed(id) {
   if (UI.hits && !UI.hits.has(id)) return true;
-  if (UI.mf) { const n = nodeById(id); if (n && !nodeMemberIds(n).includes(UI.mf)) return true; }
+  if (UI.mf) { const n = nodeById(id); if (n && !nodeAuthorIds(n).includes(UI.mf)) return true; }
   return false;
 }
 function setMemberFilter(id) {
@@ -124,7 +132,10 @@ function openTeamMenu(anchor) {
   const items = [];
   if (!P.members.length) items.push({ header: t('team.none.short') });
   else {
-    items.push({ header: t('team.filter.h') });
+    const me = meMember();
+    items.push({ header: t('me.h') }, { label: me ? t('me.is', me.name) : t('me.pick'), icon: 'user', onClick: () => openMeDialog() });
+    if (me) items.push({ label: UI.mf === me.id ? t('me.mine.off') : t('me.mine'), icon: UI.mf === me.id ? 'check' : 'eye', onClick: () => setMemberFilter(UI.mf === me.id ? null : me.id) });
+    items.push({ sep: true }, { header: t('team.filter.h') });
     P.members.forEach(m => {
       const st = memberStats(m);
       items.push({ label: (m.name || '?') + '  ·  ' + st.nodes, icon: UI.mf === m.id ? 'check' : 'badge', onClick: () => setMemberFilter(UI.mf === m.id ? null : m.id) });
@@ -232,4 +243,85 @@ function openCredits() {
     }
   });
   return m;
+}
+
+
+/* ====== «Я — это…»: кто работает за этим компьютером ======
+   Человек один раз выбирает себя в списке участников. Входы, которыми он пользуется (логин GitHub, аккаунт Claude), записываются участнику,
+   и на других устройствах программа узнаёт его сама. Всё, что он создаёт или правит, подписывается его именем. */
+Object.assign(D, {
+  'me.h': ['Кто я в этом проекте', 'Who I am in this project'],
+  'me.is': ['Я — {0} (сменить)', 'I am {0} (change)'], 'me.pick': ['Выбрать, кто я…', 'Choose who I am…'],
+  'me.mine': ['Показать мои блоки', 'Show my blocks'], 'me.mine.off': ['Показать все блоки', 'Show all blocks'],
+  'me.title': ['Кто я в этом проекте', 'Who I am in this project'],
+  'me.intro': ['Выберите себя из участников. Блоки и главы, которые вы создаёте и правите, будут подписаны вашим именем, а на карте можно показать только свои. Выбор хранится на этом устройстве.', 'Pick yourself from the members. Blocks and chapters you create and edit will be signed with your name, and the map can show only yours. The choice is stored on this device.'],
+  'me.ids': ['Ваши входы: {0}. Они запомнятся у участника, и на другом устройстве программа узнает вас сама.', 'Your sign-ins: {0}. They are saved for the member, and the app will recognise you on another device.'],
+  'me.noids': ['Войдите в GitHub или в совместную комнату, чтобы программа могла узнавать вас на других устройствах.', 'Sign in to GitHub or a shared room so the app can recognise you on other devices.'],
+  'me.add': ['Меня нет в списке: добавить…', 'I am not in the list: add…'], 'me.none': ['Это не я (сбросить)', 'None of these (reset)'],
+  'me.auto': ['Программа узнала вас: {0}', 'The app recognised you: {0}'], 'me.done': ['Теперь вы — {0}', 'You are now {0}'],
+  'me.by': ['создал: {0}', 'created by {0}'], 'me.ed': ['правил: {0}', 'edited by {0}'],
+});
+/** Чем человек сейчас «подписан» в совместной работе: логин GitHub, аккаунт Claude. */
+function meIdentities() {
+  const out = [];
+  try { const lg = (typeof GHS !== 'undefined' && GHS.st && GHS.st.login) || ''; if (lg) out.push('gh:' + String(lg).toLowerCase()); } catch (e) { /* нет */ }
+  try { const id = typeof CL !== 'undefined' && CL.me && CL.me.id; if (id) out.push('cl:' + id); } catch (e) { /* нет */ }
+  return out;
+}
+function meId() {
+  if (typeof P === 'undefined' || !P || !P.members) return '';
+  const k = S.me && S.me[P.uid]; if (k && memberById(k)) return k;
+  const ids = meIdentities();
+  if (ids.length) { const m = P.members.find(x => (x.ids || []).some(i => ids.includes(i))); if (m) return m.id; }
+  return '';
+}
+const meMember = () => memberById(meId());
+function meSet(id) {
+  if (!S.me || typeof S.me !== 'object') S.me = {};
+  if (!id) { delete S.me[P.uid]; saveSettings(); return; }
+  S.me[P.uid] = id;
+  const m = memberById(id); if (!m) return;
+  const ids = meIdentities();
+  if (ids.length) {                                 // входы привязываются к этому участнику и снимаются с других
+    for (const x of P.members) if (x !== m) x.ids = (x.ids || []).filter(i => !ids.includes(i));
+    m.ids = [...new Set([...(m.ids || []), ...ids])].slice(0, 6);
+  }
+  saveSettings(); commit(true); AUTH_SIG = null;
+}
+/** Перед каждым шагом истории: главы, которые изменились после прошлого шага, подписываются тем, кто сейчас работает. */
+const authSig = f => { const c = Object.assign({}, f); delete c.by; delete c.ed; delete c.edt; return JSON.stringify(c); };
+function authStamp() {
+  if (typeof P === 'undefined' || !P || (typeof GAME !== 'undefined' && GAME)) return;
+  const me = meId(), first = !AUTH_SIG, next = new Map(), now = Date.now();
+  for (const n of P.nodes) for (const f of n.files) {
+    const sg = authSig(f); next.set(f.id, sg);
+    if (!first && me) { const old = AUTH_SIG.get(f.id); if (old !== undefined && old !== sg) { f.ed = me; f.edt = now; } }
+  }
+  AUTH_SIG = next;
+}
+function openMeDialog() {
+  closePopover();
+  openModal({
+    cls: 'dlg me-dlg', build: m => {
+      const box = h('div', { class: 'dlg-body' });
+      const paint = () => {
+        const me = meId(), ids = meIdentities();
+        box.replaceChildren(h('h3', t('me.title')), h('p', { class: 'hint' }, t('me.intro')),
+          h('div', { class: 'me-list' }, P.members.map(x => h('button', { class: 'me-row' + (x.id === me ? ' on' : ''), onclick: () => { meSet(x.id); toast(t('me.done', x.name), 2600); m.close(); if (REG && !REG.m.closed) renderReg(); } },
+            memberAv(x, 26), h('span', { class: 'me-n' }, x.name, x.roles.length ? h('span', { class: 'mi-sub' }, ' · ' + x.roles.map(roleLabel).slice(0, 2).join(', ')) : null), x.id === me ? icon('check', 16) : null))),
+          h('div', { class: 'hint' }, ids.length ? t('me.ids', ids.join(', ')) : t('me.noids')),
+          h('div', { class: 'row-actions' },
+            h('button', { class: 'btn', onclick: () => { m.close(); newMemberDialog(x => { meSet(x.id); toast(t('me.done', x.name), 2600); }); } }, icon('plus', 15), t('me.add')),
+            me ? h('button', { class: 'btn', onclick: () => { meSet(''); paint(); } }, t('me.none')) : null,
+            h('div', { class: 'grow' }), h('button', { class: 'btn', onclick: () => m.close() }, t('c.close'))));
+      };
+      paint(); return box;
+    }
+  });
+}
+/** Подпись «создал / правил» для окна блока и подсказок. */
+function nodeAuthorText(n) {
+  const by = n.by && memberById(n.by), eds = [...new Set((n.files || []).map(f => f.ed).filter(Boolean))].map(memberById).filter(Boolean);
+  const parts = []; if (by) parts.push(t('me.by', by.name)); if (eds.length) parts.push(t('me.ed', eds.map(x => x.name).join(', ')));
+  return parts.join(' · ');
 }

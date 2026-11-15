@@ -1616,3 +1616,11 @@ body.game-mode{background:var(--bg)}
 .gm-body .ar-f{flex-wrap:wrap}.gm-body .ar-f .inp:not(.num){flex:1;min-width:0}
 .gm-body .ar-chk{flex-wrap:wrap}
 .gm-body .row-actions{display:flex;gap:8px;align-items:center}
+
+/* ---- «Я — это…» ---- */
+.modal.me-dlg{width:min(480px,100%)}
+.me-list{display:flex;flex-direction:column;gap:4px;margin:8px 0;max-height:46vh;overflow:auto}
+.me-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:var(--surface2);border:1px solid transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.me-row:hover{background:var(--hover)}
+.me-row.on{border-color:var(--accent)}
+.me-n{flex:1;min-width:0;font-weight:600}

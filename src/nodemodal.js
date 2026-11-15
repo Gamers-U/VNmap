@@ -106,6 +106,7 @@ function overviewView(st, n) {
       field(t('nm.start'), switchEl(P.startId === n.id, v => { P.startId = v ? n.id : ''; commit(true); renderAll(); }), t('nm.start.hint')),
       field(t('nm.prompt'), bindInput(n, 'prompt', { ph: t('nm.prompt.ph'), onChange: () => commit() }), t('nm.prompt.hint'))));
     root.append(field(t('team.owners'), memberPicker(n, 'owners', () => { commit(true); refreshNode(n.id); renderSide(st); }), t('team.owners.h')));
+    { const at = typeof nodeAuthorText === 'function' ? nodeAuthorText(n) : ''; if (at) root.append(h('div', { class: 'hint', style: { marginTop: '-4px' } }, at)); }
     root.append(field(t('nm.defcast'), castPicker(n, 'defaultCast', P.characters.filter(c => c.always).map(c => c.id), () => commit(true)), t('nm.defcast.hint')));
     root.append(progressBlock(n));
     try { const vf = vsNodeField(n, () => st.m.close()); if (vf) root.append(vf); } catch (e) { /* раздел переменных не обязателен для окна */ }

@@ -112,8 +112,10 @@ function seedFirstFile(n, from) {
 }
 
 /* ---- создание объектов ---- */
+const authorNow = () => (typeof meId === 'function' ? meId() : '');
 function newFile(title) {
-  return { id: uid('f'), title: title || t('file.new'), filename: '', label: '', status: 'idea', summary: '', cast: [], location: '', notes: '', visual: '', assets: [], script: '', text: '', textLive: false, textOut: '', src: null };
+  const by = authorNow();
+  return Object.assign(by ? { by } : {}, { id: uid('f'), title: title || t('file.new'), filename: '', label: '', status: 'idea', summary: '', cast: [], location: '', notes: '', visual: '', assets: [], script: '', text: '', textLive: false, textOut: '', src: null });
 }
 function newNode(type, x, y) {
   const n = {
@@ -126,6 +128,7 @@ function newNode(type, x, y) {
 function addNode(type, x, y, color) {
   const n = newNode(type, x, y);
   if (color) n.color = color;
+  const me = authorNow(); if (me) n.by = me;
   P.nodes.push(n); reindex();
   return n;
 }
@@ -242,6 +245,7 @@ function normalize(p) {
     m.id = typeof m.id === 'string' && m.id && !seenM.has(m.id) ? m.id : uid('m'); seenM.add(m.id);
     m.name = String(m.name || '').slice(0, 80); m.color = COLOR_NAMES.includes(m.color) ? m.color : COLOR_NAMES[(seenM.size - 1) % (COLOR_NAMES.length - 1)];
     m.roles = [...new Set((Array.isArray(m.roles) ? m.roles : []).map(r => String(r).trim().slice(0, 40)).filter(Boolean))].slice(0, 10);
+    m.ids = [...new Set((Array.isArray(m.ids) ? m.ids : []).map(x => String(x).trim().slice(0, 80)).filter(Boolean))].slice(0, 6);
     m.contact = String(m.contact || '').slice(0, 160); m.notes = String(m.notes || '').slice(0, 600); m.credit = m.credit !== false;
   }
   const cleanIds = a => [...new Set((Array.isArray(a) ? a : []).filter(x => typeof x === 'string' && seenM.has(x)))];
@@ -273,11 +277,14 @@ function normalize(p) {
     n.color = COLOR_NAMES.includes(n.color) ? n.color : TYPE_COLOR[n.type];
     n.defaultCast = Array.isArray(n.defaultCast) ? n.defaultCast : []; n.prompt = n.prompt || ''; n.done = n.type === 'note' && !!n.done;
     n.files = Array.isArray(n.files) ? n.files : []; n.owners = cleanIds(n.owners);
+    if (typeof n.by === 'string' && seenM.has(n.by)) { /* автор блока */ } else delete n.by;
     if (n.unlock && typeof n.unlock === 'object') { n.unlock.need = Math.max(1, +n.unlock.need || 1); n.unlock.from = Array.isArray(n.unlock.from) ? n.unlock.from : []; } else n.unlock = null;
     for (const f of n.files) {
       f.id = f.id || uid('f'); f.title = f.title || ''; f.filename = f.filename || ''; f.label = f.label || '';
       f.status = STATUSES.includes(f.status) ? f.status : 'idea'; f.summary = f.summary || ''; f.cast = Array.isArray(f.cast) ? f.cast : [];
       f.location = f.location || ''; f.notes = f.notes || ''; f.visual = f.visual || ''; f.assets = Array.isArray(f.assets) ? f.assets : []; f.script = f.script || ''; f.text = typeof f.text === 'string' ? f.text : ''; f.textLive = !!f.textLive; f.textOut = typeof f.textOut === 'string' ? f.textOut : ''; f.src = f.src && typeof f.src === 'object' && typeof f.src.h === 'string' ? { name: String(f.src.name || '').slice(0, 200), at: Number(f.src.at) || 0, h: f.src.h, key: String(f.src.key || '').slice(0, 200) } : null; f.owners = cleanIds(f.owners);
+      if (!(typeof f.by === 'string' && seenM.has(f.by))) delete f.by;
+      if (typeof f.ed === 'string' && seenM.has(f.ed) && +f.edt > 0) f.edt = +f.edt; else { delete f.ed; delete f.edt; }
     }
   }
   const ids = new Set(p.nodes.map(n => n.id));
@@ -324,8 +331,10 @@ function snapJSON() {
   const v = P.view, tt = P.teTabs; P.view = undefined; P.teTabs = undefined;
   try { return JSON.stringify(P); } finally { P.view = v; P.teTabs = tt; }
 }
+let AUTH_SIG = null;                      // подписи глав для учёта «кто последним правил» (см. members.js)
 function histPush() {
   clearTimeout(HIST.timer); HIST.timer = null;
+  if (typeof authStamp === 'function') authStamp();
   const j = snapJSON();
   if (HIST.stack[HIST.i] !== j) {
     HIST.stack.splice(HIST.i + 1);
@@ -345,7 +354,7 @@ function commit(now) {
   if (now) histPush(); else HIST.timer = setTimeout(histPush, 500);
   if (typeof collabTouch === 'function') collabTouch();
 }
-function resetHistory() { HIST.stack = [snapJSON()]; HIST.i = 0; clearTimeout(HIST.timer); HIST.timer = null; updateUndoButtons(); }
+function resetHistory() { AUTH_SIG = null; HIST.stack = [snapJSON()]; HIST.i = 0; clearTimeout(HIST.timer); HIST.timer = null; updateUndoButtons(); }
 function restoreSnap(j) {
   const v = P.view, tt = P.teTabs;
   P = normalize(JSON.parse(j)); P.view = v; if (tt) P.teTabs = tt;
