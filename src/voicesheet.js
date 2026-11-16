@@ -45,6 +45,22 @@ Object.assign(D, {
   'vc.sug.tip': ['Предложенное имя: в скрипте перед этой репликой строки voice пока нет', 'Suggested name: there is no voice line before this line in the script yet'],
   'vc.copied': ['Имя файла скопировано', 'File name copied'],
   'vc.sheet.sum': ['Сводка', 'Summary'],
+  /* вставка строк voice (1.6.9) */
+  'vi.btn': ['Вставить voice…', 'Insert voice…'],
+  'vi.title': ['Вставить строки voice в скрипты', 'Insert voice lines into the scripts'],
+  'vi.lead': ['Когда записи готовы, перед каждой репликой в скрипте нужна строка voice "файл". Программа находит записи по именам из листа (персонаж_блок_номер) и вставляет такие строки сама. Пока вы не нажали кнопку, ничего не меняется; все вставки отменяются одним Ctrl+Z.', 'When the recordings are ready, every line in the script needs a voice "file" line before it. The app finds the recordings by the names from the sheet (character_block_number) and inserts those lines for you. Nothing changes until you press the button; all the insertions are undone by one Ctrl+Z.'],
+  'vi.up': ['Загрузить файлы озвучки', 'Upload voice files'],
+  'vi.up.h': ['Выберите записи, можно сразу много. Файл попадает к реплике, если его имя совпадает с именем из листа: регистр, пробелы и «_» не важны, расширение любое. Записи станут ресурсами вида «Голос».', 'Pick the recordings, many at once if you like. A file goes to a line if its name matches the name from the sheet: case, spaces and “_” do not matter, any extension. The recordings become resources of the “Voice” kind.'],
+  'vi.up.done': ['Загружено файлов: {0}', 'Files uploaded: {0}'],
+  'vi.up.skip': ['Не нашли реплику для: {0}', 'No line found for: {0}'],
+  'vi.sum': ['Можно вставить: {0} · уже с voice: {1} · без записи: {2}', 'Can be inserted: {0} · already with voice: {1} · without a recording: {2}'],
+  'vi.none': ['Пока нечего вставлять: нет записей с именами из листа. Загрузите файлы кнопкой выше или добавьте их в «Реестр → Аудио» под именами из листа.', 'Nothing to insert yet: there are no recordings with the names from the sheet. Upload the files with the button above or add them in “Registry → Audio” under the names from the sheet.'],
+  'vi.go': [['Вставить {0} строку voice', 'Вставить {0} строки voice', 'Вставить {0} строк voice'], ['Insert {0} voice line', 'Insert {0} voice lines']],
+  'vi.done': ['Вставлено строк voice: {0}. Ctrl+Z отменит всё сразу.', 'Voice lines inserted: {0}. Ctrl+Z undoes them all at once.'],
+  'vi.stale': ['Пропущено, потому что скрипт успел измениться: {0}.', 'Skipped because the script had changed: {0}.'],
+  'vi.more': ['…и ещё {0}', '…and {0} more'],
+  'vi.col.res': ['Запись в реестре', 'Registry recording'],
+  'vi.kind': ['вид «{0}», не «Голос»', 'kind “{0}”, not “Voice”'],
   'vc.foot': ['Заметку для актёра пишите в конце строки реплики после «#»: она попадёт в лист. Скрипты эта таблица не меняет.', 'Write a note for the actor at the end of the line after “#”: it goes into the sheet. This table does not change the scripts.'],
 });
 
@@ -133,6 +149,112 @@ function vcExportXlsx(groups, label) {
 }
 
 /* ---------- окно ---------- */
+/* ---------- вставка строк voice ---------- */
+/** Ключ имени файла: без папки и расширения, регистр, пробелы, «_» и «-» не важны. */
+const vcNk = x => String(x == null ? '' : x).toLowerCase().replace(/^.*[\\/]/, '').replace(/\.[a-z0-9]{2,5}$/, '').replace(/[\s_\-]+/g, '_').replace(/^_+|_+$/g, '');
+/** Звуковые ресурсы реестра с файлом по ключам имени (имя ресурса, путь, имя загруженного файла); «Голос» важнее остальных видов. */
+function viIndex() {
+  const idx = new Map();
+  const put = (k, a) => { if (!k) return; const old = idx.get(k); if (!old || (old.kind !== 'voice' && a.kind === 'voice')) idx.set(k, a); };
+  for (const a of P.assets) {
+    if (!AUDIO_KINDS.includes(a.kind) || !vcHasFile(a)) continue;
+    put(vcNk(a.name), a); if (a.path) put(vcNk(a.path), a);
+    for (const f of Object.values(a.files || {})) if (f && f.name) put(vcNk(f.name), a);
+  }
+  return idx;
+}
+/** Как записать ресурс в строке voice: путь (так его находит и сборка), иначе имя. */
+const viLit = a => String(a.path || a.name || '').replace(/["'\\\r\n]/g, '');
+/** Что можно вставить: реплики без строки voice, для которых в реестре есть запись с именем из листа. */
+function viPlan(data) {
+  const idx = viIndex(), rows = []; let have = 0, none = 0;
+  for (const it of data.items) {
+    if (it.status !== 'need') { have++; continue; }
+    const a = idx.get(vcNk(it.sug)), lit = a ? viLit(a) : '';
+    if (lit) rows.push({ it, a, lit }); else none++;
+  }
+  return { rows, have, none };
+}
+/** Вставляет строку voice перед каждой репликой из плана. Скрипт, успевший измениться, не трогает. Один шаг отмены. */
+function viApply(plan) {
+  const byFile = new Map();
+  for (const x of plan.rows) { const id = x.it.r.f.id; if (!byFile.has(id)) byFile.set(id, []); byFile.get(id).push(x); }
+  let done = 0, stale = 0; const nodes = new Set();
+  for (const [fid, xs] of byFile) {
+    const ff = findFile(fid); if (!ff) { stale += xs.length; continue; }
+    const f = ff.file, lines = String(f.script || '').replace(/\r\n?/g, '\n').split('\n'), norm = tlLines(f);
+    let lead = 0; while (lead < lines.length && !lines[lead].trim()) lead++;
+    xs.sort((a, b) => b.it.r.li - a.it.r.li);                                  // снизу вверх: номера выше по скрипту не сдвигаются
+    let n = 0;
+    for (const x of xs) {
+      const r = x.it.r, L = lines[lead + r.li], m = L == null ? null : RE_TL_SAY.exec(L);
+      if (!m || L.replace(/\t/g, '    ').replace(/\s+$/, '') !== norm[r.li] || (m[2] || '') !== r.who || m[4].slice(1, -1).replace(/\t/g, '    ') !== r.body) { stale++; continue; }   // строка должна остаться той, что видна в списке
+      lines.splice(lead + r.li, 0, /^[ \t]*/.exec(L)[0] + 'voice "' + x.lit + '"'); n++;
+    }
+    if (n) { f.script = lines.join('\n'); nodes.add(ff.node.id); done += n; }
+  }
+  if (done) { commit(true); for (const id of nodes) { try { refreshNode(id); } catch (e) { /* карта может быть не построена */ } } }
+  return { done, stale };
+}
+/** Загружает записи в реестр как «Голос»: файл идёт к реплике, чьё имя из листа совпало с именем файла (или к строке voice без файла). */
+async function viUpload(files, data) {
+  const idx = new Map();
+  for (const it of data.items) { if (it.status === 'need') idx.set(vcNk(it.sug), it); else if (it.status === 'script') idx.set(vcNk(it.file), it); }
+  let ok = 0; const skipped = [];
+  for (const file of files) {
+    const base = file.name.replace(/\.[^.]+$/, ''), it = idx.get(vcNk(base));
+    if (!it || !(extOf(file.name) in AUD_TYPES)) { skipped.push(file.name); continue; }
+    let a = it.status === 'script' ? vcAudio(it.file) : null;
+    if (!a) {
+      const nm = slug(base) || 'voice';
+      a = P.assets.find(x => x.kind === 'voice' && (x.name || '').toLowerCase() === nm.toLowerCase()) || createAsset('voice', nm);
+      if (it.status === 'script' && !a.path) a.path = String(it.file);        // чтобы строка voice в скрипте нашла этот ресурс
+    }
+    if (await attachFile(a, '', file)) ok++; else skipped.push(file.name);
+  }
+  return { ok, skipped };
+}
+function openVoiceInsert() {
+  closePopover();
+  openModal({
+    cls: 'vi-m', build: m => {
+      const body = h('div', { class: 'vi-body' });
+      let data = vcCollect(true);
+      const paint = () => {
+        const pl = viPlan(data);
+        const list = pl.rows.slice(0, 150);
+        const rowEl = x => {
+          const r = x.it.r, ft = rtFileTitle(r.n, r.f);
+          return h('div', { class: 'vi-row' },
+            h('div', { class: 'vi-blk' }, h('b', r.n.title), ft ? h('span', { class: 'hint' }, ' › ' + ft) : null, h('div', { class: 'hint' }, t('vc.col.line') + ' ' + x.it.line)),
+            h('div', { class: 'vi-who' }, r.who ? rtWhoName(r.who) : t('vc.narr')),
+            h('div', { class: 'vi-text' }, r.plain.length > 70 ? r.plain.slice(0, 70) + '…' : r.plain),
+            h('div', { class: 'vi-lit' }, h('code', 'voice "' + x.lit + '"'), x.a.kind !== 'voice' ? h('div', { class: 'hint' }, t('vi.kind', t('kind1.' + x.a.kind))) : null));
+        };
+        body.replaceChildren(
+          h('p', { class: 'hint' }, t('vi.lead')),
+          h('div', { class: 'vi-up' }, h('button', { class: 'btn', id: 'vi-up', onclick: () => pickFiles('audio/*,.ogg,.opus,.mp3,.wav,.flac,.m4a,.aac', true, async fl => {
+            const r = await viUpload(fl, data);
+            data = vcCollect(true);
+            toast(r.ok ? t('vi.up.done', r.ok) + (r.skipped.length ? '. ' + t('vi.up.skip', r.skipped.slice(0, 4).join(', ') + (r.skipped.length > 4 ? '…' : '')) : '') : t('vi.up.skip', r.skipped.slice(0, 4).join(', ') + (r.skipped.length > 4 ? '…' : '')), 5200);
+            paint();
+          }) }, icon('upload', 15), t('vi.up')), h('div', { class: 'hint' }, t('vi.up.h'))),
+          h('div', { class: 'vi-sum', id: 'vi-sum' }, t('vi.sum', pl.rows.length, pl.have, pl.none)),
+          !pl.rows.length ? h('div', { class: 'empty small' }, t('vi.none')) : h('div', { class: 'vi-list' },
+            h('div', { class: 'vi-row vi-hd' }, h('div', t('vc.col.block')), h('div', t('vc.col.who')), h('div', t('vc.col.text')), h('div', t('vi.col.res'))),
+            ...list.map(rowEl), pl.rows.length > list.length ? h('div', { class: 'hint' }, t('vi.more', pl.rows.length - list.length)) : null),
+          h('div', { class: 'vi-actions' }, h('button', { class: 'btn primary', id: 'vi-go', disabled: !pl.rows.length, onclick: () => {
+            const r = viApply(pl);
+            toast(t('vi.done', r.done) + (r.stale ? ' ' + t('vi.stale', r.stale) : ''), 5200);
+            data = vcCollect(true); paint();
+          } }, icon('check', 15), pl.rows.length ? t('vi.go', pl.rows.length) : t('vi.go', 0))));
+      };
+      paint();
+      return h('div', { class: 'm-wrap' }, modalHead(t('vi.title'), m), body);
+    }
+  });
+}
+
 function openVoiceSheet() {
   closePopover();
   let data = vcCollect(VC.narr), ver = DATA_VER, poll = 0, shown = VC_PAGE;
@@ -210,6 +332,7 @@ function openVoiceSheet() {
           { label: t('vc.exp.csv'), icon: 'download', onClick: () => { vcExportCsv(view, VC.grp ? (curGroup() || {}).label : '').then(ok => ok && toast(t('vc.exp.done', view.length))); } },
         ].filter(Boolean));
       } }, icon('download', 15), h('span', t('vc.export')));
+      const insBtn = h('button', { class: 'btn sm', id: 'vc-ins', 'data-tip': t('vi.title'), onclick: () => openVoiceInsert() }, icon('mic', 15), h('span', t('vi.btn')));
       wrap.append(h('table', { class: 'rt vc-t' }, thead, tbody));
       wrap.addEventListener('scroll', () => { if (view.length > shown && wrap.scrollTop + wrap.clientHeight > wrap.scrollHeight - 500) { shown += VC_PAGE; paintTable(); } });
       paint();
@@ -217,11 +340,11 @@ function openVoiceSheet() {
       return h('div', { class: 'm-wrap rt-wrapall' },
         modalHead(t('vc.title'), m),
         h('div', { class: 'm-pad bs-sph' }, t('vc.intro')),
-        h('div', { class: 'm-pad rt-bar' }, q, stSeg, h('label', { class: 'ar-chk', 'data-tip': t('vc.o.narr.h') }, narrChk, h('span', t('vc.o.narr'))), exportBtn),
+        h('div', { class: 'm-pad rt-bar' }, q, stSeg, h('label', { class: 'ar-chk', 'data-tip': t('vc.o.narr.h') }, narrChk, h('span', t('vc.o.narr'))), insBtn, exportBtn),
         h('div', { class: 'm-pad vc-top' }, strip, info),
         wrap, h('div', { class: 'rt-foot' }, sum, h('span', { class: 'hint vc-foot' }, t('vc.foot'))));
     }
   });
 }
 
-TOOL_ITEMS.push({ id: 'voicesheet', group: 'story', ic: 'mic', key: 'vc.btn', kw: 'voice over sheet actor actors recording record script voice acting studio emotions lines озвучка лист для озвучки актёр актёры запись реплики эмоции студия диктор', run: () => openVoiceSheet() });
+TOOL_ITEMS.push({ id: 'voicesheet', group: 'story', ic: 'mic', key: 'vc.btn', kw: 'insert voice lines scripts upload recordings вставить строки voice озвучка записи в скрипт voice over sheet actor actors recording record script voice acting studio emotions lines озвучка лист для озвучки актёр актёры запись реплики эмоции студия диктор', run: () => openVoiceSheet() });

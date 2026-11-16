@@ -2074,3 +2074,16 @@ body.game-mode{background:var(--bg)}
 .cu-code{font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;min-height:320px;white-space:pre;overflow:auto;tab-size:4}
 .cu-meta{display:flex;gap:14px;flex-wrap:wrap}
 @media (max-width:760px){.cu-main{grid-template-columns:1fr}.cu-code{min-height:240px}}
+/* ====== Вставка строк voice (1.6.9) ====== */
+.vi-m{width:min(980px,calc(100vw - 24px))}
+.vi-body{padding:14px 18px 18px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;min-height:0}
+.vi-up{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.vi-up .hint{flex:1;min-width:220px}
+.vi-sum{font-weight:600}
+.vi-list{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.vi-row{display:grid;grid-template-columns:minmax(130px,1.2fr) 100px minmax(160px,2fr) minmax(170px,1.6fr);gap:10px;padding:8px 12px;border-top:1px solid var(--border);align-items:start;font-size:13px}
+.vi-row:first-child{border-top:0}
+.vi-hd{background:var(--surface2);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--text3)}
+.vi-lit code{font:12px/1.4 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;overflow-wrap:anywhere}
+.vi-text{overflow-wrap:anywhere}
+.vi-actions{display:flex;justify-content:flex-end}
+@media (max-width:760px){.vi-row{grid-template-columns:1fr}.vi-hd{display:none}}
