@@ -44,7 +44,7 @@ Object.assign(D, {
 });
 
 const RS_KINDS = ['bg', 'sprite', 'music', 'sfx', 'voice'];
-const RS_ST = { scope: '', kind: 'all', stat: 'all', group: 'block', more: 40 };
+const RS_ST = { scope: '', kind: 'all', stat: 'all', prod: 'all', group: 'block', more: 40 };
 const RS_BAD = new Set(['nofile', 'unreg', 'noexpr']);
 
 /** Блоки без заметок в порядке сюжета (как в таблице реплик): от начала игры, недостижимые в конце. */
@@ -99,12 +99,12 @@ const rsLabel = it => t('kind1.' + it.kind) + ': ' + it.name + (it.expr ? ' ' + 
 /** Одинаковые для экрана и выгрузки фильтры: область, тип, статус. */
 function rsFilter(items) {
   return items.filter(it => (!RS_ST.scope || it.n.id === RS_ST.scope) && (RS_ST.kind === 'all' || it.kind === RS_ST.kind)
-    && (RS_ST.stat === 'all' || (RS_ST.stat === 'todo' ? RS_BAD.has(it.status) : RS_ST.stat === 'unreg' ? it.status === 'unreg' || it.status === 'noexpr' : it.status === 'ok')));
+    && (RS_ST.stat === 'all' || (RS_ST.stat === 'todo' ? RS_BAD.has(it.status) : RS_ST.stat === 'unreg' ? it.status === 'unreg' || it.status === 'noexpr' : it.status === 'ok')) && prodMatch(it.a, RS_ST.prod));
 }
 function rsTable(list) {
-  const head = [t('rs.x.block'), t('rs.x.file'), t('rs.x.kind'), t('rs.x.name'), t('rs.x.expr'), t('rs.x.status'), t('rs.x.via'), t('rs.x.path'), t('rs.x.note')];
+  const head = [t('rs.x.block'), t('rs.x.file'), t('rs.x.kind'), t('rs.x.name'), t('rs.x.expr'), t('rs.x.status'), t('rs.x.via'), t('rs.x.path'), t('rs.x.note'), t('pd.col.st'), t('pd.col.who'), t('pd.col.due')];
   const rows = [head];
-  for (const it of list) rows.push([rsTitle(it.n), rsFileTitle(it.n, it.f), t('kind1.' + it.kind), it.name, it.expr, t('rs.st.' + it.status), rsVia(it), it.a ? it.a.path || '' : '', it.note]);
+  for (const it of list) rows.push([rsTitle(it.n), rsFileTitle(it.n, it.f), t('kind1.' + it.kind), it.name, it.expr, t('rs.st.' + it.status), rsVia(it), it.a ? it.a.path || '' : '', it.note, prodName(prodSt(it.a)), prodWho(it.a), prodDue(it.a)]);
   return rows;
 }
 function rsExportCsv(list) {
@@ -114,11 +114,11 @@ function rsExportCsv(list) {
 }
 function rsExportXlsx(list) {
   const uq = rsUnique(list);
-  const s2 = [[t('rs.x.kind'), t('rs.x.name'), t('rs.x.expr'), t('rs.x.status'), t('rs.x.path'), t('rs.x.uses'), t('rs.x.where')]];
-  for (const u of uq) s2.push([t('kind1.' + u.kind), u.name, u.expr, t('rs.st.' + u.status), u.a ? u.a.path || '' : '', new Set(u.uses.map(x => x.n.id)).size, [...new Set(u.uses.map(x => rsTitle(x.n)))].join(', ')]);
+  const s2 = [[t('rs.x.kind'), t('rs.x.name'), t('rs.x.expr'), t('rs.x.status'), t('rs.x.path'), t('rs.x.uses'), t('rs.x.where'), t('pd.col.st'), t('pd.col.who'), t('pd.col.due')]];
+  for (const u of uq) s2.push([t('kind1.' + u.kind), u.name, u.expr, t('rs.st.' + u.status), u.a ? u.a.path || '' : '', new Set(u.uses.map(x => x.n.id)).size, [...new Set(u.uses.map(x => rsTitle(x.n)))].join(', '), prodName(prodSt(u.a)), prodWho(u.a), prodDue(u.a)]);
   const s3 = [[t('rs.x.block'), t('rs.x.file'), t('rs.x.visual')]];
   for (const n of rsNodes()) for (const f of n.files) if (String(f.visual || '').trim() && (!RS_ST.scope || n.id === RS_ST.scope)) s3.push([rsTitle(n), rsFileTitle(n, f), f.visual]);
-  const sheets = [{ name: t('rs.x.s1'), rows: rsTable(list), widths: [24, 18, 12, 26, 14, 20, 18, 30, 40] }, { name: t('rs.x.s2'), rows: s2, widths: [12, 26, 14, 20, 30, 9, 50] }];
+  const sheets = [{ name: t('rs.x.s1'), rows: rsTable(list), widths: [24, 18, 12, 26, 14, 20, 18, 30, 40, 16, 22, 12] }, { name: t('rs.x.s2'), rows: s2, widths: [12, 26, 14, 20, 30, 9, 50, 16, 22, 12] }];
   if (s3.length > 1) sheets.push({ name: t('rs.x.s3'), rows: s3, widths: [24, 18, 90] });
   return saveFile((slug(P.name) || 'project') + '_resources.xlsx', makeXlsx(sheets), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 }
@@ -130,7 +130,7 @@ function rsChecklist(list, all) {
   for (const it of list) {
     if (it.n !== cur) { cur = it.n; out.push('', '## ' + rsTitle(it.n)); }
     const ft = rsFileTitle(it.n, it.f);
-    out.push('- [' + (it.status === 'ok' ? 'x' : ' ') + '] ' + rsLabel(it) + (it.status === 'ok' ? '' : ' (' + t('rs.st.' + it.status).toLowerCase() + ')') + (ft ? ' · ' + ft : '') + (it.note ? ' · ' + it.note : ''));
+    out.push('- [' + (it.status === 'ok' ? 'x' : ' ') + '] ' + rsLabel(it) + (it.status === 'ok' ? '' : ' (' + t('rs.st.' + it.status).toLowerCase() + ')') + (ft ? ' · ' + ft : '') + (it.note ? ' · ' + it.note : '') + prodSuffix(it.a));
   }
   return out.join('\n').replace(/\n{3,}/g, '\n\n').trim() + '\n';
 }
@@ -190,12 +190,14 @@ function openResources(opts) {
         sel.value = RS_ST.scope; sel.addEventListener('change', () => { RS_ST.scope = sel.value; RS_ST.more = 40; paint(); });
         const kc = k => scopeItems.filter(it => k === 'all' || it.kind === k).length;
         const sc = s => scopeItems.filter(it => (RS_ST.kind === 'all' || it.kind === RS_ST.kind) && (s === 'all' || (s === 'todo' ? RS_BAD.has(it.status) : s === 'unreg' ? it.status === 'unreg' || it.status === 'noexpr' : it.status === 'ok'))).length;
+        const pc = s => scopeItems.filter(it => (RS_ST.kind === 'all' || it.kind === RS_ST.kind) && prodMatch(it.a, s)).length;
         const chip = (cur, v, label, c, set) => h('button', { class: 'pal-chip' + (cur === v ? ' on' : ''), onclick: () => { set(v); RS_ST.more = 40; paint(); } }, label, h('span', { class: 'cnt' }, ' ' + c));
         ctl.replaceChildren(
           h('div', { class: 'rs-row1' }, h('span', { class: 'lab' }, t('rs.scope')), sel, h('div', { class: 'grow' }), h('span', { class: 'lab' }, t('rs.group')),
             segmented([['block', 'rs.g.block'], ['res', 'rs.g.res']].map(([v, k]) => ({ value: v, label: t(k) })), RS_ST.group, v => { RS_ST.group = v; RS_ST.more = 40; paint(); })),
           h('div', { class: 'pal-chips' }, chip(RS_ST.kind, 'all', t('rs.k.all'), kc('all'), v => { RS_ST.kind = v; }), ...RS_KINDS.map(k => chip(RS_ST.kind, k, t('kind.' + k), kc(k), v => { RS_ST.kind = v; }))),
-          h('div', { class: 'pal-chips' }, ...[['all', 'rs.s.all'], ['todo', 'rs.s.todo'], ['unreg', 'rs.s.unreg'], ['ok', 'rs.s.ok']].map(([s, k]) => chip(RS_ST.stat, s, t(k), sc(s), v => { RS_ST.stat = v; }))));
+          h('div', { class: 'pal-chips' }, ...[['all', 'rs.s.all'], ['todo', 'rs.s.todo'], ['unreg', 'rs.s.unreg'], ['ok', 'rs.s.ok']].map(([s, k]) => chip(RS_ST.stat, s, t(k), sc(s), v => { RS_ST.stat = v; }))),
+          h('div', { class: 'pal-chips pd-chips' }, h('span', { class: 'lab' }, t('pd.f.lab')), ...[['all', 'pd.st.any'], ['none', 'pd.st.none'], ['ordered', 'pd.st.ordered'], ['work', 'pd.st.work'], ['got', 'pd.st.got'], ['done', 'pd.st.done'], ['over', 'pd.st.over']].map(([s, k]) => chip(RS_ST.prod, s, t(k), pc(s), v => { RS_ST.prod = v; }))));
         return scopeItems;
       };
 
@@ -220,7 +222,7 @@ function openResources(opts) {
             }
             const u = { ...it };
             root.append(h('div', { class: 'rs-r' }, icon(KIND_ICON[it.kind], 15),
-              h('div', { class: 'rs-n' }, h('span', { class: 'nm' }, it.name), it.expr ? h('span', { class: 'expr' }, ' ' + it.expr) : null, h('span', { class: 'rs-via' }, rsVia(it)), it.note ? h('span', { class: 'rs-note' }, it.note) : null),
+              h('div', { class: 'rs-n' }, h('span', { class: 'nm' }, it.name), it.expr ? h('span', { class: 'expr' }, ' ' + it.expr) : null, h('span', { class: 'rs-via' }, rsVia(it)), it.note ? h('span', { class: 'rs-note' }, it.note) : null, prodLine(u, paint)),
               stTag(it.status), h('div', { class: 'rs-ac' }, ...actFor(u))));
           }
         }
@@ -236,7 +238,7 @@ function openResources(opts) {
           const nodes = [...new Map(u.uses.map(x => [x.n.id, x.n])).values()];
           root.append(h('div', { class: 'rs-r rs-r2' }, icon(KIND_ICON[u.kind], 15),
             h('div', { class: 'rs-n' }, h('span', { class: 'nm' }, u.name), u.expr ? h('span', { class: 'expr' }, ' ' + u.expr) : null,
-              h('div', { class: 'vs-names rs-where' }, ...nodes.slice(0, 5).map(n => h('button', { class: 'vs-name', 'data-tip': t('rs.show'), onclick: () => { close(); focusNode(n.id); } }, h('span', { class: 'bs-dot', style: { background: palColor(n.color) } }), rsTitle(n))), nodes.length > 5 ? h('span', { class: 'bs-sub' }, '… +' + (nodes.length - 5)) : null)),
+              h('div', { class: 'vs-names rs-where' }, ...nodes.slice(0, 5).map(n => h('button', { class: 'vs-name', 'data-tip': t('rs.show'), onclick: () => { close(); focusNode(n.id); } }, h('span', { class: 'bs-dot', style: { background: palColor(n.color) } }), rsTitle(n))), nodes.length > 5 ? h('span', { class: 'bs-sub' }, '… +' + (nodes.length - 5)) : null), prodLine(u, paint)),
             stTag(u.status), h('div', { class: 'rs-ac' }, ...actFor(u))));
         }
         if (uq.length > RS_ST.more) root.append(h('div', { class: 'bs-more' }, h('button', { class: 'btn sm', onclick: () => { RS_ST.more += 40; paint(); } }, t('rs.more') + ' (' + (uq.length - RS_ST.more) + ')')));

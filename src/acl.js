@@ -133,7 +133,7 @@ function aclNeed(k, b, a, rt, Bp) {
   }
   if (pre === 'a') {
     const kind = (a || b).kind, fl = b && a ? sameFields(b, a) : null;
-    if (fl && fl.length && fl.every(f => f === 'owners') && (rt.can('team') || rt.can(kind))) return '';
+    if (fl && fl.length && fl.every(f => f === 'owners' || f === 'prod') && (rt.can('team') || rt.can(kind))) return '';
     return rt.can(kind) ? '' : kind;
   }
   if (pre === 'v') return rt.can('vars') ? '' : 'vars';

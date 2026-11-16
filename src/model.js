@@ -285,6 +285,7 @@ function normalize(p) {
   for (const a of p.assets) {
     a.id = a.id || uid('a'); a.kind = STORED_KINDS.includes(a.kind) ? a.kind : 'bg'; a.name = a.name || ''; a.path = a.path || '';
     a.notes = a.notes || ''; a.expr = Array.isArray(a.expr) ? a.expr : []; a.owners = cleanIds(a.owners);
+    { const pr = typeof prodClean === 'function' ? prodClean(a.prod) : null; if (pr) a.prod = pr; else delete a.prod; }      // статус работы над ресурсом (assetprod.js)
     if (a.kind === 'bg' && a.cg) a.cg = true; else delete a.cg;                 // CG: показывать в галерее
     if (a.kind === 'music' && a.room === false) a.room = false; else delete a.room;   // музыка: false = не показывать в музыкальной комнате
     a.code = typeof a.code === 'string' ? a.code : ''; a.tpl = typeof a.tpl === 'string' ? a.tpl : ''; a.params = a.params && typeof a.params === 'object' && !Array.isArray(a.params) ? a.params : {};

@@ -172,6 +172,7 @@ function regAssets(st, list, qq) {
     body.push(h('div', { class: 'grid2' }, field(t('as.f.notes'), bindInput(a, 'notes', { onChange: () => commit() })),
       h('div', { class: 'field' }, h('div', { class: 'lbl' }, t('as.f.used')), h('div', { class: 'used-count' + (cnt ? '' : ' zero') }, cnt ? t('as.f.files', cnt) : t('as.f.unused')))));
     body.push(field(t('team.author'), memberPicker(a, 'owners', () => commit(true))));
+    if (hasFilesKind(a.kind)) body.push(prodFields(a));
     list.append(regCard(a.id, body, {
       lead: h('div', { class: 'reg-ic' }, icon(KIND_ICON[a.kind], 18)),
       onDelete: async () => {

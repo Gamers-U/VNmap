@@ -100,6 +100,7 @@ async function attachFile(a, key, file) {
   a.files[key || ''] = { bid, name: file.name, size: file.size, type: file.type || (img ? IMG_TYPES : fnt ? FONT_TYPES : AUD_TYPES)[ext] || '' };
   if (fnt) { if (a.kind === 'font') loadFont(a); }
   else if (!img && !a.path) a.path = 'audio/' + a.kind + '/' + (slug(a.name) || 'sound') + '.' + (ext || 'ogg');
+  if (typeof prodOnFile === 'function' && prodOnFile(a)) toast(t('pd.auto', a.name), 3600);
   commit(true);
   return true;
 }

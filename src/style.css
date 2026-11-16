@@ -2011,3 +2011,51 @@ body.game-mode{background:var(--bg)}
 .eg-lost{padding:11px 13px;border:1px solid var(--warn,#d99a1c);border-radius:12px;background:color-mix(in srgb,var(--warn,#d99a1c) 10%,transparent);display:flex;flex-direction:column;gap:6px}
 .eg-lh{display:flex;gap:6px;align-items:center;font-weight:700}
 .eg-li{display:flex;align-items:center;gap:8px;justify-content:space-between}
+
+/* ---- Лист для озвучки (1.6.8) ---- */
+.vc-top{display:flex;flex-direction:column;gap:6px;padding-top:0;padding-bottom:8px}
+.vc-strip{display:flex;gap:6px;flex-wrap:wrap}
+.vc-n{color:var(--text3);font-size:11.5px;font-variant-numeric:tabular-nums}
+.vc-info{font-size:12.5px;color:var(--text2)}
+.vc-c-emo{width:112px}
+.vc-emo{display:inline-block;padding:0 7px;border-radius:7px;background:var(--surface3);color:var(--text2);font-size:12px}
+.vc-note{margin-top:3px;font-size:12px;color:var(--text3);font-style:italic}
+.vc-c-st{width:156px}
+.vc-c-file{width:210px}
+.vc-st{display:inline-block;padding:1px 8px;border-radius:9px;font-size:11.5px;font-weight:650;white-space:nowrap;background:var(--surface3);color:var(--text2)}
+.vc-st.s-script{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
+.vc-st.s-ready{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok)}
+.vc-file{display:block;border:0;background:none;padding:0;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;cursor:pointer;word-break:break-all;text-align:left;color:var(--text)}
+.vc-file.sug{color:var(--text3)}
+.vc-file:hover{color:var(--accent)}
+.rt-foot{display:flex;gap:14px;flex-wrap:wrap;align-items:baseline}
+.vc-foot{margin-left:auto}
+
+/* ---- Статус работы над ресурсами (1.6.8) ---- */
+.pd-line{flex:0 0 100%;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;margin-top:3px}
+.pd-ctl{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.pd-sel{width:auto;min-width:118px;cursor:pointer}
+.pd-due{width:auto;min-width:132px}
+.pd-due.over{border-color:var(--danger);color:var(--danger)}
+.pd-sel.p-ordered{border-color:color-mix(in srgb,var(--accent) 55%,var(--border))}
+.pd-sel.p-work{border-color:var(--warn)}
+.pd-sel.p-got,.pd-sel.p-done{border-color:var(--ok)}
+.pd-who .mp{margin:0}
+.pd-warn{display:inline-flex;gap:4px;align-items:center;font-size:12px;color:var(--warn)}
+.pd-warn.over{color:var(--danger)}
+.pd-reg .pd-hint{line-height:1.45}
+.pd-chips .lab{color:var(--text3);font-size:12px;margin-right:2px}
+
+/* ---- Рецепты Ren'Py (1.6.8) ---- */
+.modal.rc-m{width:min(760px,calc(100vw - 24px))}
+.rc-body{display:flex;flex-direction:column;gap:12px;padding-bottom:18px}
+.rc-card{border:1px solid var(--border);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;background:var(--surface2)}
+.rc-head{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.rc-name{font-size:15px}
+.rc-unv{margin-left:auto;display:inline-flex;gap:4px;align-items:center;font-size:11.5px;color:var(--warn)}
+.rc-desc{color:var(--text2);line-height:1.45}
+.rc-params{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}
+.rc-f .lbl{font-size:12px}
+.rc-will{line-height:1.45}
+.rc-code{margin:0;padding:10px 12px;border-radius:10px;background:var(--surface3);font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;line-height:1.5;white-space:pre-wrap;word-break:break-word;max-height:320px;overflow:auto}
+.rc-code[hidden]{display:none}

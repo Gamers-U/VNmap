@@ -59,7 +59,7 @@ const rtWhoName = tag => { if (!tag) return ''; const c = rtChar(tag); return c 
 const rtFileTitle = (n, f) => (n.files.length > 1 || f.title ? (f.title || t('file.untitled')) : '');
 const rtBlockName = (n, f) => n.title + (rtFileTitle(n, f) ? ' › ' + rtFileTitle(n, f) : '');
 function rtMakeRow(n, f, lead, u) {
-  const r = { n, f, li: u.li, lead, who: u.who, attrs: u.attrs, q: u.q, body: u.body, sub: u.sub, plain: '', words: 0, hay: '', i: 0 };
+  const r = { n, f, li: u.li, lead, who: u.who, attrs: u.attrs, q: u.q, body: u.body, sub: u.sub, voice: u.voice || '', endCol: u.endCol, plain: '', words: 0, hay: '', i: 0 };
   rtFill(r);
   return r;
 }
