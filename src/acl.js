@@ -40,18 +40,18 @@ Object.assign(D, {
   'acl.eff': ['Может править: {0}', 'Can edit: {0}'],
   'acl.area.text': ['тексты глав', 'chapter texts'], 'acl.area.map': ['карта и стрелки', 'map and arrows'], 'acl.area.chars': ['персонажи', 'characters'],
   'acl.area.bg': ['фоны', 'backgrounds'], 'acl.area.sprite': ['спрайты', 'sprites'], 'acl.area.music': ['музыка', 'music'], 'acl.area.sfx': ['звуки', 'sounds'], 'acl.area.voice': ['озвучка', 'voice'],
-  'acl.area.fx': ['эффекты', 'effects'], 'acl.area.tf': ['трансформы', 'transforms'], 'acl.area.font': ['шрифты', 'fonts'], 'acl.area.gui': ['интерфейс игры', 'game interface'],
+  'acl.area.fx': ['эффекты', 'effects'], 'acl.area.tf': ['трансформы', 'transforms'], 'acl.area.font': ['шрифты', 'fonts'], 'acl.area.video': ['видео', 'video'], 'acl.area.gui': ['интерфейс игры', 'game interface'],
   'acl.area.vars': ['переменные', 'variables'], 'acl.area.achs': ['достижения', 'achievements'], 'acl.area.tr': ['переводы', 'translations'], 'acl.area.build': ['настройки сборки', 'build settings'],
   'acl.area.team': ['команда и права', 'team and rights'], 'acl.area.acl': ['права доступа', 'access rights'], 'acl.area.cmts': ['комментарии', 'comments'],
 });
 
 /** Области проекта, которыми распоряжаются права. */
-const ACL_CONTENT = ['text', 'map', 'chars', 'bg', 'sprite', 'music', 'sfx', 'voice', 'fx', 'tf', 'font', 'gui', 'vars', 'achs', 'tr', 'build'];
+const ACL_CONTENT = ['text', 'map', 'chars', 'bg', 'sprite', 'music', 'sfx', 'voice', 'fx', 'tf', 'font', 'video', 'gui', 'vars', 'achs', 'tr', 'build'];
 /** Корпоративный режим: что разрешено каждой роли из «Участники». Своя (произвольная) роль прав не даёт. */
 const ACL_ROLE_AREAS = {
   writer: ['text', 'map', 'chars', 'vars', 'achs'], editor: ['text', 'map', 'chars', 'vars'],
   artist_bg: ['bg', 'gui'], artist_sprite: ['sprite'], composer: ['music'], sound: ['sfx'], voice: ['voice'], translator: ['tr'],
-  dev: ['vars', 'achs', 'fx', 'tf', 'font', 'gui', 'build'], tester: [], manager: ['team'],
+  dev: ['vars', 'achs', 'fx', 'tf', 'font', 'video', 'gui', 'build'], tester: [], manager: ['team'],
 };
 const ACL_META_AREA = { name: 'map', startId: 'map', lofs: 'map', filesUrl: 'build', build: 'build', base: 'tr', gui: 'gui', acl: 'acl', uid: 'acl' };
 const ACL = { busy: false, last: 0 };
@@ -229,7 +229,7 @@ function aclNote(area, extra) {
   const own = aclOwner();
   return h('div', { class: 'acl-note acl-keep' }, icon('lock', 15), h('span', t('acl.ro.note', aclAreaName(area), own ? t('acl.denied.who', own.name || '?') : '')), extra || null);
 }
-const ACL_TAB_AREA = { chars: 'chars', bg: 'bg', sprite: 'sprite', font: 'font', gui: 'gui', vars: 'vars', ach: 'achs' };
+const ACL_TAB_AREA = { chars: 'chars', bg: 'bg', sprite: 'sprite', font: 'font', video: 'video', gui: 'gui', vars: 'vars', ach: 'achs' };
 /** Вкладка реестра: карточки без прав закрываются, в шапке остаётся подсказка. */
 function aclRegFreeze(st, list, root) {
   if (!aclOn()) return;

@@ -240,4 +240,4 @@ function menuSnippet(n) {
     return `    "${rpyEsc(e.title || tn.title)}":\n        jump ${tgt}`;
   }).join('\n');
 }
-function assetCodeName(a) { return ['music', 'sfx', 'voice'].includes(a.kind) ? (a.path || a.name) : a.name; }
+function assetCodeName(a) { return a.kind === 'video' ? (a.path || 'videos/' + (slug(a.name) || 'video') + '.webm') : ['music', 'sfx', 'voice'].includes(a.kind) ? (a.path || a.name) : a.name; }

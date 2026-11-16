@@ -63,7 +63,7 @@ Object.assign(D, {
 const RN_RESERVED_LABELS = new Set(['start', 'quit', 'splashscreen', 'main_menu', 'after_load', 'before_main_menu', 'after_warp']);
 /** Операторы, где слова не являются переменными: имя изображения, звук, переход и т. п. */
 const RN_NOVAR = /^\s*(?:show|hide|scene|play|stop|queue|with|pause|window|camera|image|layeredimage|transform|screen|style|voice|label|jump|call|nvl)\b/;
-const rnIdRe = name => new RegExp('(?<![\\w.])' + reEsc(name) + '(?!\\w)', 'g');
+const rnIdRe = name => new RegExp('(?:(?<![\\w.])|(?<=(?<![\\w.])persistent\\.))' + reEsc(name) + '(?!\\w)', 'g');
 const rnInterRe = name => new RegExp('(?<!\\[)\\[' + reEsc(name) + '(?!\\w)', 'g');
 const rnWordRe = name => new RegExp('(?<![\\p{L}\\d_])' + reEsc(name) + '(?![\\p{L}\\d_])', 'gu');
 const rnLines = f => String(f.script || '').replace(/\r\n?/g, '\n').split('\n');

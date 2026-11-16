@@ -11,7 +11,7 @@ Object.assign(D, {
   'wt.lead': ['Что в проекте тяжёлое: большие картинки, длинные записи, звук без сжатия. Для телефона важны и размер игры (долго скачивать), и память (большие картинки её съедают).', 'What is heavy in the project: big pictures, long recordings, uncompressed sound. On a phone both the game size (slow to download) and memory (big pictures eat it) matter.'],
   'wt.empty': ['В реестре пока нет загруженных файлов: картинок, звука, шрифтов.', 'The registry has no uploaded files yet: pictures, sound, fonts.'],
   'wt.total': ['Всего', 'Total'],
-  'wt.k.bg': ['Фоны', 'Backgrounds'], 'wt.k.sprite': ['Спрайты', 'Sprites'], 'wt.k.gui': ['Интерфейс', 'Interface'], 'wt.k.music': ['Музыка', 'Music'], 'wt.k.sfx': ['Звуки', 'Sounds'], 'wt.k.voice': ['Озвучка', 'Voice-over'], 'wt.k.font': ['Шрифты', 'Fonts'],
+  'wt.k.bg': ['Фоны', 'Backgrounds'], 'wt.k.sprite': ['Спрайты', 'Sprites'], 'wt.k.gui': ['Интерфейс', 'Interface'], 'wt.k.music': ['Музыка', 'Music'], 'wt.k.sfx': ['Звуки', 'Sounds'], 'wt.k.voice': ['Озвучка', 'Voice-over'], 'wt.k.font': ['Шрифты', 'Fonts'], 'wt.k.video': ['Видео', 'Video'],
   'wt.cnt': ['{0} шт.', '{0} files'],
   'wt.v.ok': ['Размер нормальный для телефона.', 'The size is fine for a phone.'],
   'wt.v.mid': ['Игра средней тяжести: на телефоне скачается заметно дольше, чем лёгкая.', 'A medium-weight game: it takes noticeably longer to download on a phone.'],
@@ -40,7 +40,7 @@ const WT_MB = 1048576;
 const WT_LIM = { img: 4 * WT_MB, aud: 12 * WT_MB, wav: 3 * WT_MB, pxMax: 2560 * 1440, soft: 150 * WT_MB, hard: 300 * WT_MB };
 const WT = { dim: new Map(), run: 0 };
 const WT_LOSSLESS = new Set(['wav', 'flac', 'bmp']);
-const WT_KINDS = ['bg', 'sprite', 'gui', 'music', 'sfx', 'voice', 'font'];
+const WT_KINDS = ['bg', 'sprite', 'gui', 'music', 'sfx', 'voice', 'font', 'video'];
 const WT_FILTERS = ['all', 'bad', 'img', 'aud'];
 
 /** Строки: по одной на каждый загруженный файл ресурса. list — [{a,key,m}] или всё из реестра. */

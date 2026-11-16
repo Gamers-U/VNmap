@@ -16,7 +16,7 @@ const cbNewAct = type => ({ t: type, file: '', name: '', op: 'set', val: '', cod
 /** Одно условие → выражение Python. */
 function cbCondText(c) {
   if (c.name === '' || c.name === '@expr') return String(c.expr || '').trim();
-  const v = varByName(c.name), nm = c.name;
+  const v = varByName(c.name), nm = v ? varRef(v) : c.name;
   if (!v) return c.op === 'no' ? 'not ' + nm : nm;
   if (v.type === 'choice') return `${nm} ${c.op === 'ne' ? '!=' : '=='} ${pyStr(c.val)}`;
   if (v.type === 'number') return `${nm} ${CB_NUM_OPS.some(o => o[0] === c.op) ? c.op : '>='} ${/^-?\d+(\.\d+)?$/.test(String(c.val).trim()) ? String(c.val).trim() : '0'}`;

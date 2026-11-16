@@ -351,6 +351,7 @@ function openChapterEditor(opts = {}) {
         { label: t('te.c.music'), icon: 'music', onClick: () => setTimeout(() => pickAsset(b, 'music', a => insCmd(`play music "${assetCodeName(a)}" fadein 1.0`)), 30) },
         { label: t('te.c.sound'), icon: 'volume', onClick: () => setTimeout(() => pickAsset(b, 'sfx', a => insCmd(`play sound "${assetCodeName(a)}"`)), 30) },
         { label: t('te.c.fx'), icon: 'sparkles', onClick: () => setTimeout(() => pickAsset(b, 'fx', a => insCmd(`with ${a.name}`)), 30) },
+        { label: t('te.c.video'), icon: 'film', onClick: () => setTimeout(() => pickAsset(b, 'video', a => insCmd(`$ renpy.movie_cutscene("${assetCodeName(a)}")`)), 30) },
         { label: t('te.c.pause'), icon: 'zap', onClick: () => insCmd('pause 1.0') },
         { sep: true },
         { label: t('te.c.jump'), icon: 'link', onClick: () => setTimeout(() => pickFile(b, fl => insCmd(`jump ${fileLabel(fl)}`)), 30) },

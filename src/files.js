@@ -66,13 +66,16 @@ const IMG_TYPES = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', web
 const AUD_TYPES = { ogg: 'audio/ogg', opus: 'audio/ogg', mp3: 'audio/mpeg', wav: 'audio/wav', flac: 'audio/flac', m4a: 'audio/mp4', aac: 'audio/aac' };
 const RENPY_IMG = new Set(['png', 'jpg', 'jpeg', 'webp', 'avif', 'svg']);
 const RENPY_AUD = new Set(['ogg', 'opus', 'mp3', 'wav', 'flac']);
+const VID_TYPES = { webm: 'video/webm', ogv: 'video/ogg', mp4: 'video/mp4', mkv: 'video/x-matroska', avi: 'video/x-msvideo' };
+const RENPY_VID = new Set(['webm', 'ogv', 'mp4', 'mkv', 'avi']);
+const isVideoKind = k => k === 'video';
 const isImageKind = k => k === 'bg' || k === 'sprite' || k === 'gui';
 const isFontKind = k => k === 'font';
 const hasFilesKind = k => k !== 'fx' && k !== 'tf';
 function extOf(name) { const m = /\.([A-Za-z0-9]+)$/.exec(name || ''); return m ? m[1].toLowerCase() : ''; }
 function metaExt(m) {
   const e = extOf(m.name); if (e) return e;
-  const all = Object.assign({}, IMG_TYPES, AUD_TYPES, FONT_TYPES);
+  const all = Object.assign({}, IMG_TYPES, AUD_TYPES, FONT_TYPES, VID_TYPES);
   for (const k of Object.keys(all)) if (all[k] === m.type) return k;
   return '';
 }
@@ -91,14 +94,15 @@ async function attachFile(a, key, file) {
     try { const sig = new Uint8Array(await file.slice(0, 8).arrayBuffer()); isPng = extOf(file.name) === 'png' && sig.length === 8 && sig[0] === 0x89 && sig[1] === 0x50 && sig[2] === 0x4e && sig[3] === 0x47; } catch (e) { /* ниже переведём */ }
     if (!isPng) { const f2 = await guiToPng(file); if (!f2) { toast(t('file.badtype', file.name), 4200); return false; } file = f2; }
   }
-  const img = isImageKind(a.kind), fnt = isFontKind(a.kind), ext = extOf(file.name);
-  const okExt = img ? ext in IMG_TYPES : fnt ? ext in FONT_TYPES : ext in AUD_TYPES;
-  if (!okExt && !(!fnt && String(file.type || '').startsWith(img ? 'image/' : 'audio/'))) { toast(t('file.badtype', file.name), 4200); return false; }
+  const img = isImageKind(a.kind), fnt = isFontKind(a.kind), vid = isVideoKind(a.kind), ext = extOf(file.name);
+  const okExt = img ? ext in IMG_TYPES : fnt ? ext in FONT_TYPES : vid ? ext in VID_TYPES : ext in AUD_TYPES;
+  if (!okExt && !(!fnt && String(file.type || '').startsWith(img ? 'image/' : vid ? 'video/' : 'audio/'))) { toast(t('file.badtype', file.name), 4200); return false; }
   const bid = longId('b');
   const ok = await blobPut(bid, file);
   if (!ok && !BLOB.warned) { BLOB.warned = true; toast(t('blob.nostore'), 7000); }
-  a.files[key || ''] = { bid, name: file.name, size: file.size, type: file.type || (img ? IMG_TYPES : fnt ? FONT_TYPES : AUD_TYPES)[ext] || '' };
+  a.files[key || ''] = { bid, name: file.name, size: file.size, type: file.type || (img ? IMG_TYPES : fnt ? FONT_TYPES : vid ? VID_TYPES : AUD_TYPES)[ext] || '' };
   if (fnt) { if (a.kind === 'font') loadFont(a); }
+  else if (vid) { if (!a.path) a.path = 'videos/' + (slug(a.name) || 'video') + '.' + (ext || 'webm'); }
   else if (!img && !a.path) a.path = 'audio/' + a.kind + '/' + (slug(a.name) || 'sound') + '.' + (ext || 'ogg');
   if (typeof prodOnFile === 'function' && prodOnFile(a)) toast(t('pd.auto', a.name), 3600);
   commit(true);
@@ -112,7 +116,7 @@ function pickFiles(accept, multiple, cb) {
   inp.addEventListener('change', () => { const fl = [...inp.files]; inp.remove(); if (fl.length) cb(fl); });
   document.body.append(inp); inp.click();
 }
-const acceptFor = kind => isFontKind(kind) ? '.ttf,.otf,.ttc,font/ttf,font/otf' : isImageKind(kind) ? 'image/*,.png,.jpg,.jpeg,.webp,.avif,.svg,.gif' : 'audio/*,.ogg,.opus,.mp3,.wav,.flac';
+const acceptFor = kind => isVideoKind(kind) ? 'video/*,.webm,.ogv,.mp4,.mkv,.avi' : isFontKind(kind) ? '.ttf,.otf,.ttc,font/ttf,font/otf' : isImageKind(kind) ? 'image/*,.png,.jpg,.jpeg,.webp,.avif,.svg,.gif' : 'audio/*,.ogg,.opus,.mp3,.wav,.flac';
 
 /** Массовая загрузка: сами создаём ассеты по именам файлов. */
 async function bulkUpload(kindTab, files) {
@@ -139,6 +143,12 @@ async function bulkUpload(kindTab, files) {
       const name = base.replace(/[_]+/g, ' ').replace(/[-\s]*(regular|normal)$/i, '').trim() || base;
       let a = P.assets.find(x => x.kind === 'font' && x.name.toLowerCase() === name.toLowerCase());
       if (!a) a = createAsset('font', name);
+      if (await attachFile(a, '', file)) made++; else bad++;
+    } else if (kindTab === 'video') {
+      if (!(ext in VID_TYPES)) { bad++; continue; }
+      const name = base.replace(/[_]+/g, ' ').trim() || base;
+      let a = P.assets.find(x => x.kind === 'video' && x.name.toLowerCase() === name.toLowerCase());
+      if (!a) a = createAsset('video', name);
       if (await attachFile(a, '', file)) made++; else bad++;
     } else {
       if (!(ext in AUD_TYPES)) { bad++; continue; }

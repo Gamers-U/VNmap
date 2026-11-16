@@ -2087,3 +2087,8 @@ body.game-mode{background:var(--bg)}
 .vi-text{overflow-wrap:anywhere}
 .vi-actions{display:flex;justify-content:flex-end}
 @media (max-width:760px){.vi-row{grid-template-columns:1fr}.vi-hd{display:none}}
+/* видео в реестре и окно просмотра (1.6.12) */
+.upl-thumb video{width:100%;height:100%;object-fit:cover;display:block;border-radius:inherit;pointer-events:none}
+.vp-modal{width:min(880px,94vw)}
+.vp-body{padding:12px 16px 18px}
+.vp-video{width:100%;max-height:72vh;background:#000;border-radius:12px;display:block}

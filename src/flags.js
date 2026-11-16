@@ -6,12 +6,14 @@
 const varById = id => P.vars.find(v => v.id === id);
 const varByName = nm => P.vars.find(v => v.name === nm);
 const VAR_TYPE_ICON = { flag: 'flag', choice: 'fork', number: 'hash', raw: 'code' };
+/** Как переменная пишется в коде Ren'Py: обычная — по имени, «помнить между играми» — через persistent. */
+const varRef = v => (v && v.persist ? 'persistent.' : '') + (v ? v.name : '');
 
 /* ---------- Python-строки ---------- */
 /** Что делает пункт «запомнить» у стрелки, в виде строки Ren'Py. */
 function setLine(v, st) {
   if (!v || !/^[A-Za-z_]\w*$/.test(v.name)) return null;
-  const nm = v.name, val = String(st.val == null ? '' : st.val).trim();
+  const nm = varRef(v), val = String(st.val == null ? '' : st.val).trim();
   if (v.type === 'flag') return `$ ${nm} = ${/^(false|0|no|нет)$/i.test(val) ? 'False' : 'True'}`;
   if (v.type === 'choice') return `$ ${nm} = ${pyStr(val)}`;
   if (v.type === 'number') {
@@ -61,11 +63,13 @@ let FLAG_CACHE = null;
 function flagAnalysis() {
   if (FLAG_CACHE && FLAG_CACHE.ver === DATA_VER && FLAG_CACHE.nodes === P.nodes.length) return FLAG_CACHE.data;
   const reg = new Map(P.vars.filter(v => v.name).map(v => [v.name, v]));
+  const pnorm = s => (P.vars.some(v => v.persist) ? String(s == null ? '' : s).replace(/(^|[^\w.])persistent\.([A-Za-z_]\w*)/g, (m, p, n) => (reg.has(n) && reg.get(n).persist ? p + n : m)) : s);   // persistent.имя считаем тем же флагом
   const setters = new Map(), usersRaw = [], declared = new Set(reg.keys()), pyDefs = new Set();
   const note = (map, name, rec) => { if (!map.has(name)) map.set(name, []); map.get(name).push(rec); };
   const scan = (node, file, text) => {
-    for (const line of String(text || '').split('\n')) {
+    for (let line of String(text || '').split('\n')) {
       if (!line.trim() || line.trim().startsWith('#')) continue;
+      line = pnorm(line);
       let m;
       if ((m = RE_DECL.exec(line))) { declared.add(m[1]); continue; }
       if ((m = /^\s*(?:def|class)\s+([A-Za-z_]\w*)/.exec(line))) pyDefs.add(m[1]);
@@ -81,8 +85,8 @@ function flagAnalysis() {
   for (const e of P.edges) {
     const from = nodeOf(e.from); if (!from) continue;
     for (const st of e.sets || []) { const v = varById(st.v); if (v && v.name) note(setters, v.name, { node: from, edge: e, via: 'edge', val: st.val, set: st }); }
-    for (const line of String(e.code || '').split('\n')) { const m = RE_SETTER.exec(line); if (m) note(setters, m[1], { node: from, edge: e, via: 'edge', val: m[3] }); }
-    if (e.cond && e.cond.trim()) usersRaw.push({ node: from, edge: e, cond: e.cond });
+    for (const line of String(e.code || '').split('\n')) { const m = RE_SETTER.exec(pnorm(line)); if (m) note(setters, m[1], { node: from, edge: e, via: 'edge', val: m[3] }); }
+    if (e.cond && e.cond.trim()) usersRaw.push({ node: from, edge: e, cond: pnorm(e.cond) });
   }
   /* имена из условий, которых нет ни в реестре, ни в присвоениях, ни в объявлениях: скорее всего опечатка */
   const unknown = new Map(), tagSet = new Set(P.characters.map(c => c.tag));
@@ -289,7 +293,7 @@ function edgeSetsEditor(e, onChange) {
 /* ---------- быстрые вставки в главу ---------- */
 /** Заготовка «если выбор был…» для флага. */
 function flagIfSnippet(v) {
-  const nm = v.name;
+  const nm = varRef(v);
   if (v.type === 'choice' && v.values.length) {
     const L = [];
     v.values.forEach((val, i) => { L.push(`${i ? 'elif' : 'if'} ${nm} == ${pyStr(val)}:`, i === 0 ? '    "\u0001"' : '    "…"'); });
@@ -302,7 +306,7 @@ function flagIfSnippet(v) {
 }
 /** Заготовка меню, которое запоминает выбор и не ветвит сюжет. */
 function flagMenuSnippet(v) {
-  const nm = v.name, L = ['menu:', '    "\u0001"'];
+  const nm = varRef(v), L = ['menu:', '    "\u0001"'];
   if (v.type === 'choice' && v.values.length) v.values.forEach(val => L.push(`    ${pyStr(val)}:`, `        $ ${nm} = ${pyStr(val)}`));
   else if (v.type === 'number') L.push(`    ${pyStr(t('flag.menu.plus'))}:`, `        $ ${nm} += 1`, `    ${pyStr(t('flag.menu.skip'))}:`, '        pass');
   else L.push(`    ${pyStr(t('flag.yes'))}:`, `        $ ${nm} = True`, `    ${pyStr(t('flag.no'))}:`, `        $ ${nm} = False`);

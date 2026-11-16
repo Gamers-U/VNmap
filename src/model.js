@@ -9,9 +9,9 @@ const NODE_TYPES = ['chapter', 'fork', 'ending', 'note'];
 const TYPE_ICON = { chapter: 'book', fork: 'fork', ending: 'flag', note: 'note' };
 const TYPE_COLOR = { chapter: 'blue', fork: 'orange', ending: 'purple', note: 'yellow' };
 const ASSET_KINDS = ['bg', 'sprite', 'music', 'sfx', 'voice', 'fx'];
-const KIND_ICON = { bg: 'image', sprite: 'user', music: 'music', sfx: 'volume', voice: 'mic', fx: 'sparkles', font: 'type', tf: 'motion', gui: 'palette' };
+const KIND_ICON = { bg: 'image', sprite: 'user', music: 'music', sfx: 'volume', voice: 'mic', fx: 'sparkles', font: 'type', tf: 'motion', gui: 'palette', video: 'film' };
 const VAR_TYPES = ['raw', 'flag', 'choice', 'number'];
-const STORED_KINDS = [...ASSET_KINDS, 'font', 'tf', 'gui'];
+const STORED_KINDS = [...ASSET_KINDS, 'font', 'tf', 'gui', 'video'];
 const LS_P = 'vnmap.project.v1', LS_S = 'vnmap.settings.v1', LS_B = 'vnmap.lastBackup';
 const SIDES = ['t', 'r', 'b', 'l'];
 const HEX6 = /^#[0-9a-fA-F]{6}$/;
@@ -300,6 +300,7 @@ function normalize(p) {
     v.id = v.id || uid('v'); v.name = String(v.name || ''); v.value = String(v.value == null ? '0' : v.value); v.notes = v.notes || '';
     v.type = VAR_TYPES.includes(v.type) ? v.type : /^(True|False)$/.test(v.value.trim()) ? 'flag' : /^-?\d+(\.\d+)?$/.test(v.value.trim()) ? 'number' : 'raw';
     v.values = Array.isArray(v.values) ? [...new Set(v.values.map(x => String(x).trim()).filter(Boolean))].slice(0, 30) : [];
+    if (v.persist !== true) delete v.persist;   // «помнить между играми»: хранится в persistent, переживает новую игру
   }
   for (const n of p.nodes) {
     n.id = n.id || uid('n'); n.type = NODE_TYPES.includes(n.type) ? n.type : 'chapter';

@@ -117,6 +117,7 @@ const ICONS = {
   home: '<path d="M4 11l8-7 8 7v9H4z"/>',
   dot: '<circle cx="12" cy="12" r="4" fill="currentColor"/>',
   play: '<path d="M7 4.5v15l12-7.5z" fill="currentColor"/>',
+  film: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7.5 4v16M16.5 4v16M3 9h4.5M3 15h4.5M16.5 9H21M16.5 15H21"/>',
   stop: '<rect x="6.5" y="6.5" width="11" height="11" rx="2" fill="currentColor"/>',
   trophy: '<path d="M8 4h8v5a4 4 0 0 1-8 0V4z"/><path d="M8 6H4v1a3 3 0 0 0 4 3M16 6h4v1a3 3 0 0 1-4 3"/><path d="M12 13v4M8.5 20h7M10 17h4"/>',
   box: '<path d="M21 8l-9-5-9 5v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5M12 13v8"/>',

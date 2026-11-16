@@ -148,7 +148,7 @@ function anBranches() {
 
 /* ---------- значения переменных ---------- */
 const AN_RE_NUM = /^-?\d+(?:\.\d+)?$/;
-const anTracked = () => P.vars.filter(v => /^[A-Za-z_]\w*$/.test(v.name) && ['flag', 'number', 'choice'].includes(v.type));
+const anTracked = () => P.vars.filter(v => /^[A-Za-z_]\w*$/.test(v.name) && !v.persist && ['flag', 'number', 'choice'].includes(v.type));   // «помнить между играми» не отслеживаем: значение может прийти из прошлой игры
 const anBool = s => /^(true)$/i.test(String(s).trim());
 function anInit(v) {
   const val = String(v.value == null ? '' : v.value).trim();

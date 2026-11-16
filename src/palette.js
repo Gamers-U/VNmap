@@ -45,7 +45,7 @@ function palOpenLine(nid, fid, li, lead) {
     ta.scrollTop = Math.max(0, k - 3) * (parseFloat(getComputedStyle(ta).lineHeight) || 20);
   }, 130);
 }
-const REG_TAB_OF = { gui: 'gui', bg: 'bg', sprite: 'sprite', music: 'audio', sfx: 'audio', voice: 'audio', fx: 'fx', tf: 'tf', font: 'font' };
+const REG_TAB_OF = { gui: 'gui', bg: 'bg', sprite: 'sprite', music: 'audio', sfx: 'audio', voice: 'audio', fx: 'fx', tf: 'tf', font: 'font', video: 'video' };
 
 /* ---------- команды ---------- */
 function palCommands() {

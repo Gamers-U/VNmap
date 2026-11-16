@@ -7,6 +7,7 @@ const CMP_NOT_SPEAKER = new Set('label scene show hide play stop queue with menu
 const CMP_KNOWN_FX = new Set(['dissolve', 'fade', 'None', 'pixellate', 'move', 'moveinright', 'moveinleft', 'moveintop', 'moveinbottom', 'moveoutright', 'moveoutleft', 'ease', 'easeinright', 'easeinleft', 'hpunch', 'vpunch', 'wipeleft', 'wiperight', 'wipeup', 'wipedown', 'slideleft', 'slideright', 'slideup', 'slidedown', 'irisout', 'irisin', 'blinds', 'squares', 'zoomin', 'zoomout', 'zoominout', 'vpunch']);
 const RE_AUDIO = /^(\s*)(?:play|queue)\s+(?:music|sound|audio|voice)\s+(?:\[\s*)?(["'])([^"'\\]+)\2/;
 const RE_VOICE = /^(\s*)voice\s+(["'])([^"'\\]+)\2/;
+const RE_VIDEO = /^(\s*)(?:\$\s*)?renpy\.movie_cutscene\(\s*(["'])([^"'\\]+)\2/;     // видео-заставка: $ renpy.movie_cutscene("videos/intro.webm")
 const RE_SELF_LABEL = /^label\s+([A-Za-z_]\w*)\s*(?:\([^)]*\))?\s*:/;
 const RPY_STMT_START = new Set(['play', 'stop', 'queue', 'show', 'hide', 'scene', 'with', 'pause', 'voice', 'call', 'jump', 'return', 'window', 'nvl', 'centered']);
 
@@ -134,6 +135,7 @@ function compileProject(over, blobSet) {
     const ext = metaExt(m) || (isImageKind(a.kind) ? 'png' : 'ogg');
     let path;
     if (a.kind === 'font') { path = a.path ? cmpPath(a.path) : 'fonts/' + slug(a.name) + '.' + (metaExt(m) || 'ttf'); path = extOf(path) ? cmpStripExt(path) + '.' + (metaExt(m) || extOf(path)) : path + '.' + (metaExt(m) || 'ttf'); }
+    else if (a.kind === 'video') { const ve = metaExt(m) || 'webm'; path = a.path ? cmpPath(a.path) : 'videos/' + slug(a.name) + '.' + ve; path = extOf(path) ? cmpStripExt(path) + '.' + ve : path + '.' + ve; }
     else if (a.kind === 'gui') path = guiTarget(a);
     else if (a.kind === 'bg') path = (a.path ? cmpStripExt(cmpPath(a.path)) : 'images/bg/' + slug(a.name.replace(/^bg\s+/i, ''))) + '.' + ext;
     else if (a.kind === 'sprite') { const base = a.path ? cmpStripExt(cmpPath(a.path)) : 'images/sprites/' + slug(a.name); path = (key ? base + '_' + slug(key) : base) + '.' + ext; }
@@ -157,7 +159,7 @@ function compileProject(over, blobSet) {
       assetTarget.set(a.id + '|' + key, target);
       assetFiles.push({ a, key, m, target });
       const e = metaExt(m);
-      if (isImageKind(a.kind) ? !RENPY_IMG.has(e) : isFontKind(a.kind) ? !RENPY_FONT.has(e) : !RENPY_AUD.has(e)) add('warn', t('cmp.file.fmt', a.name, e || '?'));
+      if (isImageKind(a.kind) ? !RENPY_IMG.has(e) : isFontKind(a.kind) ? !RENPY_FONT.has(e) : isVideoKind(a.kind) ? !RENPY_VID.has(e) : !RENPY_AUD.has(e)) add('warn', t('cmp.file.fmt', a.name, e || '?'));
       R.bin.push({ path: 'game/' + target, bid: m.bid, size: m.size });
     }
   }
@@ -175,6 +177,8 @@ function compileProject(over, blobSet) {
     return ref;
   };
   const normRef = r => cmpPath(r).toLowerCase();
+  const vidStem = s => cmpStripExt(cmpPath(s)).toLowerCase();
+  const findVideo = ref => P.assets.find(a => a.kind === 'video' && (a.name.toLowerCase() === ref.toLowerCase() || vidStem(a.path || 'videos/' + slug(a.name)) === vidStem(ref)));
   const findAudio = ref => P.assets.find(a => AUDIO_KINDS.includes(a.kind) && (a.name.toLowerCase() === ref.toLowerCase() || (a.path && normRef(a.path) === normRef(ref))));
 
   /* ---------- известные имена (для проверки реплик) ---------- */
@@ -194,7 +198,7 @@ function compileProject(over, blobSet) {
     const nm = (v.name || '').trim();
     if (!/^[A-Za-z_]\w*$/.test(nm)) { add('warn', t('cmp.var.bad', nm || '?')); continue; }
     if (RESERVED_TAGS.has(nm) || charTags.has(nm) || vars.some(x => x.name === nm)) { add('warn', t('cmp.var.conflict', nm)); continue; }
-    vars.push({ name: nm, value: (v.value || '').trim() || (v.type && v.type !== 'raw' ? defaultFor(v.type) : '0') }); known.add(nm);
+    vars.push({ name: nm, value: (v.value || '').trim() || (v.type && v.type !== 'raw' ? defaultFor(v.type) : '0'), persist: !!v.persist }); known.add(nm);
   }
   /* выборы с последствиями: недостающие default и проверки связей «где задаётся — где проверяется» */
   for (const d of flagCompileChecks(add, vars, charTags)) { vars.push(d); known.add(d.name); }
@@ -210,7 +214,7 @@ function compileProject(over, blobSet) {
   const usedFx = new Map();        // 'fx|dissolve' / 'tf|left' → где встретилось
   const usedImgs = new Map();      // имя изображения → [ref]
   const usedNoFile = new Map();    // ассет без файла → Set(ref)
-  const unknownSpk = new Map(), unknownAud = new Map();
+  const unknownSpk = new Map(), unknownAud = new Map(), unknownVid = new Map(), noFileVid = new Map();
   const jumps = [];
   let words = 0, emptyFiles = [];
   for (const I of info.values()) for (const F of I.files) {
@@ -234,6 +238,15 @@ function compileProject(over, blobSet) {
           if (!usedNoFile.has(a)) usedNoFile.set(a, new Set()); usedNoFile.get(a).add(F.f);
           if (opt.skipMissingAudio) line = m[1] + 'pass  # ' + t('cmp.nofile') + ': ' + line.trim();
         } else { const tg = assetTarget.get(a.id + '|'); if (tg !== lit) line = line.replace(lit, tg); }
+      }
+      const mv = RE_VIDEO.exec(line);
+      if (mv) {
+        const lit = mv[3], va = findVideo(lit);
+        if (!va) { if (!unknownVid.has(lit)) unknownVid.set(lit, ref); }
+        else if (!audioHasFile(va)) {
+          if (!noFileVid.has(va)) noFileVid.set(va, new Set()); noFileVid.get(va).add(F.f);
+          if (opt.skipMissingAudio) line = mv[1] + 'pass  # ' + t('cmp.nofile') + ': ' + line.trim();
+        } else { const tg = assetTarget.get(va.id + '|'); if (tg !== lit) line = line.replace(lit, tg); }
       }
       if (line.indexOf('{font=') >= 0) line = line.replace(/\{font=([^{}]+)\}/g, (all, ref) => '{font=' + fontPathFor(ref.trim(), ref) + '}');
       out.push(line);
@@ -263,6 +276,8 @@ function compileProject(over, blobSet) {
   for (const [lit, ref] of unknownAud) {
     add('warn', t('cmp.audio.unknown', lit), ref, { label: t('cmp.fix.addasset'), run: () => { const a = createAsset(/sfx|sound|snd/i.test(lit) ? 'sfx' : 'music', lit); a.path = lit; commit(true); } });
   }
+  for (const [lit, ref] of unknownVid) add('info', t('cmp.video.unknown', lit), ref);
+  for (const [a, set] of noFileVid) add('warn', t('cmp.video.nofile', a.name, set.size, opt.skipMissingAudio ? ' · ' + t('cmp.audio.skipped') : ''), null);
   for (const c of chars) if (c.font) fontPathFor(c.font, c.font);
   for (const d of GUI_KEYS) if (d.t === 'font' && P.gui && P.gui[d.k]) fontPathFor(P.gui[d.k], P.gui[d.k]);
   for (const a of fontNoFile) add('warn', t('cmp.font.nofile', a.name));
@@ -487,7 +502,7 @@ function compileProject(over, blobSet) {
   // variables.rpy
   if (vars.length) {
     const V = hdr(t('cmp.f.vars'));
-    for (const v of vars) V.push(`default ${v.name} = ${v.value}` + (v.auto ? '  # ' + t('flag.auto.c') : ''));
+    for (const v of vars) V.push(`default ${v.persist ? 'persistent.' : ''}${v.name} = ${v.value}` + (v.auto ? '  # ' + t('flag.auto.c') : ''));
     R.files.push({ path: 'game/variables.rpy', text: V.join('\n') + '\n' });
   }
 

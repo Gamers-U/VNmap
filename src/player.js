@@ -222,7 +222,7 @@ function plShow(st, ev, silent) {
   plSync(st, ev);
   plWhere(st, ev.label);
   for (const n of ev.notices || []) {
-    if (n.type === 'ending') { lgEnding(st, n.key, n.text); plNote(st, t('pl.ending.got', n.text)); } else if (n.type === 'ach') plNote(st, t('pl.ach.got', n.text)); else if (n.type === 'notify') plNote(st, n.text);
+    if (n.type === 'ending') { lgEnding(st, n.key, n.text); plNote(st, t('pl.ending.got', n.text)); } else if (n.type === 'ach') plNote(st, t('pl.ach.got', n.text)); else if (n.type === 'notify') plNote(st, n.text); else if (n.type === 'movie') plNote(st, t('pl.movie', n.text));
   }
   st.box.hidden = true; st.menuEl.hidden = true; st.centerEl.hidden = true; st.endEl.hidden = true;
   st.menuEl.replaceChildren(); st.stage.classList.remove('over');

@@ -3,7 +3,7 @@
 let REG = null;
 const REG_TABS = [
   { id: 'chars', icon: 'users' }, { id: 'team', icon: 'badge' }, { id: 'bg', icon: 'image' }, { id: 'sprite', icon: 'user' },
-  { id: 'audio', icon: 'music' }, { id: 'fx', icon: 'sparkles' }, { id: 'tf', icon: 'motion' }, { id: 'font', icon: 'type' }, { id: 'gui', icon: 'palette' }, { id: 'ach', icon: 'trophy' }, { id: 'vars', icon: 'code' }, { id: 'files', icon: 'file' }
+  { id: 'audio', icon: 'music' }, { id: 'fx', icon: 'sparkles' }, { id: 'tf', icon: 'motion' }, { id: 'font', icon: 'type' }, { id: 'video', icon: 'film' }, { id: 'gui', icon: 'palette' }, { id: 'ach', icon: 'trophy' }, { id: 'vars', icon: 'code' }, { id: 'files', icon: 'file' }
 ];
 const AUDIO_KINDS = ['music', 'sfx', 'voice'];
 
@@ -49,6 +49,8 @@ function usageMap() {
     richTokens(file.script).forEach(tk => { if (tk.k === 'tag' && tk.name === 'font' && !tk.close) { const a = fontAssetByRef(tk.arg); if (a) bump(a.id, file.id); } });
   }
   for (const c of P.characters) if (c.font) { const a = fontAssetByRef(c.font); if (a) bump(a.id, 'char:' + c.id); }
+  const vids = P.assets.filter(a => a.kind === 'video').map(a => ({ a, stem: String(a.path || 'videos/' + slug(a.name)).replace(/\.[A-Za-z0-9]+$/, '').toLowerCase() })).filter(x => x.stem);
+  if (vids.length) for (const { file } of allFiles()) { const src = String(file.script || '').toLowerCase(); if (src.includes('movie_cutscene')) for (const v of vids) if (src.includes(v.stem)) bump(v.a.id, file.id); }   // видео: по пути в movie_cutscene
   return map;
 }
 function regView(st) {
@@ -71,7 +73,7 @@ function regView(st) {
   };
   q.addEventListener('input', () => { st.q = q.value; fill(); });
   const addBtn = st.tab === 'files' || st.tab === 'gui' ? null : h('button', { class: 'btn primary', onclick: ev => (st.tab === 'fx' || st.tab === 'tf' ? fxAddMenu(ev.currentTarget, st.tab) : regAdd(st)) }, icon('plus', 16), t('reg.add'), (st.tab === 'fx' || st.tab === 'tf') ? icon('chevD', 14) : null);
-  const upBtn = ['bg', 'sprite', 'audio', 'font'].includes(st.tab) ? h('button', { class: 'btn', 'data-tip': t('reg.upload.tip'), onclick: () => pickFiles(acceptFor(st.tab === 'audio' ? 'music' : st.tab), true, async fl => { await bulkUpload(st.tab, fl); renderReg(); }) }, icon('upload', 16), t('reg.upload')) : null;
+  const upBtn = ['bg', 'sprite', 'audio', 'font', 'video'].includes(st.tab) ? h('button', { class: 'btn', 'data-tip': t('reg.upload.tip'), onclick: () => pickFiles(acceptFor(st.tab === 'audio' ? 'music' : st.tab), true, async fl => { await bulkUpload(st.tab, fl); renderReg(); }) }, icon('upload', 16), t('reg.upload')) : null;
   root.append(h('div', { class: 'reg-top' }, h('div', { class: 'reg-h' }, t('reg.tab.' + st.tab), h('span', { class: 'hint' }, t('reg.hint.' + st.tab))), h('div', { class: 'grow' }), q, upBtn, addBtn), list);
   fill();
   return root;
@@ -159,9 +161,9 @@ function regAssets(st, list, qq) {
   items.forEach(a => {
     const cnt = use.get(a.id) ? use.get(a.id).size : 0;
     const body = [];
-    const nameLabel = a.kind === 'bg' ? t('as.f.name.bg') : a.kind === 'sprite' ? t('as.f.name.sprite') : a.kind === 'fx' ? t('as.f.name.fx') : a.kind === 'font' ? t('as.f.name.font') : t('as.f.name.audio');
-    const row1 = [field(nameLabel, bindInput(a, 'name', { mono: a.kind !== 'music' && a.kind !== 'sfx' && a.kind !== 'voice' && a.kind !== 'font', onChange: () => { commit(); if (a.kind === 'font') renderReg(); } }))];
-    if (a.kind !== 'fx') row1.push(field(t('as.f.path'), bindInput(a, 'path', { mono: true, ph: a.kind === 'sprite' ? 'images/alice' : a.kind === 'font' ? fontRef(Object.assign({}, a, { path: '' })) : '', onChange: () => commit() }), a.kind === 'font' ? t('as.f.path.font') : undefined));
+    const nameLabel = a.kind === 'bg' ? t('as.f.name.bg') : a.kind === 'sprite' ? t('as.f.name.sprite') : a.kind === 'fx' ? t('as.f.name.fx') : a.kind === 'font' ? t('as.f.name.font') : a.kind === 'video' ? t('as.f.name.video') : t('as.f.name.audio');
+    const row1 = [field(nameLabel, bindInput(a, 'name', { mono: a.kind !== 'music' && a.kind !== 'sfx' && a.kind !== 'voice' && a.kind !== 'font' && a.kind !== 'video', onChange: () => { commit(); if (a.kind === 'font') renderReg(); } }))];
+    if (a.kind !== 'fx') row1.push(field(t('as.f.path'), bindInput(a, 'path', { mono: true, ph: a.kind === 'sprite' ? 'images/alice' : a.kind === 'font' ? fontRef(Object.assign({}, a, { path: '' })) : a.kind === 'video' ? 'videos/' + (slug(a.name) || 'video') + '.webm' : '', onChange: () => commit() }), a.kind === 'font' ? t('as.f.path.font') : a.kind === 'video' ? t('as.f.path.video') : undefined));
     if (st.tab === 'audio') row1.unshift(field(t('as.f.kind'), segmented(AUDIO_KINDS.map(k => ({ value: k, label: t('kind1.' + k) })), a.kind, v => { a.kind = v; commit(true); renderReg(); })));
     body.push(h('div', { class: st.tab === 'audio' ? 'grid3' : 'grid2' }, row1));
     if (a.kind === 'sprite') body.push(field(t('as.f.expr'), exprEditor(a)));
@@ -259,13 +261,14 @@ function assetFilesUI(a) {
   return box;
 }
 function uploadRow(a, key) {
-  const m = assetMeta(a, key), img = isImageKind(a.kind), fnt = isFontKind(a.kind);
+  const m = assetMeta(a, key), img = isImageKind(a.kind), fnt = isFontKind(a.kind), vid = isVideoKind(a.kind);
   const label = a.kind === 'sprite' ? (key || t('as.f.noexpr')) : '';
   const row = h('div', { class: 'upl-row' + (m ? ' has' : '') });
   const thumb = h('div', { class: 'upl-thumb' + (img ? '' : ' aud') });
   const markLostLater = () => { };
   if (m && img) { const im = h('img', { alt: '' }); thumb.append(im); blobUrl(m.bid).then(u => { if (u) im.src = u; else markLost(); }); }
-  else thumb.append(fnt ? icon('type', 18) : icon(img ? 'image' : 'music', 18));
+  else if (m && vid) { const vv = h('video', { muted: true, preload: 'metadata', playsinline: true }); thumb.append(vv); blobUrl(m.bid).then(u => { if (u) { vv.src = u + '#t=0.5'; } else markLost(); }); }
+  else thumb.append(fnt ? icon('type', 18) : icon(vid ? 'film' : img ? 'image' : 'music', 18));
   const info = h('div', { class: 'upl-info' });
   /* файла нет в хранилище этого устройства: заглушка вместо превью; указанный вручную файл того же размера встаёт на своё место */
   let missing = false;
@@ -278,13 +281,14 @@ function uploadRow(a, key) {
   if (m) {
     info.append(h('div', { class: 'upl-n' }, label ? h('b', label) : null, m.name), h('div', { class: 'upl-s' }, humanSize(m.size) + (m.type ? ' · ' + m.type : '') + warnExt(a, m)));
     if (!img) blobUrl(m.bid).then(u => { if (!u) markLost(); });
-  } else info.append(h('div', { class: 'upl-n' }, label ? h('b', label) : null, h('span', { class: 'muted' }, t('as.f.nofile'))), h('div', { class: 'upl-s' }, img ? t('as.f.placeholder') : t('as.f.noaudio')));
+  } else info.append(h('div', { class: 'upl-n' }, label ? h('b', label) : null, h('span', { class: 'muted' }, t('as.f.nofile'))), h('div', { class: 'upl-s' }, img ? t('as.f.placeholder') : vid ? t('as.f.novideo') : t('as.f.noaudio')));
   const doUpload = async file => {
     if (missing) { const r = await mfRestoreOne({ bid: m.bid, m }, file); toast(t(r === 'same' ? 'mf.row.done' : 'mf.row.repl', m.name), 3600); renderReg(); return; }
     if (await attachFile(a, key, file)) renderReg();
   };
   const btns = h('div', { class: 'upl-btns' });
-  if (m && !img && !fnt) {
+  if (m && vid) btns.append(h('button', { class: 'btn icon sm', 'data-tip': t('as.f.vplay'), onclick: async () => { const u = await blobUrl(m.bid); if (u) videoPreview(a, u); } }, icon('play', 15)));
+  if (m && !img && !fnt && !vid) {
     const pb = h('button', { class: 'btn icon sm', 'data-tip': t('as.f.play') }, icon('play', 15));
     pb.addEventListener('click', async () => {
       if (PREVIEW_AUDIO && PREVIEW_AUDIO.key === m.bid) { stopPreview(); return; }
@@ -307,10 +311,18 @@ function uploadRow(a, key) {
   row.addEventListener('drop', e => { e.preventDefault(); e.stopPropagation(); row.classList.remove('drop'); const f = e.dataTransfer.files && e.dataTransfer.files[0]; if (f) doUpload(f); });
   return row;
 }
+/** Окно с просмотром загруженного видео. */
+function videoPreview(a, url) {
+  openModal({
+    cls: 'vp-modal',
+    build: m => h('div', { class: 'm-wrap' }, modalHead(a.name || t('kind1.video'), m), h('div', { class: 'vp-body' }, h('video', { class: 'vp-video', src: url, controls: true, autoplay: true, playsinline: true }))),
+  });
+}
 function warnExt(a, m) {
   const e = metaExt(m);
   if (isImageKind(a.kind)) return RENPY_IMG.has(e) ? '' : ' · ' + t('as.f.badfmt', e || '?');
   if (isFontKind(a.kind)) return RENPY_FONT.has(e) ? '' : ' · ' + t('as.f.badfmt', e || '?');
+  if (isVideoKind(a.kind)) return RENPY_VID.has(e) ? '' : ' · ' + t('as.f.badfmt', e || '?');
   return RENPY_AUD.has(e) ? '' : ' · ' + t('as.f.badfmt', e || '?');
 }
 
@@ -382,6 +394,7 @@ function regVars(st, list, qq) {
         field(t('flag.type'), typeSeg),
         field(t('var.value'), initBox)),
       typeHint, valsBox,
+      h('div', { class: 'field' }, switchEl(!!v.persist, val => { if (val) v.persist = true; else delete v.persist; commit(true); renderReg(); }, t('var.persist')), h('div', { class: 'hint' }, t('var.persist.h'))),
       field(t('as.f.notes'), bindInput(v, 'notes', { ph: t('flag.notes.ph'), onChange: () => commit() })),
       usage
     ], {

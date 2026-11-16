@@ -434,6 +434,7 @@ function tabScript(st, n, f, goTab) {
       { label: t('q.setflag'), icon: 'flag', onClick: () => setTimeout(() => pickFlag(b, v => ins(flagMenuSnippet(v))), 30) },
       { sep: true },
       { label: t('q.voice'), icon: 'mic', onClick: () => setTimeout(() => pickAsset(b, 'voice', a => ins(`voice "${assetCodeName(a)}"`)), 30) },
+      { label: t('q.video'), icon: 'film', onClick: () => setTimeout(() => pickAsset(b, 'video', a => ins(`$ renpy.movie_cutscene("${assetCodeName(a)}")`)), 30) },
       { label: t('q.stopmusic'), icon: 'music', onClick: () => ins('stop music fadeout 1.0') },
       { label: t('q.label'), icon: 'flag', onClick: () => ins(`label ${fileLabel(f)}:`) },
       { label: t('q.call'), icon: 'link', onClick: () => setTimeout(() => pickFile(b, fl => ins(`call ${fileLabel(fl)}`)), 30) },

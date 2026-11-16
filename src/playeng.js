@@ -724,6 +724,7 @@ class PlGame {
         random: { randint: (a, b) => a + Math.floor(Math.random() * (b - a + 1)), random: () => Math.random(), choice: l => l[Math.floor(Math.random() * l.length)] },
         notify: m => { G.notices.push({ type: 'notify', text: plStr(m) }); return null; },
         pause: () => null, quit: () => { G.quit = true; return null; },
+        movie_cutscene: p => { G.notices.push({ type: 'movie', text: plStr(p) }); return null; },
         has_label: l => G.prog.labels.has(l), restart_interaction: () => null, block_rollback: () => null,
         music: { play: () => null, stop: () => null }, sound: { play: () => null, stop: () => null },
       },
@@ -757,10 +758,16 @@ class PlGame {
     for (const s of this.prog.inits) {
       try {
         const v = plEval(s.ast, this);
-        if (s.once && Object.prototype.hasOwnProperty.call(this.vars, s.name)) continue;
+        if (s.once && this.has(s.name)) continue;
         plAssign(this.lhs(s.name), v, this);
       } catch (e) { this.warn('значение «' + s.name + '» не вычислено: ' + (e.message || e)); }
     }
+  }
+  /** Уже задано ли значение (для default): обычное имя или поле вроде persistent.x. */
+  has(name) {
+    const p = name.split('.');
+    if (p.length === 1) return Object.prototype.hasOwnProperty.call(this.vars, name);
+    try { const o = plEval(this.lhs(p.slice(0, -1).join('.')), this); return !!o && typeof o === 'object' && Object.prototype.hasOwnProperty.call(o, p[p.length - 1]); } catch (e) { return false; }
   }
   lhs(name) { const p = name.split('.'); let t = { k: 'name', n: p[0] }; for (const x of p.slice(1)) t = { k: 'attr', o: t, n: x }; return t; }
   begin(label) {
