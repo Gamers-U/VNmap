@@ -373,7 +373,7 @@ const D = {
   'search.in.summary': ['сводка', 'summary'], 'search.in.notes': ['заметки', 'notes'], 'search.in.script': ['скрипт', 'script'], 'search.in.cast': ['участвует: {0}', 'features {0}'],
 
   /* статистика */
-  'stats.title': ['Статистика и концовки', 'Statistics and endings'], 'stats.blocks': ['блоков', 'blocks'], 'stats.files': ['файлов', 'files'], 'stats.words': ['слов в скриптах', 'script words'], 'stats.progress': ['готовность', 'progress'],
+  'stats.title': ['Статистика и концовки', 'Statistics and endings'], 'stats.blocks': ['блоков', 'blocks'], 'stats.files': ['файлов', 'files'], 'stats.words': ['слов для игрока', 'words for the player'], 'stats.progress': ['готовность', 'progress'],
   'stats.endings': ['Тест открытия концовок', 'Ending unlock test'], 'stats.endings.hint': ['Отмечайте концовки, как будто игрок их прошёл. Замки на карте покажут, какие закрытые концовки откроются.', 'Tick endings as if the player reached them. Locks on the map show which locked endings open.'],
   'stats.endings.none': ['Концовок пока нет. Создайте блок типа «Концовка».', 'No endings yet. Create a block of the Ending type.'], 'stats.reset': ['Сбросить', 'Reset'],
   'stats.unlock': ['{0} из {1} (всего {2})', '{0} of {1} (of {2})'], 'stats.byblock': ['Готовность по блокам', 'Progress by block'],

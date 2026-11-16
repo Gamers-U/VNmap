@@ -28,7 +28,7 @@ function openStats() {
         const bar = h('div', { class: 'stack-bar big' });
         STATUSES.forEach(s => { if (st.by[s]) bar.append(h('span', { style: { width: (st.by[s] / st.files * 100) + '%', background: palColor(STATUS_COLOR[s]) }, 'data-tip': t('status.' + s) + ': ' + st.by[s] })); });
         body.append(
-          h('div', { class: 'tiles' }, tile(st.nodes, t('stats.blocks')), tile(st.files, t('stats.files')), tile(st.words.toLocaleString(S.lang === 'ru' ? 'ru-RU' : 'en-US'), t('stats.words')), tile(Math.round(st.pct * 100) + '%', t('stats.progress'))),
+          h('div', { class: 'mx-line' }, h('span', { class: 'hint' }, mxLine()), h('button', { class: 'btn sm', 'data-tip': t('sh.tip'), onclick: () => { m.close(); setTimeout(openStatsHub, 0); } }, t('mx.more'))),
           st.files ? bar : null,
           st.files ? h('div', { class: 'prog-legend' }, STATUSES.map(s => h('span', { class: 'lg' }, h('span', { class: 'sdot', style: { background: palColor(STATUS_COLOR[s]) } }), t('status.' + s) + ': ' + st.by[s]))) : null);
         // концовки
@@ -222,7 +222,7 @@ function openHelp(focus) {
     cls: 'help-m', build: m => {
       paint();
       setTimeout(() => { if (window.matchMedia && matchMedia('(pointer:fine)').matches) search.focus(); }, 60);
-      return h('div', { class: 'm-wrap' }, modalHead(t('help.title'), m, h('div', { class: 'help-sw' }, icon('search', 15), search, cnt)), h('div', { class: 'help-body' }, nav, view));
+      return h('div', { class: 'm-wrap' }, modalHead(t('help.title'), m, h('div', { class: 'help-sw' }, icon('search', 15), search, cnt, h('button', { class: 'btn sm', id: 'help-tour', 'data-tip': t('tour.btn.tip'), onclick: () => { m.close(); setTimeout(() => openTour(), 0); } }, icon('sparkles', 15), t('tour.btn')))), h('div', { class: 'help-body' }, nav, view));
     }
   });
 }

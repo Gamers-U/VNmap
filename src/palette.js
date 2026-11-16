@@ -50,8 +50,8 @@ const REG_TAB_OF = { gui: 'gui', bg: 'bg', sprite: 'sprite', music: 'audio', sfx
 /* ---------- команды ---------- */
 function palCommands() {
   const L = [], anchor = () => document.querySelector('.tools-btn');
-  const add = (title, ic, run, kw, kbd) => L.push({ title, ic, run, kw: (kw || '') + ' ' + title, kbd });
-  for (const x of TOOL_ITEMS) if (uiShow(x.id)) add(t(x.key), x.ic, () => x.run(anchor()), x.kw || '', x.kbd);
+  const add = (title, ic, run, kw, kbd, id) => { const c = { title, ic, run, kw: (kw || '') + ' ' + title, kbd, id }; c.kw += ' ' + palIntentKw(c); L.push(c); };
+  for (const x of TOOL_ITEMS) if (uiShow(x.id)) add(t(x.key), x.ic, () => x.run(anchor()), x.kw || '', x.kbd, x.id);
   for (const tp of NODE_TYPES) add(t('pal.add', t('type.' + tp)), TYPE_ICON[tp], () => addNodeAtCenter(tp), 'add new block создать добавить блок ' + t('type.' + tp));
   add(t('c.fit'), 'fit', () => fitAll(), 'fit zoom map показать всю карту масштаб', 'F');
   for (const tb of REG_TABS) add(t('pal.reg', t('reg.tab.' + tb.id)), tb.icon, () => openRegistry(tb.id), 'registry реестр ' + tb.id);
@@ -67,6 +67,7 @@ function palCommands() {
   if (DESK) add(t('drive.menu'), 'cloud', () => openDrivePanel(), 'drive google диск облако');
   add(t('ui.settings'), 'sliders', () => openSettingsWindow(), 'settings preferences mode simple professional настройки режим простой профессиональный подключения модули');
   add(t('top.help'), 'help', () => openHelp(), 'help справка помощь', '?');
+  add(t('tour.btn'), 'sparkles', () => openTour(), 'tutorial tour lessons learn обучение туториал уроки тур', undefined, 'tour');
   add(t('top.theme'), S.theme === 'dark' ? 'sun' : 'moon', () => toggleTheme(), 'theme dark light тема тёмная светлая');
   add(t('pal.lang'), 'globe', () => setLang(S.lang === 'ru' ? 'en' : 'ru'), 'language язык english русский');
   add(t('pal.layer.echo'), 'flag', () => { if (BTN.echo) BTN.echo.click(); }, 'echo flags эхо флаги слой');
@@ -106,6 +107,15 @@ function palSearch(raw) {
       if (!toks.length) { res.push({ kind: 'cmd', score: 2, ic: 'zap', title: c.title, kbd: c.kbd, run: c.run }); continue; }
       const tt = c.title.toLowerCase();
       if (palHas(tt + ' ' + c.kw, toks)) res.push({ kind: 'cmd', score: tt.startsWith(toks[0]) ? 0 : 1, ic: c.ic, title: c.title, kbd: c.kbd, run: c.run });
+    }
+    /* поиск по намерениям: «хочу выгрузить игру в ренпай». Строгие совпадения выше, нестрогие после них */
+    if (toks.length) {
+      const sig = palSig(toks), have = new Set(res.filter(r => r.kind === 'cmd').map(r => r.title)), need = Math.max(1, Math.ceil(sig.length * 0.6));
+      for (const c of (sig.length === 1 && have.size ? [] : cmds)) {      // одно слово: нестрого ищем, только если строго ничего не нашлось
+        if (have.has(c.title)) continue;
+        const n = palMatchCount(sig, c.title + ' ' + c.kw);
+        if (n >= need) res.push({ kind: 'cmd', fuzzy: true, score: 1 + (sig.length - n) * 0.1, ic: c.ic, title: c.title, kbd: c.kbd, run: c.run });
+      }
     }
   }
   if (!toks.length && !only) return { items: res, q, toks, only };
@@ -220,7 +230,7 @@ function openSearch(initial) {
         const kind = r.only || st.kind;
         let items = kind === 'all' ? st.all : st.all.filter(it => PAL_GROUP[it.kind] === kind);
         if (!r.toks.length && kind === 'all') items = items.filter(it => it.kind === 'cmd').slice(0, 16);
-        else if (kind === 'all') items = items.filter(it => it.kind !== 'cmd' || it.score <= 1).slice(0, 60);
+        else if (kind === 'all') items = items.filter(it => it.kind !== 'cmd' || it.score <= 1 || it.fuzzy).slice(0, 60);
         else items = items.slice(0, 60);
         st.items = items; st.sel = 0; renderChips(); render();
         if (!r.toks.length) applyHits(null);

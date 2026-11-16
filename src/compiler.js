@@ -82,9 +82,11 @@ function compileProject(over, blobSet) {
   for (const n of order) for (const f of n.files) {
     const raw = String(f.script || '').replace(/\r\n?/g, '\n').replace(/\t/g, '    ');
     let lines = raw.split('\n').map(l => l.replace(/\s+$/, ''));
-    while (lines.length && !lines[0].trim()) lines.shift();
+    let lead = 0;
+    while (lines.length && !lines[0].trim()) { lines.shift(); lead++; }
     while (lines.length && !lines[lines.length - 1].trim()) lines.pop();
     scriptLines.set(f.id, lines);
+    if (lines.length && typeof mlReport === 'function') mlReport(add, n, f, lines, lead);      // мини-Lint: типичные ошибки скрипта
     lines.forEach(l => { const m = /^label\s+([A-Za-z_]\w*)/.exec(l); if (m) { if (declared.has(m[1])) add('warn', t('cmp.label.dup', m[1]), { node: n, file: f }); else declared.set(m[1], { node: n, file: f }); } });
   }
   for (const l of declared.keys()) taken.add(l);

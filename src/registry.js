@@ -240,7 +240,7 @@ function regFiles(st, list, qq) {
       h('span', { class: 'fcell' }, h('span', { class: 'sdot', style: { background: palColor(STATUS_COLOR[file.status]) } }), h('b', file.title || t('file.untitled')), h('span', { class: 'pi-s' }, fileName(file))),
       h('span', { class: 'fcell' }, h('span', { class: 'dot', style: { background: palColor(node.color) } }), node.title),
       h('span', { class: 'mono' + (dup ? ' warn-t' : '') }, fileLabel(file), dup ? ' ⚠' : ''),
-      stSel, h('span', { class: 'r' }, String(wordCount(file.script))),
+      stSel, h('span', { class: 'r' }, String(fileWords(file))),
       h('span', { class: 'fcell r' },
         h('button', { class: 'btn icon sm', 'data-tip': t('nm.show'), onclick: () => { REG.m.close(); focusNode(node.id); } }, icon('target', 15)),
         h('button', { class: 'btn icon sm', 'data-tip': t('tb.open'), onclick: () => { REG.m.close(); openNodeModal(node.id, file.id); } }, icon('open', 15)))));

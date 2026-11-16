@@ -43,8 +43,16 @@ function openStatsHub() {
         h('div', { class: 'tiles' }, tile(st.nodes, t('stats.blocks')), tile(st.files, t('stats.files')), tile(num(st.words), t('stats.words')), tile(Math.round(st.pct * 100) + '%', t('stats.progress')),
           ends.length ? tile(got + '/' + ends.length, t('sh.ends')) : null),
         t('sh.proj.btn'), () => openStats()));
+      {
+        const pc = body.querySelector('.sh-card[data-sh="proj"]'), en = mxEndings();
+        if (pc) {
+          const tl = pc.querySelector('.tiles');
+          if (tl) tl.after(h('div', { class: 'hint sh-note' }, t('mx.note')));
+          if (en.total && en.reachable < en.total) pc.querySelector('.nt-btns').before(h('div', { class: 'hint sh-num warn' }, t('mx.ends.un', en.total - en.reachable, en.total)));
+        }
+      }
       if (typeof uiShow !== 'function' || uiShow('branchstats')) body.append(card('time', 'zap', t('sh.time'), t('sh.time.p'),
-        st.words ? h('div', { class: 'hint sh-num' }, t('sh.time.read', dur(st.words / rdWpm()), rdWpm())) : null, null, () => openBranchStats()));
+        st.words ? h('div', { class: 'hint sh-num' }, t('sh.time.read', mxRead(st.words).text, rdWpm())) : null, null, () => openBranchStats()));
       if (typeof uiShow !== 'function' || uiShow('autorun')) body.append(card('auto', 'play', t('sh.auto'), t('sh.auto.p'), null, null, () => openAutorun()));
       if (typeof uiShow !== 'function' || uiShow('testlog')) {
         let n = 0; try { n = lgLoad().length; } catch (e) { n = 0; }

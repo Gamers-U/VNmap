@@ -63,7 +63,7 @@ const UI_STRIP = [
   { id: 'map', ic: 'fit', items: ['layout', 'mappdf', 'notes'] },
   { id: 'text', ic: 'type', items: ['texted', 'docimport', 'digest', 'replicas', 'rename', 'charpage', 'resources', 'rpyimport'] },
   { id: 'check', ic: 'check', items: ['checks', 'missingfiles', 'varstates', 'stats'] },
-  { id: 'play', ic: 'play', items: ['player', 'htmlgame', 'renpy'] },
+  { id: 'play', ic: 'play', items: ['player', 'htmlgame', 'renpy', 'ctrlcheck'] },
   { id: 'team', ic: 'users', items: ['tasks', 'notify', 'review'] },
 ];
 /** Правая часть панели по режимам: что есть по умолчанию (порядок слева направо). Модульные кнопки появляются, пока модуль не выключен. */
@@ -139,6 +139,7 @@ function uiMoreMenu(anchor) {
     uiShow('bar.translate') ? { label: t('tl.btn'), icon: 'globe', onClick: () => openTranslate() } : null,
     uiShow('bar.collab') && typeof collabAvail === 'function' && collabAvail() ? { label: t('col.btn'), icon: 'users', onClick: () => openCollabPanel() } : null,
     { label: t('exp.map'), icon: 'rows', onClick: exportMap },
+    { label: t('tour.btn'), icon: 'sparkles', onClick: () => setTimeout(() => openTour(), 0) },
     { label: t('tb.echo'), icon: S.echo ? 'check' : null, onClick: () => { S.echo = !S.echo; saveSettings(); renderEchoes(); } },
     { label: t('tb.jumps'), icon: S.jumps ? 'check' : null, onClick: () => { S.jumps = !S.jumps; saveSettings(); renderJumps(); } },
   ]);
@@ -159,7 +160,7 @@ function uiFirstNotice() {
   const c = uiCfg();
   if (c.seen) return;
   c.seen = true; saveSettings();
-  setTimeout(() => toast(t('ui.mode.first'), 9000), 1500);
+  setTimeout(() => { if (typeof uiPresetCard === 'function') uiPresetCard(); else toast(t('ui.mode.first'), 9000); }, 1500);
 }
 
 /* ---------- окно «Настройки» ---------- */
@@ -191,6 +192,7 @@ function openSettingsWindow(tab) {
 const setCard = (title, ...kids) => h('div', { class: 'nt-card' }, h('div', { class: 'nt-ch' }, title), ...kids);
 function setView(st, render) {
   const c = uiCfg(), box = h('div', { class: 'nt-list' });
+  if (typeof uiPresetBlock === 'function') box.append(uiPresetBlock(render));
   box.append(setCard(t('ui.mode'),
     segmented([{ value: 'simple', label: t('ui.mode.simple') }, { value: 'pro', label: t('ui.mode.pro') }], c.mode, v => { uiSetMode(v); render(); }),
     h('div', { class: 'hint' }, t(c.mode === 'pro' ? 'ui.mode.pro.h' : 'ui.mode.simple.h')),

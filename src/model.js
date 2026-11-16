@@ -217,8 +217,8 @@ function unlockState(n) {
 function projectStats() {
   const files = allFiles();
   const by = { idea: 0, draft: 0, written: 0, done: 0 };
-  let words = 0;
-  for (const { file } of files) { by[file.status] = (by[file.status] || 0) + 1; words += wordCount(file.script); }
+  for (const { file } of files) by[file.status] = (by[file.status] || 0) + 1;
+  const words = mxWords();                                              // слова для игрока: единый расчёт в metrics.js
   const total = files.length;
   const pct = total ? files.reduce((a, { file }) => a + (STATUS_W[file.status] || 0), 0) / total : 0;
   return { nodes: P.nodes.length, files: total, edges: P.edges.length, words, by, pct, endings: P.nodes.filter(n => n.type === 'ending').length };

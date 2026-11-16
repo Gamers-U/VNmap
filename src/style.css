@@ -1838,6 +1838,10 @@ body.game-mode{background:var(--bg)}
 .sh-card .tiles{grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}
 .sh-card .tile{background:var(--surface3)}
 .sh-num{color:var(--text)}
+.sh-num.warn{color:var(--warn,#c47a00)}
+.sh-note{font-size:12px;margin:6px 0 2px}
+.mx-line{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:2px 0 12px}
+.mx-line .hint{margin:0}
 
 /* значок синхронизации внизу и сводка во вкладке «Подключения» */
 .sync-chip{padding:0 8px;min-width:32px;justify-content:center}
@@ -1887,3 +1891,41 @@ body.game-mode{background:var(--bg)}
 
 /* на сенсорных экранах подсказка после касания «залипает» и вылезает за край: не показываем */
 @media (hover:none){[data-tip]:hover::after{display:none}}
+
+/* наборы интерфейса */
+.preset-grid{display:grid;gap:8px;margin:6px 0}
+.preset-opt{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:10px 12px;border-radius:12px;background:var(--surface2);border:1.5px solid transparent;color:var(--text);cursor:pointer}
+.preset-opt:hover{background:var(--hover)}
+.preset-opt.on{border-color:var(--accent);background:var(--accent-soft)}
+.preset-opt b{font-size:14px}
+.preset-opt span{font-size:12px;color:var(--text2);line-height:1.35}
+.ui-preset-card{position:fixed;right:16px;bottom:58px;z-index:90;width:min(380px,calc(100vw - 32px));background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.28);padding:14px;display:flex;flex-direction:column;gap:8px}
+.ui-preset-card .upc-h{font-size:15px}
+.ui-preset-card .btn{align-self:flex-end}
+
+/* ====== Обучение (tour.js) ====== */
+.ui-preset-card .upc-row{display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap;align-items:center}
+.ui-preset-card .upc-row .btn{align-self:auto}
+.tour-block{position:fixed;inset:0;z-index:2000;background:transparent;cursor:default}
+.tour-block.full{background:rgba(6,8,14,.72)}
+.tour-dim{position:fixed;z-index:2001;border-radius:12px;pointer-events:none;box-shadow:0 0 0 100vmax rgba(6,8,14,.72),0 0 0 3px var(--accent),0 0 22px 3px var(--accent-soft);transition:left .25s ease,top .25s ease,width .25s ease,height .25s ease}
+.tour-dim[hidden]{display:none}
+.tour-card{position:fixed;z-index:2002;width:min(380px,calc(100vw - 24px));max-height:calc(100vh - 24px);overflow:auto;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:16px;box-shadow:0 16px 48px rgba(0,0,0,.38);padding:14px 16px;display:flex;flex-direction:column;gap:8px;transition:left .25s ease,top .25s ease}
+.tour-top{display:flex;align-items:center;justify-content:space-between;min-height:26px;color:var(--text2);font-size:12px}
+.tour-h{margin:0;font-size:16px;text-wrap:balance}
+.tour-p{margin:0;font-size:13.5px;line-height:1.5;color:var(--text2)}
+.tour-p code{font:12.5px ui-monospace,Consolas,monospace;padding:1px 6px;border-radius:6px;background:var(--code-bg,rgba(127,127,127,.16))}
+.tour-acts{display:flex;gap:8px;flex-wrap:wrap}
+.tour-bar{height:3px;border-radius:2px;background:var(--surface2);overflow:hidden}
+.tour-bar i{display:block;height:100%;background:var(--accent);border-radius:2px;transition:width .25s ease}
+.tour-nav{display:flex;align-items:center;gap:8px;margin-top:2px}
+.tour-nav .ghost{background:transparent;color:var(--text2)}
+@media (prefers-reduced-motion:reduce){.tour-dim,.tour-card,.tour-bar i{transition:none}}
+.tour-m .help-tab .tl-ok{margin-left:auto;color:var(--accent);display:inline-flex;flex:none}
+.tl-card .tl-h4,.tour-hero .tl-h4{margin:10px 0 0;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--text3)}
+.tour-hero .tl-h4.big{margin-top:14px}
+.tl-steps{margin:0;padding-left:24px;display:flex;flex-direction:column;gap:8px;line-height:1.55}
+.tl-steps li::marker{color:var(--accent);font-weight:600}
+.tl-tip{background:var(--accent-soft);border-radius:10px;padding:9px 13px;font-size:13px;line-height:1.5}
+.tl-where{border:1px dashed var(--border);border-radius:10px;padding:9px 13px;font-size:13px;line-height:1.5}
+.tl-acts{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:6px}
