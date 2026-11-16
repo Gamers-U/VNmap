@@ -5,8 +5,49 @@ const BTN = {};
 function tbtn(ic, label, tip, onClick, cls = '') {
   return h('button', { class: 'btn tbn ' + cls, 'data-tip': tip || label, onclick: ev => onClick(ev.currentTarget, ev) }, icon(ic, 18), label ? h('span', { class: 'tlbl' }, label) : null);
 }
+/** Правая часть верхней панели: зависит от режима интерфейса (uimode.js). */
+function topRight(langSeg) {
+  const pro = uiPro(), out = [];
+  const open = () => (DESK ? tbtn('folder', t('desk.open.short'), t('desk.open.tip') + ' (Ctrl+O)', () => deskCommand('open')) : tbtn('upload', t('top.import'), t('top.import.tip'), importJSONFile));
+  const saveItems = () => (DESK ? [
+    { label: t('desk.save'), icon: 'save', kbd: 'Ctrl+S', onClick: () => deskCommand('save') },
+    { label: t('desk.saveas'), icon: 'save', kbd: 'Ctrl+Shift+S', onClick: () => deskCommand('saveas') },
+    { label: t('desk.copy'), icon: 'copy', onClick: exportJSON }] : [{ label: t('exp.json'), icon: 'save', kbd: 'Ctrl+S', onClick: exportJSON }]);
+  out.push(
+    tbtn('play', t('pl.btn'), t('pl.tip'), () => openPlayer(), 'pl-top-btn'),
+    tbtn('type', t('te.top'), t('te.top.tip'), () => { const id = [...UI.sel][0], n = id && nodeById(id); openTextEditor(n && n.type !== 'note' ? { nodeId: n.id } : {}); }, 'te-top-btn'),
+    tbtn('layers', t('top.registry'), t('top.registry.tip'), () => openRegistry()));
+  if (uiShow('bar.stats')) out.push(tbtn('chart', t('top.stats'), t('top.stats.tip'), () => openStats()));
+  if (uiShow('bar.team')) out.push((BTN.team = tbtn('badge', t('team.btn'), t('team.btn.tip'), b => openTeamMenu(b))));
+  if (uiShow('bar.translate')) out.push(tbtn('globe', t('tl.btn'), t('tl.btn.tip'), () => openTranslate()));
+  if (uiShow('bar.collab')) out.push((BTN.collab = tbtn('users', t('col.btn'), t('col.btn.tip'), () => openCollabPanel(), 'collab-btn')));
+  if (pro) {
+    out.push(tbtn('download', t('top.export'), t('top.export.tip'), b => menuAt(b, [
+      { label: t('exp.build'), icon: 'box', kbd: DESK ? 'Ctrl+B' : undefined, onClick: () => openBuild() },
+      { sep: true },
+      { label: t('exp.svg.dark'), icon: 'image', onClick: () => exportSVG('dark') },
+      { label: t('exp.svg.light'), icon: 'image', onClick: () => exportSVG('light') },
+      { label: t('mp.menu'), icon: 'image', onClick: () => openMapPdf() },
+      { label: t('dg.menu'), icon: 'rows', onClick: () => openDigest() },
+      { sep: true }, ...saveItems(),
+      { label: t('exp.map'), icon: 'rows', onClick: exportMap }]), 'build-btn'), open());
+  } else {
+    out.push(tbtn('box', t('ui.build'), t('ui.build.tip') + (DESK ? ' (Ctrl+B)' : ''), () => openBuild(), 'build-btn'),
+      tbtn('save', t('ui.file'), t('ui.file.tip'), b => menuAt(b, [...saveItems(), { sep: true },
+        { label: t('exp.svg.dark'), icon: 'image', onClick: () => exportSVG('dark') },
+        { label: t('exp.svg.light'), icon: 'image', onClick: () => exportSVG('light') },
+        { label: t('mp.menu'), icon: 'image', onClick: () => openMapPdf() }]), 'file-btn'), open());
+  }
+  out.push(h('div', { class: 'tsep' }), tbtn('sliders', '', t('top.settings'), () => openSettingsWindow()));
+  if (uiShow('bar.theme')) out.push(BTN.theme = tbtn(S.theme === 'dark' ? 'sun' : 'moon', '', t('top.theme'), () => toggleTheme()));
+  else BTN.theme = null;
+  if (uiShow('bar.lang')) out.push(langSeg);
+  out.push(tbtn('help', '', t('top.help') + ' (?)', () => openHelp()));
+  return out;
+}
 function buildChrome() {
   const top = $('#topbar'); top.replaceChildren();
+  BTN.team = BTN.collab = null;
   const nameI = h('input', { class: 'proj-name', id: 'proj-name', type: 'text', spellcheck: 'false', 'aria-label': t('top.name'), 'data-tip': t('top.name') });
   nameI.value = P.name;
   nameI.addEventListener('input', () => { P.name = nameI.value; commit(); });
@@ -21,48 +62,19 @@ function buildChrome() {
     h('div', { class: 'bar' }, BTN.undo, BTN.redo, h('div', { class: 'tsep' }),
       tbtn('plus', t('top.add'), t('top.add.tip'), b => menuAt(b, NODE_TYPES.map(tp => ({ label: t('type.' + tp), icon: TYPE_ICON[tp], onClick: () => addNodeAtCenter(tp) })))),
       tbtn('search', t('top.search'), t('top.search') + ' (Ctrl+K)', () => openSearch()),
-      tbtn('wand', t('tools.btn'), t('tools.tip'), b => toolsMenu(b), 'tools-btn')),
+      uiPro() ? tbtn('wand', t('tools.btn'), t('tools.tip'), b => toolsMenu(b), 'tools-btn') : tbtn('wand', t('ui.more'), t('ui.more.tip'), b => toolsMenu(b), 'tools-btn')),
     h('div', { class: 'grow' }),
-    h('div', { class: 'bar' },
-      tbtn('play', t('pl.btn'), t('pl.tip'), () => openPlayer(), 'pl-top-btn'),
-      tbtn('type', t('te.top'), t('te.top.tip'), () => { const id = [...UI.sel][0], n = id && nodeById(id); openTextEditor(n && n.type !== 'note' ? { nodeId: n.id } : {}); }, 'te-top-btn'),
-      tbtn('layers', t('top.registry'), t('top.registry.tip'), () => openRegistry()),
-      tbtn('chart', t('top.stats'), t('top.stats.tip'), () => openStats()),
-      (BTN.team = tbtn('badge', t('team.btn'), t('team.btn.tip'), b => openTeamMenu(b))),
-      tbtn('globe', t('tl.btn'), t('tl.btn.tip'), () => openTranslate()),
-      (BTN.collab = tbtn('users', t('col.btn'), t('col.btn.tip'), () => openCollabPanel(), 'collab-btn')),
-      tbtn('download', t('top.export'), t('top.export.tip'), b => menuAt(b, [
-        { label: t('exp.build'), icon: 'box', kbd: DESK ? 'Ctrl+B' : undefined, onClick: () => openBuild() },
-        { sep: true },
-        { label: t('exp.svg.dark'), icon: 'image', onClick: () => exportSVG('dark') },
-        { label: t('exp.svg.light'), icon: 'image', onClick: () => exportSVG('light') },
-        { label: t('mp.menu'), icon: 'image', onClick: () => openMapPdf() },
-        { label: t('dg.menu'), icon: 'rows', onClick: () => openDigest() },
-        { sep: true },
-        ...(DESK ? [
-          { label: t('desk.save'), icon: 'save', kbd: 'Ctrl+S', onClick: () => deskCommand('save') },
-          { label: t('desk.saveas'), icon: 'save', kbd: 'Ctrl+Shift+S', onClick: () => deskCommand('saveas') },
-          { label: t('desk.copy'), icon: 'copy', onClick: exportJSON },
-          { label: t('drive.menu'), icon: 'cloud', onClick: () => openDrivePanel() }]
-          : [{ label: t('exp.json'), icon: 'save', kbd: 'Ctrl+S', onClick: exportJSON }]),
-        { label: t('gh.menu'), icon: 'fork', onClick: () => openGhPanel() },
-        { label: t('gho.menu'), icon: 'fork', onClick: () => openFromGithub() },
-        { label: t('exp.map'), icon: 'rows', onClick: exportMap }]), 'build-btn'),
-      DESK ? tbtn('folder', t('desk.open.short'), t('desk.open.tip') + ' (Ctrl+O)', () => deskCommand('open'))
-        : tbtn('upload', t('top.import'), t('top.import.tip'), importJSONFile),
-      h('div', { class: 'tsep' }),
-      tbtn('sliders', '', t('top.settings'), b => openSettings(b)),
-      BTN.theme, langSeg,
-      tbtn('help', '', t('top.help') + ' (?)', () => openHelp())));
+    h('div', { class: 'bar' }, ...topRight(langSeg)));
   const zb = $('#zoombar'); zb.replaceChildren(h('div', { class: 'bar' },
     tbtn('minus', '', t('zoom.out'), () => zoomCenter(1 / 1.25)),
     h('button', { class: 'btn zlabel', id: 'zoom-label', 'data-tip': t('zoom.reset'), onclick: () => { const r = stage.getBoundingClientRect(); zoomAt(r.left + r.width / 2, r.top + r.height / 2, 1); } }, '100%'),
     tbtn('plus', '', t('zoom.in'), () => zoomCenter(1.25)),
     h('div', { class: 'tsep' }),
     tbtn('fit', '', t('c.fit') + ' (F)', () => fitAll()),
-    h('div', { class: 'tsep' }),
+    ...(uiShow('bar.layers') ? [h('div', { class: 'tsep' }),
     (BTN.echo = tbtn('flag', '', t('tb.echo'), b => { S.echo = !S.echo; saveSettings(); b.classList.toggle('on', S.echo); renderEchoes(); }, S.echo ? 'on' : '')),
-    (BTN.jumps = tbtn('link', '', t('tb.jumps'), b => { S.jumps = !S.jumps; saveSettings(); b.classList.toggle('on', S.jumps); renderJumps(); }, S.jumps ? 'on' : ''))));
+    (BTN.jumps = tbtn('link', '', t('tb.jumps'), b => { S.jumps = !S.jumps; saveSettings(); b.classList.toggle('on', S.jumps); renderJumps(); }, S.jumps ? 'on' : ''))] : [])));
+  BTN.echo = uiShow('bar.layers') ? BTN.echo : null; BTN.jumps = uiShow('bar.layers') ? BTN.jumps : null;
   updateUndoButtons(); updateSaveBadge(); updateZoomLabel(); updateStatus();
   if (typeof collabRefreshUI === 'function') collabRefreshUI(); if (BTN.collab) BTN.collab.hidden = !(typeof collabAvail === 'function' && collabAvail());
 }
@@ -173,6 +185,7 @@ function boot() {
   initCanvas();
   deskInit();
   buildChrome();
+  if (typeof uiFirstNotice === 'function') uiFirstNotice();
   renderAll(); if (first) fitAll(false); else applyView();
   document.addEventListener('keydown', onKey);
   window.addEventListener('beforeunload', () => { flushHistory(); saveNow(); });

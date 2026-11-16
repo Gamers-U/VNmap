@@ -51,13 +51,12 @@ const REG_TAB_OF = { gui: 'gui', bg: 'bg', sprite: 'sprite', music: 'audio', sfx
 function palCommands() {
   const L = [], anchor = () => document.querySelector('.tools-btn');
   const add = (title, ic, run, kw, kbd) => L.push({ title, ic, run, kw: (kw || '') + ' ' + title, kbd });
-  for (const x of TOOL_ITEMS) add(t(x.key), x.ic, () => x.run(anchor()), x.kw || '', x.kbd);
+  for (const x of TOOL_ITEMS) if (uiShow(x.id)) add(t(x.key), x.ic, () => x.run(anchor()), x.kw || '', x.kbd);
   for (const tp of NODE_TYPES) add(t('pal.add', t('type.' + tp)), TYPE_ICON[tp], () => addNodeAtCenter(tp), 'add new block создать добавить блок ' + t('type.' + tp));
   add(t('c.fit'), 'fit', () => fitAll(), 'fit zoom map показать всю карту масштаб', 'F');
   for (const tb of REG_TABS) add(t('pal.reg', t('reg.tab.' + tb.id)), tb.icon, () => openRegistry(tb.id), 'registry реестр ' + tb.id);
-  add(t('top.stats'), 'chart', () => openStats(), 'stats endings progress статистика концовки прогресс');
-  add(t('team.btn'), 'badge', () => openTeamMenu(BTN.team || anchor()), 'team members команда участники роли');
-  add(t('tl.btn'), 'globe', () => openTranslate(), 'translate перевод язык');
+  if (uiShow('bar.team')) add(t('team.btn'), 'badge', () => openTeamMenu(BTN.team || anchor()), 'team members команда участники роли');
+  if (uiShow('bar.translate')) add(t('tl.btn'), 'globe', () => openTranslate(), 'translate перевод язык');
   add(t('exp.build'), 'box', () => openBuild(), 'build export renpy собрать игру экспорт', DESK ? 'Ctrl+B' : undefined);
   add(t('exp.svg.dark'), 'image', () => exportSVG('dark'), 'svg image картинка карта');
   add(t('exp.svg.light'), 'image', () => exportSVG('light'), 'svg image картинка карта');
@@ -66,6 +65,7 @@ function palCommands() {
   add(t('gh.menu'), 'fork', () => openGhPanel(), 'github гитхаб репозиторий');
   add(t('gho.menu'), 'fork', () => openFromGithub(), 'github open link repository открыть ссылка репозиторий новелла');
   if (DESK) add(t('drive.menu'), 'cloud', () => openDrivePanel(), 'drive google диск облако');
+  add(t('ui.settings'), 'sliders', () => openSettingsWindow(), 'settings preferences mode simple professional настройки режим простой профессиональный подключения модули');
   add(t('top.help'), 'help', () => openHelp(), 'help справка помощь', '?');
   add(t('top.theme'), S.theme === 'dark' ? 'sun' : 'moon', () => toggleTheme(), 'theme dark light тема тёмная светлая');
   add(t('pal.lang'), 'globe', () => setLang(S.lang === 'ru' ? 'en' : 'ru'), 'language язык english русский');

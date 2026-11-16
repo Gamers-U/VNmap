@@ -1807,3 +1807,8 @@ body.game-mode{background:var(--bg)}
 .nt-state{margin-left:auto;font-weight:500;font-size:12px;color:var(--text3)}.nt-state.on{color:var(--ok,#2e9e5b)}
 .nt-btns{display:flex;flex-wrap:wrap;gap:8px}
 .nt-steps{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--text2)}
+
+/* настройки */
+.set-modal .m-wrap{min-height:0;width:min(720px,96vw)}
+.set-body{padding:4px 20px 18px;overflow:auto;display:flex;flex-direction:column;gap:12px}
+.set-pane{display:flex;flex-direction:column;gap:12px}

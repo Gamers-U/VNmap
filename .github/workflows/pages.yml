@@ -1,0 +1,64 @@
+name: Веб-версия (GitHub Pages)
+
+# Выкладывает браузерную версию карты на постоянную ссылку, которая открывается на телефоне и на любом компьютере без установки:
+#   https://gamers-u.github.io/VNmap/
+# Один раз включите: Settings → Pages → Build and deployment → Source: «GitHub Actions». Пока Pages не включены, этот шаг ничего не делает и не краснеет.
+# Проекты пользователей на сайт не попадают: страница хранит их только в браузере у самого человека.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'build.py'
+      - 'version.json'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Выложить страницу
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.d.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: chk
+        name: Включены ли Pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh api "repos/$GITHUB_REPOSITORY/pages" --jq '.build_type' 2>/dev/null | grep -q workflow; then
+            echo "on=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "on=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Pages не включены (или источник не «GitHub Actions»). Включите: Settings → Pages → Source → GitHub Actions, потом Actions → «Веб-версия» → Run workflow."
+          fi
+      - uses: actions/setup-python@v5
+        if: steps.chk.outputs.on == 'true'
+        with: { python-version: '3.12' }
+      - name: Собрать страницу
+        if: steps.chk.outputs.on == 'true'
+        env: { PYTHONUTF8: '1' }
+        run: |
+          python build.py
+          mkdir -p site
+          cp dist/vnmap.html site/index.html
+          touch site/.nojekyll
+      - uses: actions/configure-pages@v5
+        if: steps.chk.outputs.on == 'true'
+      - uses: actions/upload-pages-artifact@v3
+        if: steps.chk.outputs.on == 'true'
+        with: { path: site }
+      - id: d
+        if: steps.chk.outputs.on == 'true'
+        uses: actions/deploy-pages@v4

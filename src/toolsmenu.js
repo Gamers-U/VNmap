@@ -9,6 +9,7 @@ const TOOL_ITEMS = [];
 function toolsMenu(anchor) {
   const items = []; let last = null;
   for (const x of TOOL_ITEMS) {
+    if (typeof uiShow === 'function' && !uiShow(x.id)) continue;               // режим интерфейса (uimode.js)
     if (last !== null && x.group !== last) items.push({ sep: true });
     last = x.group;
     items.push({ label: t(x.key), icon: x.ic, kbd: x.kbd, onClick: () => setTimeout(() => x.run(anchor), 0) });

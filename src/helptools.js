@@ -52,7 +52,7 @@ HELP.ru.push(
 );
 HELP.en.push(
   { h: 'Story tools', items: [
-    'The wand button (“Tools”) gathers all additional features. Almost any of them can also be opened through search `Ctrl+K`: just start typing the name.',
+    'The wand button (“More” in Simple mode, “Tools” in Professional mode) gathers all additional features. Almost any of them can also be opened through search `Ctrl+K`: just start typing the name. The mode is switched in “Settings” → “View and mode”.',
     '“Arrange nodes…” lays the map out automatically: left to right or top to bottom, the whole map or only the selected blocks (the floating bar has a button for the selection). If you do not like it, `Ctrl+Z` puts everything back.',
     'Notes: a sticker on a block (an icon on the block, a button above it and in the block window) with a “resolved” mark. “All project notes…” shows both stickers and the note cards created right on the map, with search and the filters “open / resolved / all”. A note card can be resolved too: on the map it fades and gets crossed out.',
     '`Ctrl+K` searches blocks, lines, characters, flags, resources, notes and commands. Prefixes: `>` commands only, `@` characters, `#` flags and labels.',
@@ -146,3 +146,25 @@ HELP.en.push(
 );
 HELP_ICONS.push('sliders', 'rows', 'type', 'play');
 HELP_GROUPS.splice(2, 0, [['Инструменты, текст и печать', 'Tools, text and printing'], [20, 21, 22, 23]]);
+HELP.ru.push(
+  { h: 'Настройки и режимы интерфейса', items: [
+    'Окно «Настройки» (кнопка с ползунками или `Ctrl+K` → «Настройки») имеет три вкладки: «Вид и режим», «Подключения» и «Модули» (настраиваются в профессиональном режиме).',
+    'Два режима интерфейса. Простой включён по умолчанию: наверху только Блок, Поиск, Ещё, Играть, Текст, Реестр и Сборка, а в меню «Ещё» только самое нужное (расстановка, PDF карты, заметки, проверка сюжета, выжимка для вычитки, HTML-игра, запуск в Ren\'Py, редактор текста, импорт из документов, недостающие файлы). Профессиональный показывает всё: статистику концовок, команду, перевод, совместную работу, анализ веток, автопрогон, журнал прохождений, задачи, «Кто что сделал», уведомления.',
+    'Режим личный: он хранится на вашем компьютере и ничего не меняет в проекте, у других участников. Не путайте его с «корпоративным режимом» прав доступа (Реестр → «Участники»): тот настраивается один раз на весь проект и влияет на всех.',
+    'Вкладка «Модули» (профессиональный режим): можно выключить целые группы возможностей, которыми вы не пользуетесь: «Анализ и статистика», «Тонкая работа с текстом», «Команда», «Совместная работа», «Переводы». Выключенное пропадает из панели, из меню «Инструменты» и из поиска `Ctrl+K`; данные проекта не удаляются, всё возвращается включением.',
+    'Вкладка «Подключения»: GitHub (панель проекта и «Открыть проект с GitHub…»), Google Диск (настольная версия), уведомления и совместная работа. Эти пункты намеренно убраны из меню «Экспорт» и «Инструменты»: настройки доступа живут в одном месте.',
+    'Первый запуск после обновления показывает короткую подсказку о режимах. Если нужной кнопки не видно, это почти всегда простой режим: переключите его в «Вид и режим» или найдите функцию через `Ctrl+K`.',
+  ] }
+);
+HELP.en.push(
+  { h: 'Settings and interface modes', items: [
+    'The “Settings” window (the sliders button or `Ctrl+K` → “Settings”) has three tabs: “View and mode”, “Connections” and “Modules” (configured in Professional mode).',
+    'Two interface modes. Simple is the default: the top bar has only Block, Search, More, Play, Text, Registry and Build, and the “More” menu only the most needed things (arrange nodes, map PDF, notes, plot check, proofreading digest, HTML game, run in Ren\'Py, the text editor, document import, missing files). Professional shows everything: the endings statistics, team, translation, collaboration, branch analysis, autorun, playthrough log, tasks, “Who did what”, notifications.',
+    'The mode is personal: it is stored on your computer and changes nothing in the project or for other members. Do not confuse it with the “corporate mode” of access rights (Registry → “Members”): that is set once for the whole project and affects everyone.',
+    'The “Modules” tab (Professional mode): you can switch off whole groups of features you do not use: “Analysis and statistics”, “Fine text work”, “Team”, “Collaboration”, “Translations”. A switched-off group disappears from the bar, from the Tools menu and from `Ctrl+K` search; project data is not deleted and everything returns when you switch it on.',
+    'The “Connections” tab: GitHub (the project panel and “Open a project from GitHub…”), Google Drive (desktop version), notifications and collaboration. These items are deliberately gone from the “Export” and “Tools” menus: access settings live in one place.',
+    'The first launch after the update shows a short hint about the modes. If you cannot see a button, it is almost always Simple mode: switch it in “View and mode” or find the feature through `Ctrl+K`.',
+  ] }
+);
+HELP_ICONS.push('sliders');
+HELP_GROUPS[4][1].push(24);

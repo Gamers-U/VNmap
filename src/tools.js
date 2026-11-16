@@ -161,20 +161,7 @@ async function newProject(demo) {
 }
 
 /* ---------- настройки ---------- */
-function openSettings(btn) {
-  const fxs = transitionNames();
-  const sel = h('select', { class: 'inp sm', id: 'set-trans' }, h('option', { value: '' }, t('tr.none')), ...fxs.map(n => h('option', { value: n, selected: n === S.transition }, n)));
-  sel.addEventListener('change', () => { S.transition = sel.value; saveSettings(); });
-  const box = h('div', { class: 'settings' },
-    field(t('set.grid'), segmented([{ value: 'dots', label: t('set.grid.dots') }, { value: 'lines', label: t('set.grid.lines') }, { value: 'off', label: t('set.grid.off') }], S.grid, v => { S.grid = v; saveSettings(); applyGrid(); })),
-    switchEl(S.snap, v => { S.snap = v; saveSettings(); }, t('set.snap')),
-    field(t('set.wheel'), segmented([{ value: 'zoom', label: t('set.wheel.zoom') }, { value: 'pan', label: t('set.wheel.pan') }], S.wheel, v => { S.wheel = v; saveSettings(); }), t('set.wheel.hint')),
-    field(t('set.trans'), sel, t('set.trans.hint')),
-    h('div', { class: 'msep' }),
-    h('button', { class: 'btn wide', onclick: () => newProject(false) }, icon('new', 16), t('proj.new')),
-    h('button', { class: 'btn wide', onclick: () => newProject(true) }, icon('book', 16), t('proj.demo')));
-  popover(btn, box, { cls: 'settings-pop' });
-}
+function openSettings() { openSettingsWindow(); }
 
 /* ---------- справка ---------- */
 const HELP_ICONS = ['fit', 'layers', 'fork', 'file', 'code', 'chat', 'search', 'save', 'box', 'folder', 'new', 'cloud', 'flag', 'sparkles', 'badge', 'globe', 'users', 'home', 'wand', 'link'];
