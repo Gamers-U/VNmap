@@ -462,18 +462,10 @@ function driveInit() {
   window.addEventListener('focus', () => { const m = dmeta(); if (GS.st.signedIn && m && m.on && GS.phase !== 'syncing') driveKick(); });
 }
 
-/* ---------- плашка в строке состояния ---------- */
-function driveChip() {
-  if (!GD) return null;
-  const s = driveState();
-  const L = { nocfg: 'drive.chip.nocfg', nosign: 'drive.chip.nosign', off: 'drive.chip.off', syncing: 'drive.chip.syncing', ok: 'drive.chip.ok', pending: 'drive.chip.pending', offline: 'drive.chip.offline', auth: 'drive.chip.auth', error: 'drive.chip.error', conflict: 'drive.chip.conflict', newer: 'drive.chip.newer' };
-  const m = dmeta();
-  const tip = s === 'ok' && m && m.last ? t('drive.tip.last', ago(m.last)) : s === 'syncing' && GS.progress ? GS.progress : GS.err || t('drive.tip.' + (L[s] ? s : 'off'));
-  const warn = ['offline', 'auth', 'error', 'conflict', 'newer'].includes(s);
-  const ic = s === 'ok' ? 'check' : s === 'syncing' ? 'refresh' : warn ? 'alert' : 'cloud';
-  const click = () => { if (s === 'conflict') driveConflictDialog(); else if (s === 'newer' && GS.remote) driveRun(async () => { const mm = dmeta(); try { setPhase('syncing'); await driveApply(mm, GS.remote.lay, GS.remote.doc); GS.remote = null; GS.newerN = 0; setPhase('idle'); } catch (e) { driveFail(e); } }); else openDrivePanel(); };
-  const label = t(L[s]) + (s === 'syncing' && GS.progress ? ' ' + GS.progress : '');
-  return h('button', { class: 'btn stat drive-chip' + (warn ? ' warn' : '') + (s === 'syncing' ? ' busy' : ''), 'data-tip': tip, onclick: click }, icon(ic, 15), label);
+/* ---------- загрузить более новую версию с Диска (кнопка во вкладке «Подключения») ---------- */
+function driveTakeNewer() {
+  if (!GS.remote) return driveSyncNow();
+  return driveRun(async () => { const mm = dmeta(); try { setPhase('syncing'); await driveApply(mm, GS.remote.lay, GS.remote.doc); GS.remote = null; GS.newerN = 0; setPhase('idle'); } catch (e) { driveFail(e); } });
 }
 
 /* ====== окно «Google Диск» ====== */

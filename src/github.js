@@ -397,18 +397,6 @@ function ghInit() {
   window.addEventListener('focus', () => { const m = gmeta(); if (GHS.st.hasToken && m && m.on && GHS.phase !== 'syncing') ghKick(); });
 }
 
-/* ---------- плашка в строке состояния ---------- */
-function ghChip() {
-  const m = gmeta(); if (!m || !m.on) return null;
-  const s = ghState();
-  const L = { nosign: 'gh.chip.nosign', syncing: 'gh.chip.syncing', ok: 'gh.chip.ok', pending: 'gh.chip.pending', offline: 'gh.chip.offline', auth: 'gh.chip.auth', error: 'gh.chip.error', conflict: 'gh.chip.conflict', newer: 'gh.chip.newer' };
-  const tip = s === 'ok' && m.last ? t('gh.tip.last', ago(m.last)) : s === 'syncing' && GHS.progress ? GHS.progress : GHS.err || t(L[s] || 'gh.chip.ok');
-  const warn = ['offline', 'auth', 'error', 'conflict', 'newer', 'nosign'].includes(s);
-  const ic = s === 'ok' ? 'check' : s === 'syncing' ? 'refresh' : warn ? 'alert' : 'fork';
-  const click = () => { if (s === 'conflict') ghConflictDialog(); else if (s === 'newer') ghSyncNow(); else openGhPanel(); };
-  return h('button', { class: 'btn stat drive-chip gh-chip' + (warn ? ' warn' : '') + (s === 'syncing' ? ' busy' : ''), 'data-tip': tip, onclick: click }, icon(ic, 15), t(L[s] || 'gh.chip.ok'));
-}
-
 /* ====== окно «GitHub» ====== */
 function openGhPanel() {
   closePopover();

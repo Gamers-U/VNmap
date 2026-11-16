@@ -1,7 +1,8 @@
 'use strict';
 /* ====== Режимы интерфейса и окно «Настройки» ======
-   «Простой» (по умолчанию): функции просто спрятаны, видно Карту, Текст, Играть, Реестр, Сборку (скрытое находится через Ctrl+K).
-   «Профессиональный» показывает всё, и там можно выключать целые модули, которыми вы не пользуетесь.
+   «Простой» (по умолчанию): на панели только Карта, Текст, Играть, Реестр, Сборка, Файл; все остальные функции лежат под одной
+   кнопкой «Ещё», чтобы не бросаться в глаза, но всегда были под рукой.
+   «Профессиональный» выкладывает их на виду (строка разделов под панелью), и там можно выключать целые модули, которыми вы не пользуетесь.
    Режим личный: он хранится в настройках программы на этом компьютере, в проект не попадает.
    Не путать с корпоративным режимом прав доступа: тот относится к проекту (Участники → Права доступа). */
 
@@ -10,17 +11,17 @@ Object.assign(D, {
   'ui.tab.view': ['Вид и режим', 'Look and mode'], 'ui.tab.conn': ['Подключения', 'Connections'], 'ui.tab.mods': ['Модули', 'Modules'],
   'ui.mode': ['Режим интерфейса', 'Interface mode'],
   'ui.mode.simple': ['Простой', 'Simple'], 'ui.mode.pro': ['Профессиональный', 'Professional'],
-  'ui.mode.simple.h': ['Видно только самое нужное: Карта, Текст, Играть, Реестр, Сборка. Остальные возможности спрятаны (их можно найти через поиск Ctrl+K).', 'Only what matters is visible: Map, Text, Play, Registry, Build. Other features are hidden (find them through the Ctrl+K search).'],
+  'ui.mode.simple.h': ['На панели только самое нужное: Карта, Текст, Играть, Реестр, Сборка. Все остальные возможности программы лежат под кнопкой «Ещё».', 'The toolbar only has what matters: Map, Text, Play, Registry, Build. Every other feature of the app is under the “More” button.'],
   'ui.mode.pro.h': ['Всё на виду: под панелью отдельная строка разделов (Карта, Тексты, Проверки, Игра, Работа команды), плюс статистика, команда, перевод, совместная работа. Ненужные модули выключаются на вкладке «Модули».', 'Everything is in view: a separate row of sections under the toolbar (Map, Texts, Checks, Play, Teamwork), plus statistics, team, translation, collaboration. Switch off unneeded modules on the “Modules” tab.'],
   'ui.mode.note': ['Режим интерфейса личный и не меняет проект. Корпоративный режим прав доступа это другое: он относится к проекту (Участники → Права доступа).', 'The interface mode is personal and does not change the project. The corporate access-rights mode is a different thing: it belongs to the project (Members → Access rights).'],
-  'ui.mode.first': ['Включён простой режим: видно только самое нужное, остальное спрятано. Все функции: Настройки → Профессиональный.', 'Simple mode is on: only what matters is visible, the rest is hidden. For everything: Settings → Professional.'],
+  'ui.mode.first': ['Простой режим: на панели только главное, все остальные функции под кнопкой «Ещё». Чтобы они были на виду: Настройки → Профессиональный.', 'Simple mode: only the essentials are on the toolbar, every other feature is under the “More” button. To have them in view: Settings → Professional.'],
   'ui.look': ['Оформление', 'Appearance'], 'ui.theme': ['Тема', 'Theme'], 'ui.theme.dark': ['Тёмная', 'Dark'], 'ui.theme.light': ['Светлая', 'Light'], 'ui.lang': ['Язык интерфейса', 'Interface language'],
   'ui.mapset': ['Карта', 'Map'], 'ui.project': ['Проект', 'Project'],
   'ui.tab.bar': ['Панель', 'Toolbar'],
   'ui.bar.p': ['Отметьте, какие кнопки показывать на панели, и перетащите их мышью, чтобы поменять порядок. Спрятанное всё равно можно найти через поиск Ctrl+K. Настройка своя для простого и для профессионального режима.', 'Tick which buttons to show on the toolbar and drag them with the mouse to change the order. Hidden ones can still be found through the Ctrl+K search. The setting is separate for Simple and Professional mode.'],
   'ui.bar.p.touch': ['Отметьте, какие кнопки показывать на панели. Спрятанное всё равно можно найти через поиск Ctrl+K. Настройка своя для простого и для профессионального режима.', 'Tick which buttons to show on the toolbar. Hidden ones can still be found through the Ctrl+K search. The setting is separate for Simple and Professional mode.'],
   'ui.bar.main': ['Кнопки панели', 'Toolbar buttons'], 'ui.bar.strip': ['Разделы под панелью', 'Sections under the toolbar'],
-  'ui.bar.fixed': ['Всегда на панели: Блок, Поиск, Настройки, Справка.', 'Always on the toolbar: Block, Search, Settings, Help.'],
+  'ui.bar.fixed': ['Всегда на панели: Блок, Поиск, Настройки, Справка (в простом режиме ещё «Ещё»).', 'Always on the toolbar: Block, Search, Settings, Help (and “More” in Simple mode).'],
   'ui.bar.drag': ['Перетащите, чтобы поменять порядок', 'Drag to reorder'],
   'ui.bar.reset': ['Вернуть панель по умолчанию', 'Restore the default toolbar'],
   'ui.g.map': ['Карта', 'Map'], 'ui.g.text': ['Тексты', 'Texts'], 'ui.g.check': ['Проверки', 'Checks'], 'ui.g.play': ['Игра', 'Play'], 'ui.g.team': ['Работа команды', 'Teamwork'],
@@ -29,7 +30,8 @@ Object.assign(D, {
   'ui.g.check.tip': ['Проверка сюжета, переменные, ветки и время, автопрогон, журнал, статистика', 'Plot check, variables, branches and time, autorun, log, statistics'],
   'ui.g.play.tip': ['Плеер, HTML-игра для тестеров, запуск в Ren\'Py', 'Player, HTML game for testers, run in Ren\'Py'],
   'ui.g.team.tip': ['Задачи и сроки, кто что сделал, уведомления, проверка правок', 'Tasks and deadlines, who did what, notifications, review of changes'],
-  'ui.more': ['Ещё', 'More'], 'ui.more.tip': ['Остальные возможности: расстановка, проверки, импорт, тесты', 'More features: arranging, checks, import, tests'],
+  'ui.more': ['Ещё', 'More'], 'ui.more.tip': ['Все остальные возможности: карта, тексты, проверки, игра, команда, переводы', 'All other features: map, texts, checks, play, team, translations'],
+  'ui.more.other': ['Ещё', 'Other'],
   'ui.build': ['Сборка', 'Build'], 'ui.build.tip': ['Собрать игру для Ren\'Py', 'Build the game for Ren\'Py'],
   'ui.file': ['Файл', 'File'], 'ui.file.tip': ['Сохранить проект, открыть, сохранить карту: SVG, PDF', 'Save the project, open one, save the map: SVG, PDF'],
   'ui.conn.h': ['Подключения', 'Connections'],
@@ -37,10 +39,16 @@ Object.assign(D, {
   'ui.gh': ['GitHub', 'GitHub'], 'ui.gh.on': ['Проект подключён: {0}', 'Project linked: {0}'], 'ui.gh.in': ['Вы вошли как {0}, проект не подключён', 'Signed in as {0}, project not linked'], 'ui.gh.off': ['Вход не выполнен', 'Not signed in'],
   'ui.gh.panel': ['Панель GitHub', 'GitHub panel'], 'ui.gh.open': ['Открыть проект с GitHub…', 'Open a project from GitHub…'],
   'ui.drive': ['Google Диск', 'Google Drive'], 'ui.drive.btn': ['Панель Диска', 'Drive panel'],
+  'ui.sync.now': ['Синхронизировать сейчас', 'Sync now'], 'ui.take': ['Загрузить новую версию', 'Load the newer version'], 'ui.pick': ['Выбрать версию…', 'Choose a version…'],
+  'ui.drive.nocfg': ['Ключ не настроен', 'Key not set up'], 'ui.drive.nosign': ['Вход не выполнен', 'Not signed in'], 'ui.drive.in': ['Вы вошли как {0}', 'Signed in as {0}'], 'ui.drive.on': ['Проект синхронизируется', 'Project is syncing'],
+  'ui.drive.key.h': ['Один раз нужен бесплатный ключ Google. Пошаговая подсказка — в панели Диска.', 'A free Google key is needed once. A step-by-step guide is in the Drive panel.'], 'ui.drive.key.btn': ['Настроить ключ…', 'Set up the key…'],
+  'ui.drive.signin': ['Войти через Google', 'Sign in with Google'],
+  'ui.drive.sw': ['Синхронизировать этот проект', 'Sync this project'], 'ui.drive.sw.h': ['Проект и файлы попадут в папку «Карта новеллы» на вашем Диске, плюс автоматические копии.', 'The project and files go to the app\'s own folder on your Drive, plus automatic backups.'],
+  'ui.drive.web': ['Только в программе для компьютера', 'Desktop app only'], 'ui.drive.web.h': ['Google Диск работает в программе для компьютера (там же вход в Google). В браузере общее хранилище — GitHub, а страховую копию можно сохранить файлом.', 'Google Drive works in the desktop app (sign-in to Google is there too). In the browser the shared storage is GitHub, and you can save a backup copy as a file.'],
   'ui.notify': ['Уведомления', 'Notifications'], 'ui.notify.t': ['Telegram и Discord: сводка при закрытии проекта и напоминания о сроках.', 'Telegram and Discord: a summary when the project closes and deadline reminders.'], 'ui.notify.btn': ['Настроить', 'Set up'],
   'ui.collab': ['Совместная работа', 'Collaboration'], 'ui.collab.t': ['Работать над проектом вместе в реальном времени.', 'Work on the project together in real time.'], 'ui.collab.btn': ['Открыть панель', 'Open the panel'],
   'ui.mods.h': ['Модули', 'Modules'],
-  'ui.mods.p': ['Выключенный модуль прячет свои кнопки и пункты меню. Сами данные проекта не трогаются, вернуть модуль можно в любой момент.', 'A switched-off module hides its buttons and menu items. The project data is untouched and you can bring a module back at any time.'],
+  'ui.mods.p': ['Выключенный модуль прячет свои кнопки и пункты меню (в простом режиме тоже). Сами данные проекта не трогаются, вернуть модуль можно в любой момент.', 'A switched-off module hides its buttons and menu items. The project data is untouched and you can bring a module back at any time.'],
   'ui.mods.only': ['Модули настраиваются в профессиональном режиме.', 'Modules are configured in the professional mode.'],
   'ui.mod.analysis': ['Анализ и статистика', 'Analysis and statistics'], 'ui.mod.analysis.h': ['Статистика, ветки и время, автопрогон, журнал прохождений, переменные в блоках.', 'Statistics, branches and time, auto-run, playthrough log, variables in blocks.'],
   'ui.mod.text': ['Тонкая работа с текстом', 'Fine text work'], 'ui.mod.text.h': ['Таблица реплик, переименование везде, страница персонажа, список ресурсов, импорт .rpy.', 'The replica table, rename everywhere, the character page, the resource list, .rpy import.'],
@@ -96,7 +104,8 @@ function uiStrip() {
   }
   return groups.length ? h('div', { class: 'bar strip', id: 'toolstrip' }, ...groups) : null;
 }
-/* Что в каком режиме видно: 's' — в обоих режимах, 'p' — только в профессиональном (и пока модуль не выключен), 'x' — живёт в других местах (Настройки).
+/* Где что лежит: 's' — на виду в обоих режимах, 'p' — на виду только в профессиональном (в простом лежит под кнопкой «Ещё»), 'x' — живёт в других местах (Настройки).
+   Второй элемент — модуль: если он выключен (вкладка «Модули»), возможность спрятана в обоих режимах.
    Идентификаторы совпадают с пунктами меню «Инструменты» (TOOL_ITEMS) и с кнопками верхней панели. Незнакомое видно всегда. */
 const UI_LVL = {
   layout: ['s'], mappdf: ['s'], notes: ['s'], texted: ['s'], docimport: ['s'], digest: ['s'], checks: ['s'], missingfiles: ['s'], htmlgame: ['s'], renpy: ['s'], player: ['s'], stats: ['s'],
@@ -113,12 +122,28 @@ function uiCfg() {
   return c;
 }
 const uiPro = () => uiCfg().mode === 'pro';
-/** Показывать ли возможность (id пункта меню «Инструменты» или кнопки панели «bar.…»). */
+/** Есть ли возможность вообще (id пункта меню «Инструменты» или кнопки панели «bar.…»): не 'x' и модуль не выключен. Режим на это не влияет: в простом режиме всё доступно под «Ещё». */
 function uiShow(id) {
   const d = UI_LVL[id]; if (!d) return true;
   if (d[0] === 'x') return false;
-  if (!uiPro()) return d[0] === 's';
   return !(d[1] && uiCfg().off[d[1]]);
+}
+/** Лежит ли возможность на виду (на панели, в разделах): в простом режиме только 's', остальное под «Ещё». */
+const uiPlain = id => uiShow(id) && (uiPro() || (UI_LVL[id] || ['s'])[0] === 's');
+/** Меню «Ещё» простого режима: все возможности программы по разделам (те же, что в профессиональном режиме лежат на виду). */
+function uiMoreMenu(anchor) {
+  const items = [], add = (head, list) => { list = list.filter(Boolean); if (!list.length) return; if (items.length) items.push({ sep: true }); items.push({ header: head }, ...list); };
+  for (const { g, its } of stripGroups()) add(t('ui.g.' + g.id), its.map(it => ({ label: t(it.key), icon: it.ic, kbd: it.kbd, onClick: () => setTimeout(() => it.run(anchor), 0) })));
+  add(t('ui.more.other'), [
+    uiShow('bar.team') ? { label: t('team.btn'), icon: 'badge', onClick: () => setTimeout(() => openTeamMenu(anchor), 0) } : null,
+    uiShow('bar.translate') ? { label: t('tl.btn'), icon: 'globe', onClick: () => openTranslate() } : null,
+    uiShow('bar.collab') && typeof collabAvail === 'function' && collabAvail() ? { label: t('col.btn'), icon: 'users', onClick: () => openCollabPanel() } : null,
+    { label: t('exp.map'), icon: 'rows', onClick: exportMap },
+    { label: t('tb.echo'), icon: S.echo ? 'check' : null, onClick: () => { S.echo = !S.echo; saveSettings(); renderEchoes(); } },
+    { label: t('tb.jumps'), icon: S.jumps ? 'check' : null, onClick: () => { S.jumps = !S.jumps; saveSettings(); renderJumps(); } },
+  ]);
+  const pop = popover(anchor, menuBox(items), { cls: 'menu-pop more-pop' });
+  return pop;
 }
 function uiSetMode(m) {
   const c = uiCfg(); m = m === 'pro' ? 'pro' : 'simple'; if (c.mode === m) return;
@@ -138,11 +163,17 @@ function uiFirstNotice() {
 }
 
 /* ---------- окно «Настройки» ---------- */
+let SETW = null;                     // открытое окно настроек: вкладка «Подключения» обновляется, пока идёт синхронизация
+function syRefreshOpen() {
+  const w = SETW; if (!w || !w.m || w.m.closed || w.tab !== 'conn' || !w.render || !w.body) return;
+  const sc = w.body.scrollTop; w.render(); w.body.scrollTop = sc;
+}
 function openSettingsWindow(tab) {
   closePopover();
   const st = { tab: tab || 'view' };
+  SETW = st;
   openModal({
-    cls: 'set-modal',
+    cls: 'set-modal', onClose: () => { if (SETW === st) SETW = null; },
     build: m => {
       st.m = m; st.body = h('div', { class: 'set-body' });
       const render = () => {
@@ -150,7 +181,7 @@ function openSettingsWindow(tab) {
         tabs.push({ value: 'bar', label: t('ui.tab.bar') });
         if (uiPro()) tabs.push({ value: 'mods', label: t('ui.tab.mods') });
         if (!tabs.some(x => x.value === st.tab)) st.tab = 'view';
-        st.body.replaceChildren(segmented(tabs, st.tab, v => { st.tab = v; render(); }), h('div', { class: 'set-pane' }, st.tab === 'view' ? setView(st, render) : st.tab === 'conn' ? setConn(st) : st.tab === 'bar' ? setBar(st, render) : setMods(st, render)));
+        st.body.replaceChildren(segmented(tabs, st.tab, v => { st.tab = v; render(); }), h('div', { class: 'set-pane' }, st.tab === 'view' ? setView(st, render) : st.tab === 'conn' ? setConn(st, render) : st.tab === 'bar' ? setBar(st, render) : setMods(st, render)));
       };
       st.render = render; render();
       return h('div', { class: 'm-wrap' }, modalHead(t('ui.settings'), m), st.body);
@@ -180,19 +211,54 @@ function setView(st, render) {
     h('button', { class: 'btn', onclick: () => { st.m.close(); newProject(true); } }, icon('book', 16), t('proj.demo')))));
   return box;
 }
-function setConn(st) {
+/** Строка состояния службы во вкладке: значок и текст (тот же текст, что в подсказке к значку внизу). */
+const syLineEl = p => h('div', { class: 'sy-line ' + p.st + (SY_WARN.includes(p.st) ? ' warn' : '') }, icon(p.st === 'ok' ? 'check' : p.st === 'syncing' ? 'refresh' : SY_WARN.includes(p.st) ? 'alert' : p.ic, 14), h('span', p.line));
+function setConn(st, render) {
   const box = h('div', { class: 'nt-list' }), go = fn => () => { st.m.close(); setTimeout(fn, 0); };
+  const parts = syParts(), o = syOverall(parts), part = id => parts.find(p => p.id === id);
   box.append(h('div', { class: 'hint' }, t('ui.conn.p')));
-  const m = typeof gmeta === 'function' ? gmeta() : null, login = typeof GHS !== 'undefined' && GHS.st && GHS.st.login;
+  /* сводка: то же, что значок внизу */
+  box.append(h('div', { class: 'nt-card sy-sum ' + o.st + (o.warn ? ' warn' : ''), id: 'sy-sum' }, h('div', { class: 'nt-ch' }, icon(o.ic, 17), t('sy.t.' + o.st)),
+    parts.length ? h('div', { class: 'sy-lines' }, parts.map(syLineEl)) : h('div', { class: 'hint' }, t('sy.none.h'))));
+  /* GitHub */
+  const m = typeof gmeta === 'function' ? gmeta() : null, login = typeof GHS !== 'undefined' && GHS.st && GHS.st.login, gp = part('gh');
   const ghState = m && m.on ? t('ui.gh.on', m.repo || '') : login ? t('ui.gh.in', login) : t('ui.gh.off');
   box.append(setCard(h('span', { class: 'nt-ch' }, icon('fork', 15), t('ui.gh'), h('span', { class: 'nt-state' + (m && m.on ? ' on' : '') }, ghState)),
+    gp ? syLineEl(gp) : null,
     h('div', { class: 'nt-btns' },
-      h('button', { class: 'btn primary sm', onclick: go(() => openGhPanel()) }, t('ui.gh.panel')),
-      h('button', { class: 'btn sm', onclick: go(() => openFromGithub()) }, t('ui.gh.open')))));
-  if (DESK) box.append(setCard(h('span', { class: 'nt-ch' }, icon('cloud', 15), t('ui.drive')), h('div', { class: 'nt-btns' }, h('button', { class: 'btn sm', onclick: go(() => openDrivePanel()) }, t('ui.drive.btn')))));
+      h('button', { class: 'btn primary sm', id: 'set-gh-panel', onclick: go(() => openGhPanel()) }, t('ui.gh.panel')),
+      h('button', { class: 'btn sm', onclick: go(() => openFromGithub()) }, t('ui.gh.open')),
+      gp && gp.st === 'conflict' ? h('button', { class: 'btn sm danger-fill', onclick: go(() => ghConflictDialog()) }, icon('alert', 14), t('ui.pick')) : null,
+      gp && gp.st !== 'conflict' ? h('button', { class: 'btn sm', id: 'set-gh-now', onclick: () => ghSyncNow() }, icon('refresh', 14), gp.st === 'newer' ? t('ui.take') : t('ui.sync.now')) : null)));
+  /* Google Диск */
+  box.append(setDriveCard(st, render, go, part('drive')));
   box.append(setCard(h('span', { class: 'nt-ch' }, icon('chat', 15), t('ui.notify')), h('div', { class: 'hint' }, t('ui.notify.t')), h('div', { class: 'nt-btns' }, h('button', { class: 'btn sm', onclick: go(() => openNotify()) }, t('ui.notify.btn')))));
   if (typeof collabAvail === 'function' && collabAvail()) box.append(setCard(h('span', { class: 'nt-ch' }, icon('users', 15), t('ui.collab')), h('div', { class: 'hint' }, t('ui.collab.t')), h('div', { class: 'nt-btns' }, h('button', { class: 'btn sm', onclick: go(() => openCollabPanel()) }, t('ui.collab.btn')))));
   return box;
+}
+/** Карточка Google Диска: вход, включение синхронизации для проекта и ручной обмен, не уходя из настроек. */
+function setDriveCard(st, render, go, dp) {
+  const head = (state, on) => h('span', { class: 'nt-ch' }, icon('cloud', 15), t('ui.drive'), h('span', { class: 'nt-state' + (on ? ' on' : '') }, state));
+  if (!GD) return h('div', { class: 'nt-card', id: 'set-drive' }, head(t('ui.drive.web'), false), h('div', { class: 'hint' }, t('ui.drive.web.h')));
+  const gs = GS.st, dm = dmeta(), on = !!(dm && dm.on);
+  const state = !gs.configured ? t('ui.drive.nocfg') : !gs.signedIn ? t('ui.drive.nosign') : on ? t('ui.drive.on') : t('ui.drive.in', gs.email || '');
+  const kids = [];
+  if (!gs.configured) {
+    kids.push(h('div', { class: 'hint' }, t('ui.drive.key.h')), h('div', { class: 'nt-btns' }, h('button', { class: 'btn primary sm', id: 'set-drive-panel', onclick: go(() => openDrivePanel()) }, t('ui.drive.key.btn'))));
+  } else if (!gs.signedIn) {
+    kids.push(h('div', { class: 'nt-btns' },
+      h('button', { class: 'btn primary sm', id: 'set-drive-signin', disabled: GS.signing, onclick: async () => { await driveSignIn(); render(); } }, icon('user', 14), t('ui.drive.signin')),
+      h('button', { class: 'btn sm', onclick: go(() => openDrivePanel()) }, t('ui.drive.btn'))));
+  } else {
+    kids.push(h('div', { class: 'opt-row' }, switchEl(on, v => { if (v) driveEnable(); else driveDisable(); setTimeout(render, 80); }, t('ui.drive.sw')), h('div', { class: 'hint' }, t('ui.drive.sw.h'))));
+    if (dp) kids.push(syLineEl(dp));
+    kids.push(h('div', { class: 'nt-btns' },
+      h('button', { class: 'btn primary sm', id: 'set-drive-panel', onclick: go(() => openDrivePanel()) }, t('ui.drive.btn')),
+      on && dp && dp.st === 'conflict' ? h('button', { class: 'btn sm danger-fill', onclick: go(() => driveConflictDialog()) }, icon('alert', 14), t('ui.pick')) : null,
+      on && dp && dp.st === 'newer' ? h('button', { class: 'btn sm', onclick: () => driveTakeNewer() }, icon('download', 14), t('ui.take')) : null,
+      on && dp && !['conflict', 'newer'].includes(dp.st) ? h('button', { class: 'btn sm', id: 'set-drive-now', onclick: () => driveSyncNow() }, icon('refresh', 14), t('ui.sync.now')) : null));
+  }
+  return h('div', { class: 'nt-card', id: 'set-drive' }, head(state, on), ...kids);
 }
 const BAR_META = {
   play: ['play', 'pl.btn'], text: ['type', 'te.top'], registry: ['layers', 'top.registry'], stats: ['chart', 'sh.btn'], team: ['badge', 'team.btn'],

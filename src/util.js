@@ -67,6 +67,8 @@ const ICONS = {
   badge: '<rect x="4" y="3" width="16" height="18" rx="2.5"/><circle cx="12" cy="10" r="2.6"/><path d="M7.6 17.2c.8-2 2.4-3 4.4-3s3.6 1 4.4 3"/>',
   hash: '<path d="M5 9h15M4 15h15M10 4L8 20M16 4l-2 16"/>',
   cloud: '<path d="M7.5 18.5a4.5 4.5 0 01-.7-8.95A6 6 0 0118.2 10 4.3 4.3 0 0118 18.5z"/>',
+  grid: '<rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/>',
+  cloudok: '<path d="M7.5 18.5a4.5 4.5 0 01-.7-8.95A6 6 0 0118.2 10 4.3 4.3 0 0118 18.5z"/><path d="M9.4 13.6l2.1 2.1 3.9-4.1"/>',
   refresh: '<path d="M20 11a8 8 0 00-14.5-4.2M4 4v4h4M4 13a8 8 0 0014.5 4.2M20 20v-4h-4"/>',
   fork: '<circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="8" r="2"/><path d="M6 7v10M18 10c0 4-6 3-12 7"/>',
   book: '<path d="M4 5a2 2 0 012-2h13v15H6a2 2 0 00-2 2V5z"/><path d="M4 20a2 2 0 002 1h13"/>',

@@ -33,7 +33,8 @@ function barBuilders() {
     file: () => (uiPro() ? null : tbtn('save', t('ui.file'), t('ui.file.tip'), b => menuAt(b, [...saveItems(), { sep: true },
       { label: t('exp.svg.dark'), icon: 'image', onClick: () => exportSVG('dark') },
       { label: t('exp.svg.light'), icon: 'image', onClick: () => exportSVG('light') },
-      { label: t('mp.menu'), icon: 'image', onClick: () => openMapPdf() }]), 'file-btn')),
+      { label: t('mp.menu'), icon: 'image', onClick: () => openMapPdf() },
+      { label: t('exp.map'), icon: 'rows', onClick: exportMap }]), 'file-btn')),
     open,
   };
 }
@@ -65,7 +66,7 @@ function buildChrome() {
     h('div', { class: 'bar' }, BTN.undo, BTN.redo, h('div', { class: 'tsep' }),
       tbtn('plus', t('top.add'), t('top.add.tip'), b => menuAt(b, NODE_TYPES.map(tp => ({ label: t('type.' + tp), icon: TYPE_ICON[tp], onClick: () => addNodeAtCenter(tp) })))),
       tbtn('search', t('top.search'), t('top.search') + ' (Ctrl+K)', () => openSearch()),
-      uiPro() ? tbtn('wand', t('tools.btn'), t('tools.tip'), b => toolsMenu(b), 'tools-btn') : null),
+      uiPro() ? tbtn('wand', t('tools.btn'), t('tools.tip'), b => toolsMenu(b), 'tools-btn') : tbtn('grid', t('ui.more'), t('ui.more.tip'), b => uiMoreMenu(b), 'more-btn')),
     uiStrip(),
     h('div', { class: 'grow' }),
     h('div', { class: 'bar' }, ...topRight(langSeg)));
@@ -76,10 +77,10 @@ function buildChrome() {
     tbtn('plus', '', t('zoom.in'), () => zoomCenter(1.25)),
     h('div', { class: 'tsep' }),
     tbtn('fit', '', t('c.fit') + ' (F)', () => fitAll()),
-    ...(uiShow('bar.layers') ? [h('div', { class: 'tsep' }),
+    ...(uiPlain('bar.layers') ? [h('div', { class: 'tsep' }),
     (BTN.echo = tbtn('flag', '', t('tb.echo'), b => { S.echo = !S.echo; saveSettings(); b.classList.toggle('on', S.echo); renderEchoes(); }, S.echo ? 'on' : '')),
     (BTN.jumps = tbtn('link', '', t('tb.jumps'), b => { S.jumps = !S.jumps; saveSettings(); b.classList.toggle('on', S.jumps); renderJumps(); }, S.jumps ? 'on' : ''))] : [])));
-  BTN.echo = uiShow('bar.layers') ? BTN.echo : null; BTN.jumps = uiShow('bar.layers') ? BTN.jumps : null;
+  BTN.echo = uiPlain('bar.layers') ? BTN.echo : null; BTN.jumps = uiPlain('bar.layers') ? BTN.jumps : null;
   updateUndoButtons(); updateSaveBadge(); updateZoomLabel(); updateStatus();
   if (typeof collabRefreshUI === 'function') collabRefreshUI(); if (BTN.collab) BTN.collab.hidden = !(typeof collabAvail === 'function' && collabAvail());
 }
@@ -110,8 +111,9 @@ function updateStatus() {
     h('button', { class: 'btn stat', 'data-tip': t('sh.tip'), onclick: () => openStatsHub() },
       h('span', t('status.blocks', st.nodes)), h('span', { class: 'sep-dot' }, '·'), h('span', t('status.files', st.files)), h('span', { class: 'sep-dot' }, '·'), h('span', { class: 'strong' }, Math.round(st.pct * 100) + '%')),
     typeof aclChip === 'function' ? aclChip() : null,
-    DESK ? [deskStatusChip(), driveChip(), ghChip(), updChip()]
-      : [h('button', { class: 'btn stat' + (stale ? ' warn' : ''), 'data-tip': t('status.backup.tip'), onclick: () => exportJSON() }, icon('save', 15), UI.lastBackup ? t('status.backup', ago(UI.lastBackup)) : t('status.nobackup')), ghChip()]));
+    DESK ? [deskStatusChip(), syncChip(), updChip()]
+      : [h('button', { class: 'btn stat' + (stale ? ' warn' : ''), 'data-tip': t('status.backup.tip'), onclick: () => exportJSON() }, icon('save', 15), UI.lastBackup ? t('status.backup', ago(UI.lastBackup)) : t('status.nobackup')), syncChip()]));
+  if (typeof syRefreshOpen === 'function') syRefreshOpen();
 }
 function toggleTheme() {
   S.theme = S.theme === 'dark' ? 'light' : 'dark';

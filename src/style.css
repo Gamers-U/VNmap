@@ -481,7 +481,7 @@ html.desktop{--font:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"He
 .dr-t b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dlg-col{display:flex;flex-direction:column;gap:8px;margin-top:6px}
 .dlg-col .btn{justify-content:center;height:38px}
-.drive-chip.busy .ic{animation:drspin 1s linear infinite}
+.drive-chip.busy .ic,.sync-chip.syncing .ic,.sy-line.syncing .ic{animation:drspin 1s linear infinite}
 @keyframes drspin{to{transform:rotate(360deg)}}
 
 /* имя и цвет персонажа в игре */
@@ -1838,3 +1838,17 @@ body.game-mode{background:var(--bg)}
 .sh-card .tiles{grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}
 .sh-card .tile{background:var(--surface3)}
 .sh-num{color:var(--text)}
+
+/* значок синхронизации внизу и сводка во вкладке «Подключения» */
+.sync-chip{padding:0 8px;min-width:32px;justify-content:center}
+.sync-chip.ok{color:var(--ok)}
+.sync-chip.pending,.sync-chip.none{color:var(--text3)}
+.sync-chip.syncing{color:var(--accent)}
+#statusbar .sync-chip[data-tip]:hover::after{white-space:pre;text-align:left}
+.sy-lines{display:flex;flex-direction:column;gap:4px}
+.sy-line{display:flex;align-items:flex-start;gap:7px;font-size:12.5px;color:var(--text2)}
+.sy-line .ic{flex:none;margin-top:2px}
+.sy-line.ok .ic,.sy-sum.ok .nt-ch .ic{color:var(--ok)}
+.sy-line.warn,.sy-sum.warn .nt-ch{color:var(--warn)}
+.sy-sum.none .nt-ch,.sy-sum.pending .nt-ch{color:var(--text2)}
+.pop.more-pop{max-height:calc(100vh - 72px);overflow-y:auto;overscroll-behavior:contain;min-width:230px}
