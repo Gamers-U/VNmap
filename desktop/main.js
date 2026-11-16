@@ -20,7 +20,7 @@ const HOST = 'app';
 const APP_DIR = path.join(__dirname, 'app');
 const PROJECT_EXTS = ['.vnmap', '.zip', '.json'];
 const DEV = process.argv.includes('--dev');
-const BRIDGE = 6;                      // версия «моста» оболочки: страница может потребовать не меньше (data-needs в её отметке сборки)
+const BRIDGE = 7;                      // версия «моста» оболочки: страница может потребовать не меньше (data-needs в её отметке сборки)
 const RECENT_MAX = 12;
 
 protocol.registerSchemesAsPrivileged([{ scheme: SCHEME, privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true } }]);
@@ -489,6 +489,58 @@ function registerIpc() {
   handle('desk:unbind', async () => { projectPath = ''; saveWinSettings(); return true; });
   /* лёгкая проверка «файл проекта изменился?» для совместной работы через общий файл */
   handle('desk:stat', async () => { if (!projectPath) return null; try { const st = await fsp.stat(projectPath); return { sig: Math.round(st.mtimeMs) + ':' + st.size, size: st.size, mtime: st.mtimeMs }; } catch (err) { return null; } });
+
+  /* ---- снимки проекта рядом с файлом .vnmap (1.6.13): папка «<имя проекта> (snapshots)», в ней файлы вида 2026-11-16_20-41-33_auto.json ---- */
+  const SNAP_STAMP = /^\d{4}-\d\d-\d\d_\d\d-\d\d-\d\d$/, SNAP_NAME = /^(\d{4}-\d\d-\d\d_\d\d-\d\d-\d\d)_(auto|safe|named)(?:_([^\\/:*?"<>|\x00-\x1f]{1,80}))?\.json$/;
+  const snapDir = () => {
+    if (!projectPath) return '';
+    const base = path.basename(projectPath).replace(/\.vnmap$/i, '');
+    return path.join(path.dirname(projectPath), safeFileName(base) + ' (snapshots)');
+  };
+  handle('sn:info', async () => {
+    const dir = snapDir(); if (!dir) return { ok: false, code: 'nobind' };
+    const items = [];
+    try {
+      for (const n of await fsp.readdir(dir)) {
+        const m = SNAP_NAME.exec(n); if (!m) continue;
+        let st; try { st = await fsp.stat(path.join(dir, n)); } catch (err) { continue; }
+        if (!st.isFile()) continue;
+        items.push({ file: n, stamp: m[1], kind: m[2], label: m[3] || '', size: st.size, mtime: Math.round(st.mtimeMs) });
+      }
+    } catch (err) { /* папки ещё нет: снимков пока не было */ }
+    items.sort((a, b) => b.stamp.localeCompare(a.stamp) || b.mtime - a.mtime);
+    return { ok: true, dir, items };
+  });
+  handle('sn:save', async (e, o) => {
+    const dir = snapDir(); if (!dir) return { ok: false, code: 'nobind' };
+    if (!o || o.path !== projectPath) return { ok: false, code: 'moved' };         // за время записи проект успели привязать к другому файлу или отвязать
+    if (typeof o.text !== 'string' || !SNAP_STAMP.test(String(o.stamp)) || !['auto', 'safe', 'named'].includes(o.kind)) return { ok: false, code: 'bad' };
+    const label = o.kind === 'named' ? String(o.label || '').replace(/[\\/:*?"<>|\x00-\x1f]+/g, ' ').replace(/\s+/g, ' ').trim().replace(/^\.+/, '').slice(0, 60).trim() : '';
+    const file = o.stamp + '_' + o.kind + (label ? '_' + label : '') + '.json';
+    try {
+      await fsp.mkdir(dir, { recursive: true });
+      await atomicWrite(path.join(dir, file), toBuffer(o.text));
+    } catch (err) { return { ok: false, code: 'write', msg: String(err.message || err) }; }
+    /* лишние автокопии и страховки удаляем: хранятся столько же, сколько внутри программы; свои снимки не трогаем */
+    const keep = { auto: Math.max(1, Math.min(200, Math.round(+o.keepAuto) || 15)), safe: Math.max(1, Math.min(200, Math.round(+o.keepSafe) || 10)) };
+    try {
+      const all = [];
+      for (const n of await fsp.readdir(dir)) { const m = SNAP_NAME.exec(n); if (m && (m[2] === 'auto' || m[2] === 'safe')) all.push({ n, stamp: m[1], kind: m[2] }); }
+      for (const kind of ['auto', 'safe']) {
+        const mine = all.filter(x => x.kind === kind).sort((a, b) => b.stamp.localeCompare(a.stamp));
+        for (const x of mine.slice(keep[kind])) { try { await fsp.unlink(path.join(dir, x.n)); } catch (err) { /* не страшно */ } }
+      }
+    } catch (err) { /* не страшно */ }
+    return { ok: true, file, dir };
+  });
+  handle('sn:read', async (e, file) => {
+    const dir = snapDir(); if (!dir || typeof file !== 'string' || !SNAP_NAME.test(file)) return null;
+    try { return await fsp.readFile(path.join(dir, file), 'utf8'); } catch (err) { return null; }
+  });
+  handle('sn:remove', async (e, file) => {
+    const dir = snapDir(); if (!dir || typeof file !== 'string' || !SNAP_NAME.test(file)) return false;
+    try { await fsp.unlink(path.join(dir, file)); return true; } catch (err) { return false; }
+  });
 
   handle('desk:openDialog', async () => {
     const r = await dialog.showOpenDialog(win, { title: T().openTitle, defaultPath: lastDir || app.getPath('documents'), properties: ['openFile'], filters: [{ name: T().projFilter, extensions: ['vnmap', 'zip', 'json'] }, ...filtersFor(['all'])] });

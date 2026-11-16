@@ -70,6 +70,12 @@ contextBridge.exposeInMainWorld('vnDesktop', {
     mine: memberId => call('nt:mine', memberId),
     farewell: f => call('nt:farewell', f),
   },
+  snap: {
+    info: () => call('sn:info'),
+    save: o => call('sn:save', o),
+    read: file => call('sn:read', file),
+    remove: file => call('sn:remove', file),
+  },
   shellUpdate: {
     check: () => call('su:check'),
     download: () => call('su:download'),

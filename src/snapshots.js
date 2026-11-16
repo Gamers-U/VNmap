@@ -31,6 +31,15 @@ Object.assign(D, {
   'sn.rest.done': ['Проект возвращён к снимку. Отменить: Ctrl+Z', 'The project was returned to the snapshot. Undo: Ctrl+Z'],
   'sn.del.q': ['Удалить снимок?', 'Delete the snapshot?'], 'sn.del.t': ['«{0}» будет удалён без возможности вернуть.', '“{0}” will be deleted for good.'],
   'sn.ren.q': ['Новое название снимка', 'New snapshot name'],
+  'sn.disk': ['Копировать снимки в папку рядом с файлом проекта', 'Copy snapshots to a folder next to the project file'],
+  'sn.disk.h': ['Папка «<имя проекта> (snapshots)» появится рядом с файлом при первом снимке. Так снимки переживают очистку данных программы и переезжают вместе с проектом. Файлы из неё можно открыть как обычный проект.', 'The “<project name> (snapshots)” folder appears next to the file with the first snapshot. That way snapshots survive clearing the app data and travel with the project. The files can be opened as an ordinary project.'],
+  'sn.disk.at': ['Папка: {0}. Файлов в ней: {1}.', 'Folder: {0}. Files in it: {1}.'],
+  'sn.disk.open': ['Открыть папку', 'Open the folder'],
+  'sn.foot.disk': ['Снимки лежат в этой программе и в папке рядом с файлом проекта, но не внутри самого файла и не на GitHub. Чтобы унести снимок, возьмите файл из папки или нажмите «Скачать копию».', 'Snapshots live in this app and in the folder next to the project file, but not inside the file itself and not on GitHub. To take one away, grab the file from the folder or press “Download a copy”.'],
+  'sn.disk.old': ['Чтобы снимки копировались в папку рядом с файлом проекта, переустановите программу (нужна оболочка версии 1.6.13 или новее).', 'To copy snapshots next to the project file, reinstall the app (shell version 1.6.13 or newer is needed).'],
+  'sn.disk.nobind': ['Сохраните проект в файл (Ctrl+S): тогда снимки будут копироваться ещё и в папку рядом с ним.', 'Save the project to a file (Ctrl+S): snapshots will then also be copied to a folder next to it.'],
+  'sn.disk.fail': ['Не удалось записать снимок в папку рядом с проектом: {0}', 'Could not write the snapshot to the folder next to the project: {0}'],
+  'sn.meta.disk': ['{0} · из папки рядом с проектом · {1}', '{0} · from the folder next to the project · {1}'],
   'sn.bad': ['Снимок повреждён или не читается', 'The snapshot is damaged or unreadable'],
   'sn.d.title': ['Что изменилось с этого снимка', 'What has changed since this snapshot'],
   'sn.d.lead': ['Снимок от {0} и проект сейчас. Новое это то, что появилось после снимка, «Пропало» то, что было в снимке, а сейчас нет и вернётся при восстановлении.', 'The snapshot of {0} against the project now. New is what appeared after the snapshot; Gone is what was in the snapshot but is not now and would come back on restore.'],
@@ -58,6 +67,7 @@ function snCfg() {
   if (typeof c.auto !== 'boolean') c.auto = true;
   if (!SN_AUTO_EVERY.includes(c.every)) c.every = 10;
   if (!SN_AUTO_KEEP.includes(c.keep)) c.keep = 15;
+  if (typeof c.disk !== 'boolean') c.disk = true;        // ПК: копии ещё и в папку рядом с файлом проекта
   return c;
 }
 
@@ -85,6 +95,7 @@ async function snList(uid) {
   } catch (e) { return null; }
 }
 async function snGet(id) {
+  if (String(id).startsWith('disk:')) { const sd = SND(); if (!sd) return null; try { return await sd.read(String(id).slice(5)); } catch (e) { return null; } }       // снимок из папки рядом с проектом
   const db = await snDb(); if (!db) return null;
   try { const r = await snReq(db.transaction('data').objectStore('data').get(id)); return r ? r.json : null; } catch (e) { return null; }
 }
@@ -93,7 +104,13 @@ function snWrite(db, fn) {
     try { const tx = db.transaction(['meta', 'data'], 'readwrite'); fn(tx.objectStore('meta'), tx.objectStore('data')); tx.oncomplete = () => res(true); tx.onerror = tx.onabort = () => res(false); } catch (e) { res(false); }
   });
 }
-async function snDelete(ids) { const db = await snDb(); if (!db || !ids.length) return false; return snWrite(db, (m, d) => ids.forEach(id => { m.delete(id); d.delete(id); })); }
+async function snDelete(ids) {
+  const sd = SND(), disk = ids.filter(id => String(id).startsWith('disk:')), mem = ids.filter(id => !String(id).startsWith('disk:'));
+  if (sd) for (const id of disk) { try { await sd.remove(String(id).slice(5)); } catch (e) { /* не страшно */ } }
+  if (!mem.length) return disk.length > 0;
+  const db = await snDb(); if (!db) return false;
+  return snWrite(db, (m, d) => mem.forEach(id => { m.delete(id); d.delete(id); }));
+}
 async function snRename(id, name) {
   const db = await snDb(); if (!db) return false;
   const m = db.transaction('meta').objectStore('meta'); const cur = await snReq(m.get(id)); if (!cur) return false;
@@ -109,7 +126,7 @@ async function snTake(why, name) {
     if ((typeof GAME !== 'undefined' && GAME) || !P || !P.nodes.length) return null;
     const json = JSON.stringify(P), sig = snSig(json);
     const stats = { nodes: P.nodes.length, files: P.nodes.reduce((a, n) => a + n.files.length, 0), words: typeof mxWords === 'function' ? mxWords() : 0 };
-    const uid0 = P.uid, pname = P.name;
+    const uid0 = P.uid, pname = P.name, path0 = typeof DS !== 'undefined' ? DS.path : '';
     const db = await snDb(); if (!db) return null;
     const list = (await snList(uid0)) || [];
     const manual = why === 'manual';
@@ -123,6 +140,7 @@ async function snTake(why, name) {
       const old = list.filter(x => x.kind === kind).slice(keep - 1).map(x => x.id);        // с новой записью останется ровно keep
       if (old.length) await snDelete(old);
     }
+    await snDiskPut(meta, json, path0);
     return meta;
   } catch (e) { return null; }
 }
@@ -141,6 +159,35 @@ function snStart() {
   SN.timer = setInterval(() => snTick('tick'), 60e3);
   document.addEventListener('visibilitychange', () => { if (document.hidden && Date.now() - SN.at > 120e3) snTick('hide'); });
   setTimeout(() => { SN.live = true; SN.at = Date.now() - snCfg().every * 60e3; snTick('open'); }, 6000);
+}
+
+/* ---------- копии рядом с файлом проекта (ПК, оболочка 1.6.13 и новее) ----------
+   Каждая копия ещё и пишется файлом `ГГГГ-ММ-ДД_ЧЧ-ММ-СС_вид[_название].json` в папку «<имя проекта> (snapshots)» рядом с .vnmap. Так снимки переживают очистку данных
+   программы и переезжают вместе с проектом на другой компьютер. Эти файлы можно открыть как обычный проект. Лишние автокопии и страховки оболочка удаляет сама. */
+const SND = () => (typeof DESK !== 'undefined' && DESK && DESK.snap ? DESK.snap : null);
+const snStamp = ms => { const d = new Date(ms), p = n => String(n).padStart(2, '0'); return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + '_' + p(d.getHours()) + '-' + p(d.getMinutes()) + '-' + p(d.getSeconds()); };
+const snStampMs = s => { const m = /^(\d{4})-(\d\d)-(\d\d)_(\d\d)-(\d\d)-(\d\d)$/.exec(s); return m ? new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6]).getTime() : 0; };
+const snDiskOn = () => !!(SND() && typeof DS !== 'undefined' && DS.path && snCfg().disk !== false);
+async function snDiskPut(meta, json, path0) {
+  if (!snDiskOn() || DS.path !== path0) return;                                 // проект успели отвязать или перепривязать: чужой файл не трогаем
+  try {
+    const r = await SND().save({ path: path0, stamp: snStamp(meta.t), kind: meta.kind, label: meta.name, text: json, keepAuto: snCfg().keep, keepSafe: SN_SAFE_KEEP });
+    if (r && r.ok) { SN.disk = { dir: r.dir, err: '' }; return; }
+    if (r && r.code === 'moved') return;
+    SN.disk = { dir: '', err: (r && (r.msg || r.code)) || '?' };
+  } catch (e) { SN.disk = { dir: '', err: String((e && e.message) || e || '?').replace(/^Error invoking remote method '[^']+': (Error: )?/, '') }; }
+  if (!SN.diskWarned) { SN.diskWarned = true; toast(t('sn.disk.fail', SN.disk.err), 6500); }
+}
+/** Список для окна: снимки программы плюс те, что лежат только в папке рядом с проектом (после очистки данных или на другом компьютере). */
+async function snListAll(uid) {
+  const idb = await snList(uid), sd = SND();
+  if (!sd || typeof DS === 'undefined' || !DS.path) return { list: idb, disk: null };
+  let info = null; try { info = await sd.info(); } catch (e) { info = null; }
+  if (!info || !info.ok) return { list: idb, disk: null };
+  const have = new Set((idb || []).map(m => m.kind + '|' + snStamp(m.t))), twin = new Map(info.items.map(it => [it.kind + '|' + it.stamp, it.file]));
+  for (const m of idb || []) m.twin = twin.get(m.kind + '|' + snStamp(m.t)) || '';
+  const only = info.items.filter(it => !have.has(it.kind + '|' + it.stamp)).map(it => ({ id: 'disk:' + it.file, uid, pname: P.name, t: snStampMs(it.stamp) || it.mtime, kind: it.kind, why: it.kind === 'auto' ? 'tick' : it.kind === 'safe' ? 'replace' : '', name: it.label, bytes: it.size, nodes: 0, files: 0, words: 0, disk: true }));
+  return { list: idb === null && !only.length ? null : (idb || []).concat(only).sort((a, b) => b.t - a.t), disk: { dir: info.dir, count: info.items.length, only: only.length } };
 }
 
 /* ---------- восстановление и скачивание ---------- */
@@ -240,7 +287,7 @@ function openSnapshots() {
       const body = h('div', { class: 'sn-body' });
       SNW = { m, body, paint: null };
       const sel = (opts, val, fmt, on) => { const s = h('select', { class: 'inp sn-sel' }, opts.map(o => h('option', { value: o, selected: o === val }, fmt(o)))); s.addEventListener('change', () => on(+s.value)); return s; };
-      const load = async () => { st.list = await snList(P.uid); paint(); };
+      const load = async () => { const r = await snListAll(P.uid); st.list = r.list; st.disk = r.disk; paint(); };
       const paint = () => {
         const c = snCfg();
         const nameI = h('input', { class: 'inp', id: 'sn-name', placeholder: t('sn.name.ph'), 'aria-label': t('sn.name'), value: st.name, maxlength: '120' });
@@ -257,17 +304,26 @@ function openSnapshots() {
           h('div', { class: 'sn-cfg' }, h('label', { class: 'ar-chk' }, autoChk, h('span', t('sn.auto'))),
             c.auto ? [h('span', { class: 'hint' }, t('sn.every')), sel(SN_AUTO_EVERY, c.every, v => t('sn.min', v), v => { c.every = v; saveSettings(); }),
               h('span', { class: 'hint' }, t('sn.keep')), sel(SN_AUTO_KEEP, c.keep, v => t('sn.n', v), v => { c.keep = v; saveSettings(); })] : null));
+        const diskBox = () => {
+          if (typeof DESK === 'undefined' || !DESK) return null;
+          if (!SND()) return h('div', { class: 'hint sn-disk' }, t('sn.disk.old'));
+          if (!DS.path) return h('div', { class: 'hint sn-disk' }, t('sn.disk.nobind'));
+          const chk = h('input', { type: 'checkbox', id: 'sn-disk', checked: c.disk !== false }); chk.addEventListener('change', () => { c.disk = chk.checked; saveSettings(); paint(); });
+          return h('div', { class: 'sn-disk' }, h('label', { class: 'ar-chk' }, chk, h('span', t('sn.disk'))),
+            c.disk !== false && st.disk ? h('div', { class: 'hint' }, t('sn.disk.at', st.disk.dir, st.disk.count), ' ', h('button', { class: 'btn sm', id: 'sn-opendir', onclick: () => DESK.showInFolder(st.disk.dir) }, icon('folder', 14), t('sn.disk.open'))) : h('div', { class: 'hint' }, t('sn.disk.h')));
+        };
+        head.append(diskBox() || '');
         const rows = st.list === undefined ? [h('div', { class: 'hint' }, '…')] : st.list === null ? [h('div', { class: 'bs-hint warn' }, t('sn.nodb'))] : !st.list.length ? [h('div', { class: 'empty' }, t('sn.empty'))] : st.list.map(x => h('div', { class: 'sn-row', 'data-snap': x.id, 'data-kind': x.kind },
           h('span', { class: 'sn-badge ' + x.kind }, t('sn.k.' + x.kind)),
           h('div', { class: 'sn-main' }, h('b', x.kind === 'named' ? (x.name || t('sn.k.named')) : t('sn.why.' + (x.why || 'tick'))),
-            h('div', { class: 'hint' }, t('sn.meta', snWhen(x.t), x.nodes, x.words, humanSize(x.bytes)))),
+            h('div', { class: 'hint' }, x.disk ? t('sn.meta.disk', snWhen(x.t), humanSize(x.bytes)) : t('sn.meta', snWhen(x.t), x.nodes, x.words, humanSize(x.bytes)))),
           h('div', { class: 'sn-acts' },
             h('button', { class: 'btn sm sn-cmp', onclick: () => snCompare(x) }, t('sn.compare')),
             h('button', { class: 'btn sm primary sn-rest', onclick: async () => { if (await snRestore(x)) { m.close(); } } }, icon('undo', 14), t('sn.restore')),
             h('button', { class: 'btn icon sm', 'data-tip': t('sn.dl'), onclick: () => snDownload(x) }, icon('download', 15)),
-            x.kind === 'named' ? h('button', { class: 'btn icon sm sn-ren', 'data-tip': t('sn.ren'), onclick: async () => { const v = await promptDlg({ title: t('sn.ren.q'), label: t('sn.name'), value: x.name || '', ok: t('sn.ren') }); if (v != null && String(v).trim()) { await snRename(x.id, String(v).trim()); load(); } } }, icon('type', 15)) : null,
-            h('button', { class: 'btn icon sm sn-del', 'data-tip': t('sn.del'), onclick: async () => { if (await confirmDlg({ title: t('sn.del.q'), text: t('sn.del.t', x.kind === 'named' ? x.name : snLabel(x)), ok: t('sn.del'), danger: true })) { await snDelete([x.id]); load(); } } }, icon('trash', 15)))));
-        body.replaceChildren(head, h('div', { class: 'sn-list' }, ...rows), h('div', { class: 'hint sn-foot' }, t('sn.foot')));
+            x.kind === 'named' && !x.disk ? h('button', { class: 'btn icon sm sn-ren', 'data-tip': t('sn.ren'), onclick: async () => { const v = await promptDlg({ title: t('sn.ren.q'), label: t('sn.name'), value: x.name || '', ok: t('sn.ren') }); if (v != null && String(v).trim()) { await snRename(x.id, String(v).trim()); load(); } } }, icon('type', 15)) : null,
+            h('button', { class: 'btn icon sm sn-del', 'data-tip': t('sn.del'), onclick: async () => { if (await confirmDlg({ title: t('sn.del.q'), text: t('sn.del.t', x.kind === 'named' ? x.name : snLabel(x)), ok: t('sn.del'), danger: true })) { await snDelete([x.id].concat(x.twin ? ['disk:' + x.twin] : [])); load(); } } }, icon('trash', 15)))));
+        body.replaceChildren(head, h('div', { class: 'sn-list' }, ...rows), h('div', { class: 'hint sn-foot' }, t(snDiskOn() ? 'sn.foot.disk' : 'sn.foot')));
       };
       SNW.paint = load;
       load();
