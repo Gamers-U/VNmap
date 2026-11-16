@@ -159,7 +159,7 @@ setTimeout(() => { ntDueCheck().catch(() => { }); setInterval(() => ntDueCheck()
    Скрипт ниже кладётся в репозиторий как есть и запускается GitHub по расписанию. В нём нет обратных кавычек и «${», чтобы его можно
    было держать строкой в странице. Адреса проверяются так же, как в оболочке: только Telegram и вебхуки Discord. */
 const NT_SCRIPT = String.raw`// VNMap: напоминания о сроках в Telegram и Discord. Запускается по расписанию в GitHub Actions.
-// Читает проект из репозитория и пишет каждому участнику его просроченное и сегодняшнее. Секреты берёт из VNMAP_NOTIFY (по строке JSON на человека).
+// Читает проект из репозитория и пишет каждому участнику его просроченное и сегодняшнее (задачи, блоки и ресурсы со сроком). Секреты берёт из VNMAP_NOTIFY (по строке JSON на человека).
 import fs from 'node:fs';
 const env = process.env;
 const RU = env.VN_LANG !== 'en';
@@ -188,6 +188,10 @@ for (const n of nodes) {
   const files = Array.isArray(n.files) ? n.files : [];
   if (files.length && files.every(f => f && f.status === 'done')) continue;
   items.push({ t: String(n.title || '—'), where: T('блок', 'block'), due: n.due, who: Array.isArray(n.owners) ? n.owners : [] });
+}
+for (const a of Array.isArray(P.assets) ? P.assets : []) {
+  const pr = a && a.prod; if (!pr || !okDate(pr.due) || pr.st === 'got' || pr.st === 'done') continue;
+  items.push({ t: String(a.name || a.path || '—'), where: T('ресурс', 'resource'), due: pr.due, who: Array.isArray(a.owners) ? a.owners : [] });
 }
 
 const targets = new Map();

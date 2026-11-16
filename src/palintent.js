@@ -29,7 +29,7 @@ const PAL_INTENT = {
   htmlgame: 'html игра для тестеров одним файлом отправить тестеру поделиться браузерная игра tester html game one file share',
   renpy: 'запустить в ренпай запуск lint проверка ренпай настоящий движок sdk собрать дистрибутив архив виндовс run renpy engine sdk lint distribution',
   ctrlcheck: 'контрольная новелла проверка сборки ренпай чек-лист отчёт не запускается ошибка при запуске test novel checklist report build does not run',
-  tasks: 'задачи сроки дедлайны кто делает назначить сцену приоритет tasks deadlines assign priority',
+  tasks: 'задачи сроки дедлайны кто делает назначить сцену приоритет ресурсы срок ресурса tasks deadlines assign priority resource deadline',
   notify: 'уведомления телеграм дискорд сообщение напоминание закрыл проект пауза notifications telegram discord reminder',
   review: 'проверка правок ветки авторов принять правки ревью рецензия review accept changes author branches',
   whoami: 'я это кто я автор имя участник мой профиль who am i author member',

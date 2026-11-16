@@ -26,8 +26,10 @@ Object.assign(D, {
   'tk.sum.open': ['Открыто', 'Open'], 'tk.sum.over': ['Просрочено', 'Overdue'], 'tk.sum.done': ['Готово', 'Done'], 'tk.sum.nobody': ['Без исполнителя', 'Unassigned'],
   'tk.sum.who': ['Кто', 'Who'], 'tk.sum.next': ['Ближайший срок', 'Next deadline'],
   'tk.sum.overdue.h': ['Просроченное', 'Overdue items'], 'tk.sum.none': ['Просроченного нет.', 'Nothing is overdue.'],
-  'tk.sum.hint': ['В сводку входят задачи и блоки со сроком. Блок считается готовым, когда все его файлы в статусе «Готово».', 'The summary counts tasks and blocks that have a deadline. A block is finished when all its files are “Done”.'],
+  'tk.sum.hint': ['В сводку входят задачи, блоки и ресурсы со сроком. Блок считается готовым, когда все его файлы в статусе «Готово», а ресурс — когда он получен или вставлен в игру.', 'The summary counts tasks, blocks and resources that have a deadline. A block is finished when all its files are “Done”, and a resource when it is received or in the game.'],
   'tk.ro': ['Задачи ведут владелец и руководители; свою задачу вы можете двигать по статусам и писать к ней комментарий.', 'The owner and project leads manage tasks; you can move your own task through the statuses and comment on it.'],
+  'tk.res': ['ресурс', 'resource'], 'tk.res.open': ['Открыть в реестре', 'Open in the registry'],
+  'tk.res.st': ['Статус работы над ресурсом', 'Work status of the resource'],
   'tk.filter.who': ['Исполнитель', 'Assignee'], 'tk.filter.all': ['Все', 'All'], 'acl.area.tasks': ['задачи и сроки', 'tasks and deadlines'],
 });
 
@@ -53,6 +55,12 @@ function taskItems() {
   const out = [];
   for (const q of P.tasks) out.push({ kind: 'task', id: q.id, title: q.title || t('tk.untitled'), node: q.node, who: q.who || [], due: q.due, st: q.st, pri: q.pri || 0, done: q.st === 'done', ref: q });
   for (const n of P.nodes) if (n.due) out.push({ kind: 'block', id: n.id, title: blockTitle(n), node: n.id, who: n.owners || [], due: n.due, st: blockDone(n) ? 'done' : 'doing', pri: n.pri || 0, done: blockDone(n), ref: n });
+  for (const a of P.assets) {                         // ресурсы со сроком (задаёт реестр: статус работы и срок готовности)
+    const due = typeof prodDue === 'function' ? prodDue(a) : '';
+    if (!due) continue;
+    const s = prodSt(a), fin = s === 'got' || s === 'done';
+    out.push({ kind: 'asset', id: a.id, title: a.name || a.path || t('tk.untitled'), node: '', who: a.owners || [], due, st: s, pri: 0, done: fin, ref: a });
+  }
   return out;
 }
 const taskCanManage = () => { const rt = aclRights(); return rt.all || rt.grant; };
@@ -94,6 +102,7 @@ function tkRow(it, st, render, canEditSt) {
   const nd = it.node ? nodeById(it.node) : null;
   const main = h('div', { class: 'tk-main' }, h('div', { class: 'tk-t' }, it.title), h('div', { class: 'tk-s' },
     it.kind === 'block' ? h('span', { class: 'chip static' }, t('tk.from.block')) : null,
+    it.kind === 'asset' ? h('span', { class: 'chip static' }, icon('layers', 12), t('kind1.' + it.ref.kind) !== 'kind1.' + it.ref.kind ? t('kind1.' + it.ref.kind) : t('tk.res')) : null,
     nd && it.kind !== 'block' ? h('button', { class: 'chip', onclick: () => { st.m.close(); focusNode(nd.id, { open: true }); } }, icon('layers', 12), blockTitle(nd)) : null,
     it.due ? h('span', { class: 'tk-due b-' + (it.done ? 'none' : taskBucket(it.due)) }, dueText(it.due)) : null,
     (it.who || []).map(id => memberById(id)).filter(Boolean).map(mm => h('span', { class: 'chip static' }, memberAv(mm, 14), mm.name))));
@@ -103,6 +112,11 @@ function tkRow(it, st, render, canEditSt) {
     sel.addEventListener('change', () => { it.ref.st = sel.value; commit(true); render(); });
     if (!canEditSt) sel.disabled = true;
     row.append(sel);
+  } else if (it.kind === 'asset') {
+    const a = it.ref, sel = h('select', { class: 'inp tk-st', 'aria-label': t('tk.res.st'), 'data-tip': t('tk.res.st') }, ['', ...PROD_ST].map(v => h('option', { value: v, selected: prodSt(a) === v }, prodName(v))));
+    sel.addEventListener('change', () => { prodSet(a, { st: sel.value }); render(); });
+    if (!(canEditSt && (taskCanManage() || aclCan('team') || aclCan(a.kind)))) sel.disabled = true;
+    row.append(sel, h('button', { class: 'btn sm icon', title: t('tk.res.open'), 'aria-label': t('tk.res.open'), onclick: () => { st.m.close(); openRegistry(AUDIO_KINDS.includes(a.kind) ? 'audio' : a.kind); if (REG) { REG.q = a.name || ''; renderReg(); } } }, icon('open', 14)));
   } else row.append(h('button', { class: 'btn sm', onclick: () => { st.m.close(); focusNode(it.node, { open: true }); } }, icon('open', 14), t('tk.open')));
   return row;
 }

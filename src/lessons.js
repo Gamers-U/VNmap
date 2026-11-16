@@ -206,7 +206,7 @@ const TOUR_LESSONS = [
     tip: ['Выбор хранится на вашем компьютере и не меняет проект для других.', 'The choice is stored on your computer and does not change the project for others.'] },
   { id: 'tasks', g: 'team', tool: 'tasks',
     why: ['Корпоративный режим: срок и приоритет у блока, отдельные задачи с исполнителями.', 'Corporate mode: a deadline and a priority on a block, separate tasks with assignees.'],
-    how: [['Откройте «Мои», чтобы увидеть задачи по срокам, или «Все задачи».', 'Open My to see tasks by deadline, or All tasks.'], ['«Сводка для руководителя» показывает, что просрочено и у кого сколько работы.', 'The manager summary shows what is overdue and how much work each person has.']],
+    how: [['Откройте «Мои», чтобы увидеть задачи по срокам, или «Все задачи».', 'Open My to see tasks by deadline, or All tasks.'], ['«Сводка для руководителя» показывает, что просрочено и у кого сколько работы.', 'The manager summary shows what is overdue and how much work each person has.'], ['Сроки ресурсов (фон, спрайт, озвучка) из реестра тоже здесь: статус меняется в строке.', 'Resource deadlines (backgrounds, sprites, voice) from the registry are here too: change the status in the row.']],
     tip: ['Сроки задач могут приходить в Telegram или Discord: см. урок про уведомления.', 'Task deadlines can arrive in Telegram or Discord: see the lesson about notifications.'] },
   { id: 'whodid', g: 'team', tool: 'whodid',
     why: ['Показывает по людям, что сделано за неделю, месяц или всё время: блоки, правки глав, слова, замечания.', 'Shows per person what was done in a week, a month or all the time: blocks, chapter edits, words, remarks.'],
