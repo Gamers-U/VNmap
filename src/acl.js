@@ -117,10 +117,15 @@ function aclNeed(k, b, a, rt, Bp) {
   if (pre === 'k' || pre === 'x') return '';
   if (pre === 'n' || pre === 'f') {
     const fl = b && a ? sameFields(b, a, ['fileIds', 'nodeId']) : null;
-    if (fl && fl.length && fl.every(f => f === 'owners')) return rt.can('map') || rt.can('text') || rt.can('team') ? '' : 'map';
+    if (fl && fl.length && fl.every(f => f === 'owners' || f === 'due' || f === 'pri')) return rt.can('map') || rt.can('text') || rt.can('team') ? '' : 'map';
     return rt.can(pre === 'f' ? 'text' : 'map') ? '' : (pre === 'f' ? 'text' : 'map');
   }
   if (pre === 'e') return rt.can('map') ? '' : 'map';
+  if (pre === 'q') {                                     // задачи ведут владелец и руководители; исполнитель двигает свою задачу и пишет комментарий
+    if (rt.can('team')) return '';
+    const fl = b && a ? sameFields(b, a) : null;
+    return fl && fl.length && fl.every(f => f === 'st' || f === 'notes') && rt.me && (a.who || []).includes(rt.me.id) ? '' : 'tasks';
+  }
   if (pre === 'c') {
     const fl = b && a ? sameFields(b, a) : null;
     if (fl && fl.length && fl.every(f => f === 'actor')) return rt.can('chars') || rt.can('voice') || rt.can('team') ? '' : 'chars';

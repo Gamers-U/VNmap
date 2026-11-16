@@ -305,7 +305,7 @@ function normalize(p) {
     n.x = isFinite(n.x) ? n.x : 0; n.y = isFinite(n.y) ? n.y : 0; n.title = n.title || ''; n.desc = n.desc || '';
     n.color = COLOR_NAMES.includes(n.color) ? n.color : TYPE_COLOR[n.type];
     n.defaultCast = Array.isArray(n.defaultCast) ? n.defaultCast : []; n.prompt = n.prompt || ''; n.done = n.type === 'note' && !!n.done;
-    n.files = Array.isArray(n.files) ? n.files : []; n.owners = cleanIds(n.owners);
+    n.files = Array.isArray(n.files) ? n.files : []; n.owners = cleanIds(n.owners); if (!taskDueOk(n.due)) delete n.due; if (n.pri !== 1 && n.pri !== 2) delete n.pri;
     if (typeof n.by === 'string' && seenM.has(n.by)) { /* автор блока */ } else delete n.by;
     if (n.unlock && typeof n.unlock === 'object') { n.unlock.need = Math.max(1, +n.unlock.need || 1); n.unlock.from = Array.isArray(n.unlock.from) ? n.unlock.from : []; } else n.unlock = null;
     for (const f of n.files) {
@@ -357,6 +357,16 @@ function normalize(p) {
   if (p.lofs && typeof p.lofs === 'object' && !Array.isArray(p.lofs)) for (const k of Object.keys(p.lofs).slice(0, 600)) { const v = p.lofs[k]; if (Array.isArray(v) && isFinite(v[0]) && isFinite(v[1]) && (Math.round(v[0]) || Math.round(v[1]))) lofs[k] = [Math.round(v[0]), Math.round(v[1])]; }
   p.lofs = lofs;
   p.gui = guiClean(p.gui);
+  /* задачи корпоративного режима: P.tasks = [{ id, title, node (блок), who (участники), due (ГГГГ-ММ-ДД), st, pri, notes, by, at }] */
+  const seenQ = new Set();
+  p.tasks = (Array.isArray(p.tasks) ? p.tasks : []).filter(q => q && typeof q === 'object').slice(0, 2000);
+  for (const q of p.tasks) {
+    q.id = typeof q.id === 'string' && q.id && !seenQ.has(q.id) ? q.id : uid('q'); seenQ.add(q.id);
+    q.title = String(q.title == null ? '' : q.title).slice(0, 200); q.notes = String(q.notes || '').slice(0, 2000);
+    q.node = typeof q.node === 'string' ? q.node.slice(0, 60) : ''; q.who = cleanIds(q.who);
+    q.due = taskDueOk(q.due) ? q.due : ''; q.st = ['new', 'doing', 'review', 'done'].includes(q.st) ? q.st : 'new'; q.pri = q.pri === 1 || q.pri === 2 ? q.pri : 0;
+    q.by = String(q.by || '').slice(0, 60); q.at = Number(q.at) || 0;
+  }
   p.acl = p.acl && typeof p.acl === 'object' && p.acl.on ? (p.acl.corp ? { on: true, corp: true } : { on: true }) : {};
   return p;
 }

@@ -11,7 +11,7 @@ const CL = {
   rem: new Map(), base: new Map(), unsubs: [], peers: [], profiles: {}, me: { id: null, name: '' },
   canWrite: true, applying: false, pushing: false, again: false, skip: new Set(), retryN: 0, info: '', lastSig: ''
 };
-const CL_COLLS = ['n', 'f', 'e', 'c', 'a', 'v', 'm', 'k', 'x', 'g', 'l', 'r', 'meta'];
+const CL_COLLS = ['n', 'f', 'e', 'c', 'a', 'v', 'm', 'k', 'x', 'g', 'q', 'l', 'r', 'meta'];
 const CL_LS = 'vnmap.collab.on';
 const clDocOf = path => (path === 'meta' ? ['meta', 'project'] : path.startsWith('r/') ? ['r', path.slice(2).replace('/', '__')] : [path.split('/')[0], path.slice(path.indexOf('/') + 1)]);
 const clPathOf = (coll, id) => (coll === 'meta' ? 'meta' : coll === 'r' ? 'r/' + id.replace('__', '/') : coll + '/' + id);

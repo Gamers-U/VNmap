@@ -82,7 +82,7 @@ Object.assign(D, {
   /* что изменилось */
   'rv.type.new': ['новое', 'new'], 'rv.type.edit': ['изменено', 'changed'], 'rv.type.del': ['удалено', 'deleted'],
   'rv.n.node': ['блок', 'block'], 'rv.n.file': ['глава', 'chapter'], 'rv.n.edge': ['стрелка', 'arrow'], 'rv.n.char': ['персонаж', 'character'],
-  'rv.n.asset': ['ресурс', 'asset'], 'rv.n.var': ['переменная', 'variable'], 'rv.n.member': ['участник', 'member'], 'rv.n.ach': ['достижение', 'achievement'],
+  'rv.n.asset': ['ресурс', 'asset'], 'rv.n.var': ['переменная', 'variable'], 'rv.n.member': ['участник', 'member'], 'rv.n.ach': ['достижение', 'achievement'], 'rv.n.task': ['задача', 'task'], 'rv.g.tasks': ['Задачи', 'Tasks'],
   'rv.n.note': ['заметка', 'note'], 'rv.n.lang': ['язык', 'language'], 'rv.n.tr': ['перевод', 'translation'], 'rv.n.meta': ['настройки проекта', 'project settings'],
   'rv.n.layout': ['расположение блоков на карте', 'block layout on the map'],
   'rv.g.chars': ['Персонажи', 'Characters'], 'rv.g.assets': ['Ресурсы', 'Assets'], 'rv.g.vars': ['Переменные', 'Variables'], 'rv.g.members': ['Участники', 'Members'],
@@ -223,8 +223,8 @@ function rvHunks(a, b) {
   return mgHunks(A, Bn).map(h => ({ at: h.as + 1, del: A.slice(h.as, h.ae), add: Bn.slice(h.bs, h.be) }));
 }
 const rvNames = keys => { const names = [...new Set(keys.map(rvFieldName))]; return names.slice(0, 5).join(', ') + (names.length > 5 ? '…' : ''); };
-const RV_GROUP = { c: 'chars', a: 'assets', v: 'vars', m: 'members', g: 'achs', l: 'tl', r: 'tl' };
-const RV_NOUN = { c: 'char', a: 'asset', v: 'var', m: 'member', g: 'ach', l: 'lang' };
+const RV_GROUP = { c: 'chars', a: 'assets', v: 'vars', m: 'members', g: 'achs', l: 'tl', r: 'tl', q: 'tasks' };
+const RV_NOUN = { c: 'char', a: 'asset', v: 'var', m: 'member', g: 'ach', l: 'lang', q: 'task' };
 const rvName = e => String((e && (e.name || e.title || e.file || e.filename || e.id)) || '').slice(0, 80);
 
 /** Изменения автора относительно основы (B → A), с отметками относительно моего проекта L. Чистая функция над картами сущностей. */
