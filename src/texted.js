@@ -140,6 +140,35 @@ function teRuns(text) {
 const teHlCount = text => { let n = 0; String(text || '').replace(PR_HL_RE, () => { n++; return ''; }); return n; };
 
 /** Редактор текста: по умолчанию документ-ветка (docedit.js); «По главам» — одна глава за раз. opts: { fileId } / { nodeId } — что открыть; { chapters: true } — сразу по главам. */
+/* ====== Телефон и узкое окно ======
+   Боковые панели (ветки и оглавление слева, сценарий главы справа) не помещаются рядом с текстом, поэтому на узком экране
+   они выезжают поверх него «шторками»; верхнюю панель (заголовок, вкладки, инструменты) можно свернуть в тонкую полоску,
+   чтобы текст занимал почти весь экран. Работает в обоих редакторах: обычном и «По главам». */
+Object.assign(D, {
+  'te.drw.l': ['Ветки и оглавление', 'Branches and outline'], 'te.drw.l.ch': ['Главы', 'Chapters'], 'te.drw.r': ['Сценарий главы', 'Chapter script'],
+  'te.bar.hide': ['Скрыть верхнюю панель', 'Hide the top panel'], 'te.bar.show': ['Показать верхнюю панель', 'Show the top panel'],
+});
+const teNarrow = () => !!(window.matchMedia && matchMedia('(max-width: 980px)').matches);
+function teMobile(m, wrap, mhead, left, right, o = {}) {
+  const card = m.card;
+  const open = side => card.classList.contains(side === 'l' ? 'te-dl-open' : 'te-dr-open');
+  const drawer = side => { card.classList.toggle('te-dl-open', side === 'l'); card.classList.toggle('te-dr-open', side === 'r'); };
+  const bare = on => { S.teBare = !!on; card.classList.toggle('te-bare', !!on); drawer(null); saveSettings(); };
+  const sideBtn = side => h('button', { class: 'btn icon sm te-nb te-nb-' + side, 'data-tip': side === 'l' ? t(o.chapters ? 'te.drw.l.ch' : 'te.drw.l') : t('te.drw.r'), 'aria-label': side === 'l' ? t(o.chapters ? 'te.drw.l.ch' : 'te.drw.l') : t('te.drw.r'), onclick: () => drawer(open(side) ? null : side) }, icon(side === 'l' ? 'list' : 'code', 16));
+  const hideB = h('button', { class: 'btn icon sm te-nb te-nb-bar', 'data-tip': t('te.bar.hide'), 'aria-label': t('te.bar.hide'), onclick: () => bare(true) }, icon('chevU', 16));
+  const showB = h('button', { class: 'btn icon sm te-nb', 'data-tip': t('te.bar.show'), 'aria-label': t('te.bar.show'), onclick: () => bare(false) }, icon('chevD', 16));
+  const grow = mhead.querySelector('.grow');
+  const group = h('div', { class: 'te-nbtns' }, sideBtn('l'), sideBtn('r'), hideB);
+  if (grow) mhead.insertBefore(group, grow); else mhead.append(group);
+  const mini = h('div', { class: 'te-mini' }, sideBtn('l'), h('div', { class: 'grow' }), sideBtn('r'), showB, h('button', { class: 'btn icon sm', 'data-tip': t('c.close'), 'aria-label': t('c.close'), onclick: () => m.close() }, icon('x', 16)));
+  wrap.insertBefore(mini, wrap.firstChild);
+  const body = wrap.querySelector('.te-body');
+  if (body) body.append(h('div', { class: 'te-scrim', onclick: () => drawer(null) }));
+  /* выбрал главу или раздел в списке: шторка закрывается, чтобы сразу читать */
+  left.addEventListener('click', ev => { if (teNarrow() && ev.target.closest && ev.target.closest('.te-ch, .de-ol-i')) setTimeout(() => drawer(null), 120); });
+  card.classList.toggle('te-bare', !!S.teBare);
+  return { drawer, bare };
+}
 function openTextEditor(opts = {}) {
   return opts.chapters || S.teMode === 'ch' ? openChapterEditor(opts) : openDocEditor(opts);
 }
@@ -600,6 +629,7 @@ function openChapterEditor(opts = {}) {
       right.append(pvHead, pvBody);
       const mhead = modalHead(t('te.title'), m); winControl(m, mhead, 'texted');
       wrap.append(mhead, tabBar, h('div', { class: 'te-body' }, left, mid, right), foot);
+      teMobile(m, wrap, mhead, left, right, { chapters: true });
       loadCur(); paintAll();
       setTimeout(() => ta.focus(), 60);
       return wrap;

@@ -352,8 +352,9 @@ function openDocEditor(opts = {}) {
           seen = DATA_VER; paintAll();
         }));
       };
-      const hideL = h('button', { class: 'btn icon sm', id: 'de-hide-l', onclick: () => setPane('l', !S.teNoL) }, icon('list', 16));
-      const hideR = h('button', { class: 'btn icon sm', id: 'de-hide-r', onclick: () => setPane('r', !S.teNoR) }, icon('code', 16));
+      const drw = side => { const c = m.card, k = side === 'l' ? 'te-dl-open' : 'te-dr-open', was = c.classList.contains(k); c.classList.remove('te-dl-open', 'te-dr-open'); if (!was) c.classList.add(k); };
+      const hideL = h('button', { class: 'btn icon sm', id: 'de-hide-l', onclick: () => (teNarrow() ? drw('l') : setPane('l', !S.teNoL)) }, icon('list', 16));
+      const hideR = h('button', { class: 'btn icon sm', id: 'de-hide-r', onclick: () => (teNarrow() ? drw('r') : setPane('r', !S.teNoR)) }, icon('code', 16));
       const railL = h('button', { class: 'te-rail l', id: 'de-rail-l', onclick: () => setPane('l', false) }, icon('chevR', 14));
       const railR = h('button', { class: 'te-rail r', id: 'de-rail-r', onclick: () => setPane('r', false) }, icon('chevL', 14));
       function setPane(side, off, quiet) {
@@ -1172,7 +1173,7 @@ function openDocEditor(opts = {}) {
         colBtn,
         h('button', { class: 'btn icon sm', id: 'de-opts', 'data-tip': t('de.opts'), onclick: ev => optsPop(ev.currentTarget) }, icon('sliders', 16)),
         hideL, hideR,
-        h('button', { class: 'btn icon sm', id: 'de-focus', 'data-tip': t('de.focus'), onclick: () => { const on2 = !(S.teNoL && S.teNoR); setPane('l', on2, true); setPane('r', on2, true); saveSettings(); } }, icon('fit', 16)));
+        h('button', { class: 'btn icon sm', id: 'de-focus', 'data-tip': t('de.focus'), onclick: () => { if (teNarrow()) { S.teBare = !S.teBare; m.card.classList.toggle('te-bare', !!S.teBare); saveSettings(); return; } const on2 = !(S.teNoL && S.teNoR); setPane('l', on2, true); setPane('r', on2, true); saveSettings(); } }, icon('fit', 16)));
 
       /* ---------- карточка развилки ---------- */
       const paintFork = () => {
@@ -1376,6 +1377,7 @@ function openDocEditor(opts = {}) {
       const mhead = modalHead(t('te.title'), m, h('button', { class: 'btn icon sm help-q-btn', id: 'de-help', 'data-tip': t('de.help'), onclick: () => openHelp('editor') }, icon('help', 16)));
       winControl(m, mhead, 'texted');
       wrap.append(mhead, tabBar, h('div', { class: 'te-body' }, railL, left, mid, right, railR), foot);
+      teMobile(m, wrap, mhead, left, right);
       setPane('l', !!S.teNoL, true); setPane('r', !!S.teNoR, true);
       setZoom(curZoom(), true);
       render();
