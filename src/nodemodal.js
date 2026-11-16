@@ -388,6 +388,7 @@ function tabScript(st, n, f, goTab) {
   };
   const ed = codeEditor(f, 'script', tags, () => { commit(); updFoot(); });
   const ins = txt => insertSnippet(ed.ta, txt);
+  if (typeof spSetTarget === 'function') spSetTarget(ed.ta);
   const withTr = tr => tr ? ` with ${tr}` : '';
   const cast = () => effectiveCast(n, f).all;
   const qi = (ic, label, fn) => h('button', { class: 'qi', onclick: ev => fn(ev.currentTarget) }, icon(ic, 14), label);
@@ -427,6 +428,7 @@ function tabScript(st, n, f, goTab) {
     qi('fork', t('q.menu'), () => ins(menuSnippet(n))),
     qi('link', t('q.jump'), b => pickFile(b, fl => ins(`jump ${fileLabel(fl)}`))),
     qi('wand', t('q.cond'), () => openCondBuilder({ insert: ins })),
+    qi('code', t('sp.q'), b => spPick(b, ed.ta)),
     qi('plus', t('q.more'), b => menuAt(b, [
       { label: t('q.ifflag'), icon: 'fork', onClick: () => setTimeout(() => pickFlag(b, v => ins(flagIfSnippet(v))), 30) },
       { label: t('q.setflag'), icon: 'flag', onClick: () => setTimeout(() => pickFlag(b, v => ins(flagMenuSnippet(v))), 30) },
@@ -436,7 +438,9 @@ function tabScript(st, n, f, goTab) {
       { label: t('q.label'), icon: 'flag', onClick: () => ins(`label ${fileLabel(f)}:`) },
       { label: t('q.call'), icon: 'link', onClick: () => setTimeout(() => pickFile(b, fl => ins(`call ${fileLabel(fl)}`)), 30) },
       { label: t('q.pause'), icon: 'zap', onClick: () => ins('pause 1.0') },
-      { label: t('q.comment'), icon: 'code', onClick: () => ins('# \u0001') }])));
+      { label: t('q.comment'), icon: 'code', onClick: () => ins('# \u0001') },
+      { sep: true },
+      { label: t('sp.pick.save'), icon: 'save', onClick: () => spSaveSelection(ed.ta) }])));
 
   foot.append(h('span', { class: 'grow-text' }, ''),
     h('button', { class: 'btn sm', onclick: () => goTab && NM_TAB !== 'dialog' && (NM_TAB = 'dialog', selectInModal(st, f.id)) }, icon('chat', 14), t('tab.dialog')),

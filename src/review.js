@@ -223,8 +223,8 @@ function rvHunks(a, b) {
   return mgHunks(A, Bn).map(h => ({ at: h.as + 1, del: A.slice(h.as, h.ae), add: Bn.slice(h.bs, h.be) }));
 }
 const rvNames = keys => { const names = [...new Set(keys.map(rvFieldName))]; return names.slice(0, 5).join(', ') + (names.length > 5 ? '…' : ''); };
-const RV_GROUP = { c: 'chars', a: 'assets', v: 'vars', m: 'members', g: 'achs', l: 'tl', r: 'tl', q: 'tasks' };
-const RV_NOUN = { c: 'char', a: 'asset', v: 'var', m: 'member', g: 'ach', l: 'lang', q: 'task' };
+const RV_GROUP = { c: 'chars', a: 'assets', v: 'vars', m: 'members', g: 'achs', l: 'tl', r: 'tl', q: 'tasks', s: 'snips' };
+const RV_NOUN = { c: 'char', a: 'asset', v: 'var', m: 'member', g: 'ach', l: 'lang', q: 'task', s: 'snip' };
 const rvName = e => String((e && (e.name || e.title || e.file || e.filename || e.id)) || '').slice(0, 80);
 
 /** Изменения автора относительно основы (B → A), с отметками относительно моего проекта L. Чистая функция над картами сущностей. */

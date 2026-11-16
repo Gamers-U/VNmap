@@ -145,6 +145,7 @@ async function readImport(file, opts = {}) {
   return true;
 }
 function setProject(p) {
+  if (typeof snBeforeReplace === 'function') snBeforeReplace();
   if (typeof CL !== 'undefined' && CL.on) { collabDisable(); toast(t('col.off.replaced'), 6000); }
   if (typeof deskUnbind === 'function') deskUnbind();
   P = p; reindex(); UI.sel.clear(); UI.edge = null; resetHistory(); saveNow();

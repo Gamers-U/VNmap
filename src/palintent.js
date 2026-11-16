@@ -37,6 +37,10 @@ const PAL_INTENT = {
   layout: 'расстановка авторасстановка выровнять блоки упорядочить карту слева направо arrange auto layout align blocks',
   mappdf: 'карта в пдф печать распечатать листы скачать картинку карты показать издателю map pdf print sheets export image',
   notes: 'заметки стикеры комментарии записки решено notes stickers comments todo',
+  weight: 'вес размер ресурсов тяжёлые тяжёлая игра большие картинки слишком большая картинка мегабайты мб сжать уменьшить webp ogg wav звук не сжат телефон память лагает сколько весит игра weight size heavy big images compress megabytes phone memory how big is the game',
+  snippets: 'сниппеты сниппет шаблоны шаблон заготовки заготовка кусок кода библиотека кода повторяющийся код вставить код часто использую сохранить код макрос snippets snippet templates library reuse code macro insert',
+  endguide: 'гайд по концовкам как получить концовку путь к концовке прохождение гайд шпаргалка для тестеров для игроков выборы к концовке какие выборы нужны вики спойлеры endings guide walkthrough how to get ending route choices cheat sheet wiki',
+  snapshots: 'снимки снимок резервная копия бэкап автокопия точка возврата вернуть назад восстановить прошлую версию откатить потерял проект что изменилось сравнить версии история snapshots backup restore rollback previous version history compare',
   tour: 'обучение учиться учебник туториал урок уроки тур подсказки научи объясни как пользоваться программой с чего начать tutorial lessons guide tour learn how to use getting started',
   ghopen: 'открыть с гитхаба по ссылке репозиторий новелла open from github link repository',
 };

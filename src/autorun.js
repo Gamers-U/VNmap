@@ -93,6 +93,16 @@ async function arVoiceDurations(R, prog, binMap, on) {
   return { map: out, total: list.length, found };
 }
 
+/** Простые значения переменных игры (числа, да/нет, короткие строки) без служебных. */
+function arScalars(v) {
+  const o = {};
+  for (const k of Object.keys(v || {})) {
+    if (k[0] === '_') continue;
+    const x = v[k];
+    if ((typeof x === 'number' && isFinite(x)) || typeof x === 'boolean' || (typeof x === 'string' && x.length <= 60)) o[k] = x;
+  }
+  return o;
+}
 /** Основной расчёт: поиск самого быстрого пути (по времени) по ситуациям выбора. */
 async function arCompute(cfg, ui) {
   ui.status(t('ar.prep'));
@@ -143,7 +153,7 @@ async function arCompute(cfg, ui) {
       nodes.push(n); heap.push(n);
     } else if (ev.type === 'end') {
       const keys = (ev.notices || []).filter(x => x.type === 'ending').map(x => x.key);
-      ends.push({ t: curT, node: curNode, via: curVia, label: ev.label, keys });
+      ends.push({ t: curT, node: curNode, via: curVia, label: ev.label, keys, vars: arScalars(g.vars) });
     } else if (ev.type === 'error') errors++;
   };
 
@@ -154,6 +164,7 @@ async function arCompute(cfg, ui) {
   curT = 0; curNode = null; curVia = null;
   const first = g.begin('start');
   const startEv = walk(first);
+  const baseVars = arScalars(g.vars);
   place(startEv, null, null);
   const seen = new Map();                // key -> лучшее время
   let checked = 0, truncated = false, lastUi = Date.now();
@@ -196,14 +207,15 @@ async function arCompute(cfg, ui) {
     const ekeys = e.keys.length ? e.keys : [null];
     for (const k of ekeys) {
       const id = k ? 'k:' + k : 'l:' + e.label;
-      if (endsSeen.has(id)) { const row = endRows.find(r => r.id === id); if (row && e.t < row.t) { row.t = e.t; row.node = e.node; row.via = e.via; } continue; }
+      if (endsSeen.has(id)) { const row = endRows.find(r => r.id === id); if (row && e.t < row.t) { row.t = e.t; row.node = e.node; row.via = e.via; row.vars = e.vars; } continue; }
       endsSeen.add(id);
       const b = byLabel.get(e.label), info = k && R.endingsData.list.find(x => x.key === k);
-      endRows.push({ id, t: e.t, node: e.node, via: e.via, key: k, title: k ? (info ? info.title : k) : null, block: b ? b.id : null });
+      endRows.push({ id, t: e.t, node: e.node, via: e.via, vars: e.vars, key: k, title: k ? (info ? info.title : k) : null, block: b ? b.id : null });
     }
   }
   endRows.sort((a, b) => a.t - b.t);
-  return { blocks, nTotal, endRows, checked, truncated, voice, errors, warns: g.warns.slice(0, 6), steps: nodeRoute, startAt: R.start };
+  const labelTitle = label => { const b = byLabel.get(label), nd = b ? nodeById(b.id) : null; return nd ? bsTitle(nd) : ''; };
+  return { blocks, nTotal, endRows, checked, truncated, voice, errors, warns: g.warns.slice(0, 6), steps: nodeRoute, startAt: R.start, baseVars, labelTitle, endingsList: (R.endingsData && R.endingsData.list) || [] };
 }
 
 function openAutorun() {

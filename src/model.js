@@ -367,6 +367,14 @@ function normalize(p) {
     q.due = taskDueOk(q.due) ? q.due : ''; q.st = ['new', 'doing', 'review', 'done'].includes(q.st) ? q.st : 'new'; q.pri = q.pri === 1 || q.pri === 2 ? q.pri : 0;
     q.by = String(q.by || '').slice(0, 60); q.at = Number(q.at) || 0;
   }
+  /* сниппеты: P.snippets = [{ id, name, code, note, group, at }] (snippets.js) */
+  const seenS = new Set();
+  p.snippets = (Array.isArray(p.snippets) ? p.snippets : []).filter(s => s && typeof s === 'object' && typeof s.code === 'string' && s.code.trim()).slice(0, 300);
+  for (const s of p.snippets) {
+    s.id = typeof s.id === 'string' && s.id && !seenS.has(s.id) ? s.id : uid('s'); seenS.add(s.id);
+    s.code = s.code.slice(0, 20000); s.name = String(s.name == null ? '' : s.name).trim().slice(0, 80) || s.code.split('\n')[0].slice(0, 40);
+    s.note = String(s.note || '').slice(0, 300); s.group = String(s.group || '').trim().slice(0, 40); s.at = Number(s.at) || 0;
+  }
   p.acl = p.acl && typeof p.acl === 'object' && p.acl.on ? (p.acl.corp ? { on: true, corp: true } : { on: true }) : {};
   return p;
 }

@@ -79,6 +79,8 @@ function compileProject(over, blobSet) {
   const taken = new Set(['start', 'quit', 'after_load', 'splashscreen', 'before_main_menu', 'main_menu', 'after_warp', 'hide_windows']);
   const declared = new Map();
   const scriptLines = new Map();
+  let FBG = null; const fbSeen = new Set();
+  if (typeof fbGeom === 'function') { try { FBG = fbGeom(); } catch (e) { FBG = null; } }
   for (const n of order) for (const f of n.files) {
     const raw = String(f.script || '').replace(/\r\n?/g, '\n').replace(/\t/g, '    ');
     let lines = raw.split('\n').map(l => l.replace(/\s+$/, ''));
@@ -87,8 +89,10 @@ function compileProject(over, blobSet) {
     while (lines.length && !lines[lines.length - 1].trim()) lines.pop();
     scriptLines.set(f.id, lines);
     if (lines.length && typeof mlReport === 'function') mlReport(add, n, f, lines, lead);      // мини-Lint: типичные ошибки скрипта
+    if (lines.length && FBG) { try { fbReport(add, n, f, lines, lead, FBG, fbSeen); } catch (e) { /* проверка не должна ломать сборку */ } }      // длинные реплики (fitbox.js)
     lines.forEach(l => { const m = /^label\s+([A-Za-z_]\w*)/.exec(l); if (m) { if (declared.has(m[1])) add('warn', t('cmp.label.dup', m[1]), { node: n, file: f }); else declared.set(m[1], { node: n, file: f }); } });
   }
+  if (FBG && typeof fbFlush === 'function') fbFlush(add, FBG);
   for (const l of declared.keys()) taken.add(l);
   const uniq = base => { let b = base, k = 2; while (taken.has(b)) b = base + '_' + k++; taken.add(b); return b; };
   const info = new Map();
@@ -116,8 +120,9 @@ function compileProject(over, blobSet) {
       }
       let fname = fileName(f).replace(/[^A-Za-z0-9_.-]+/g, '_'), k = 2;
       const stem = fname.replace(/\.rpy$/i, '');
-      while (usedNames.has(I.dir + '/' + fname)) fname = stem + '_' + k++ + '.rpy';
-      usedNames.add(I.dir + '/' + fname);
+      if (f.filename && typeof fnScriptName === 'function') { try { fnScriptName(add, n, f, fileName(f), fname); } catch (e) { /* не страшно */ } }
+      while (usedNames.has((I.dir + '/' + fname).toLowerCase())) fname = stem + '_' + k++ + '.rpy';        // на Windows «A.rpy» и «a.rpy» один файл
+      usedNames.add((I.dir + '/' + fname).toLowerCase());
       I.files.push({ f, label, self, lines, fname, path: 'game/story/' + I.dir + '/' + fname });
     }
   }
@@ -157,6 +162,10 @@ function compileProject(over, blobSet) {
     }
   }
   const audioHasFile = a => assetTarget.has(a.id + '|');
+  const fnTG = { exact: new Set(), lower: new Map() }, fnFound = new Map();                      // проверка имён файлов (filenames.js)
+  for (const x of assetFiles) { fnTG.exact.add(x.target); fnTG.lower.set(x.target.toLowerCase(), x.target); }
+  if (typeof wtReport === 'function') { try { wtReport(add, assetFiles); } catch (e) { /* не страшно */ } }       // вес ресурсов (weight.js)
+  if (typeof fnAssets === 'function') { try { fnAssets(add, P.assets, a => (assetFiles.find(x => x.a === a) || {}).target || ''); } catch (e) { /* проверка не должна ломать сборку */ } }
   const fontNoFile = new Set(), fontUnknown = new Map();
   const fontPathFor = (ref, refInfo) => {
     const a = fontAssetByRef(ref);
@@ -208,6 +217,12 @@ function compileProject(over, blobSet) {
     const tlAt = tlOn ? tlPrepare(F, tlIds) : null;     // реплики получают постоянные id для перевода
     for (let li = 0; li < F.lines.length; li++) {
       let line = F.lines[li];
+      if (typeof fnScanLine === 'function') {            // имена файлов: регистр, кириллица, пробелы (filenames.js)
+        try {
+          const ma = RE_AUDIO.exec(line) || RE_VOICE.exec(line), aa = ma ? findAudio(ma[3]) : null;
+          fnScanLine(line, ref, fnTG, fnFound, aa && audioHasFile(aa) ? ma[3] : null);
+        } catch (e) { /* не страшно */ }
+      }
       if (tlAt && tlAt.has(li)) line = tlWithId(line, tlAt.get(li));
       let m = RE_AUDIO.exec(line) || RE_VOICE.exec(line);
       if (m) {
@@ -239,6 +254,7 @@ function compileProject(over, blobSet) {
     }
     if (!out.length) emptyFiles.push(ref);
   }
+  if (typeof fnFlush === 'function') { try { fnFlush(add, fnFound); } catch (e) { /* не страшно */ } }
   for (const [tag, ref] of unknownSpk) {
     add('warn', t('cmp.speaker.unknown', tag, ref.file.title || '?'), ref, { label: t('cmp.fix.addchar', tag), run: () => { createChar(tag.charAt(0).toUpperCase() + tag.slice(1), tag); } });
   }

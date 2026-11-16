@@ -8,10 +8,10 @@ function tbtn(ic, label, tip, onClick, cls = '') {
 /** Кнопки правой части панели по id. Какие показывать и в каком порядке, решают режим интерфейса и вкладка «Панель» в Настройках (uimode.js). */
 function barBuilders() {
   const open = () => (DESK ? tbtn('folder', t('desk.open.short'), t('desk.open.tip') + ' (Ctrl+O)', () => deskCommand('open')) : tbtn('upload', t('top.import'), t('top.import.tip'), importJSONFile));
-  const saveItems = () => (DESK ? [
+  const saveItems = () => [{ label: t('sn.btn'), icon: 'undo', onClick: () => openSnapshots() }, ...(DESK ? [
     { label: t('desk.save'), icon: 'save', kbd: 'Ctrl+S', onClick: () => deskCommand('save') },
     { label: t('desk.saveas'), icon: 'save', kbd: 'Ctrl+Shift+S', onClick: () => deskCommand('saveas') },
-    { label: t('desk.copy'), icon: 'copy', onClick: exportJSON }] : [{ label: t('exp.json'), icon: 'save', kbd: 'Ctrl+S', onClick: exportJSON }]);
+    { label: t('desk.copy'), icon: 'copy', onClick: exportJSON }] : [{ label: t('exp.json'), icon: 'save', kbd: 'Ctrl+S', onClick: exportJSON }])];
   return {
     play: () => tbtn('play', t('pl.btn'), t('pl.tip'), () => openPlayer(), 'pl-top-btn'),
     text: () => tbtn('type', t('te.top'), t('te.top.tip'), () => { const id = [...UI.sel][0], n = id && nodeById(id); openTextEditor(n && n.type !== 'note' ? { nodeId: n.id } : {}); }, 'te-top-btn'),
@@ -56,7 +56,7 @@ function buildChrome() {
   nameI.value = P.name;
   nameI.addEventListener('input', () => { P.name = nameI.value; commit(); });
   nameI.addEventListener('keydown', e => { if (e.key === 'Enter') nameI.blur(); });
-  const badge = h('div', { class: 'save-badge', id: 'save-badge' });
+  const badge = h('div', { class: 'save-badge', id: 'save-badge', role: 'button', tabindex: '0', onclick: () => openSnapshots(), onkeydown: e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openSnapshots(); } } });
   BTN.undo = tbtn('undo', '', t('c.undo') + ' (Ctrl+Z)', () => undo());
   BTN.redo = tbtn('redo', '', t('c.redo') + ' (Ctrl+Shift+Z)', () => redo());
   BTN.theme = tbtn(S.theme === 'dark' ? 'sun' : 'moon', '', t('top.theme'), () => toggleTheme());
@@ -93,7 +93,7 @@ function updateSaveBadge() {
   const st = UI.saveState;
   el.className = 'save-badge ' + st;
   el.textContent = t('save.' + st);
-  el.setAttribute('data-tip', st === 'error' ? t('save.error.tip') : t('save.tip'));
+  el.setAttribute('data-tip', st === 'error' ? t('save.error.tip') : t('save.tip') + t('sn.badge'));
 }
 function updateZoomLabel() { const el = $('#zoom-label'); if (el && P) el.textContent = Math.round(P.view.k * 100) + '%'; }
 function ago(ms) {
@@ -193,6 +193,7 @@ function boot() {
   deskInit();
   buildChrome();
   if (typeof uiFirstNotice === 'function') uiFirstNotice();
+  if (typeof snStart === 'function') snStart();
   renderAll(); if (first) fitAll(false); else applyView();
   document.addEventListener('keydown', onKey);
   window.addEventListener('beforeunload', () => { flushHistory(); saveNow(); });

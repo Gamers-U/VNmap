@@ -206,6 +206,7 @@ function tlLocate(l) {
   const search = () => tourBtn(t('top.search') + ' (Ctrl+K)');
   const kk = t('tour.w.k', name);
   if (!it) return { text: '', target: search };
+  if (l.where) return { text: tlPick(l.where) + '\n' + kk, target: l.spot || search };
   const lvl = typeof UI_LVL !== 'undefined' ? UI_LVL[l.tool] : null;
   if (lvl && lvl[0] === 'x') return { text: kk, target: search };
   if (typeof uiShow === 'function' && !uiShow(l.tool)) return { text: t('tour.w.off'), target: () => tourBtn(t('top.settings')), off: true };
