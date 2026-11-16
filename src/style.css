@@ -1820,3 +1820,21 @@ body.game-mode{background:var(--bg)}
 @media (max-width:760px){.strip .tbn .tlbl{display:none}.strip .tbn{padding:0 9px}}
 /* узкие экраны: панели переносятся, чтобы все кнопки были доступны (профессиональный режим на телефоне) */
 @media (max-width:760px){#topbar .bar{flex-wrap:wrap;max-width:100%}}
+
+/* ---- Настройки → Панель ---- */
+.bar-rows{display:flex;flex-direction:column;gap:4px}
+.bar-row{display:flex;align-items:center;gap:10px;padding:6px 10px;border-radius:10px;background:var(--surface3);border:1px solid transparent}
+.bar-row .switch-row{margin:0;flex:1}
+.bar-row .bar-ic{color:var(--text2);display:grid;place-items:center}
+.bar-row .bar-grip{cursor:grab;color:var(--text3);display:grid;place-items:center}
+.bar-row.dragging{opacity:.4}
+.bar-row.over{border-color:var(--accent);background:var(--accent-soft)}
+.bar-row .switch:not(.on){background:var(--border-strong)}
+
+/* ---- Статистика (сводное окно) ---- */
+.sh-body{display:flex;flex-direction:column;gap:12px}
+.sh-card{background:var(--surface2);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.sh-card .sh-h{display:flex;align-items:center;gap:9px}
+.sh-card .tiles{grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}
+.sh-card .tile{background:var(--surface3)}
+.sh-num{color:var(--text)}

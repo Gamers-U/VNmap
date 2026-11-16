@@ -16,6 +16,13 @@ Object.assign(D, {
   'ui.mode.first': ['Включён простой режим: видно только самое нужное, остальное спрятано. Все функции: Настройки → Профессиональный.', 'Simple mode is on: only what matters is visible, the rest is hidden. For everything: Settings → Professional.'],
   'ui.look': ['Оформление', 'Appearance'], 'ui.theme': ['Тема', 'Theme'], 'ui.theme.dark': ['Тёмная', 'Dark'], 'ui.theme.light': ['Светлая', 'Light'], 'ui.lang': ['Язык интерфейса', 'Interface language'],
   'ui.mapset': ['Карта', 'Map'], 'ui.project': ['Проект', 'Project'],
+  'ui.tab.bar': ['Панель', 'Toolbar'],
+  'ui.bar.p': ['Отметьте, какие кнопки показывать на панели, и перетащите их мышью, чтобы поменять порядок. Спрятанное всё равно можно найти через поиск Ctrl+K. Настройка своя для простого и для профессионального режима.', 'Tick which buttons to show on the toolbar and drag them with the mouse to change the order. Hidden ones can still be found through the Ctrl+K search. The setting is separate for Simple and Professional mode.'],
+  'ui.bar.p.touch': ['Отметьте, какие кнопки показывать на панели. Спрятанное всё равно можно найти через поиск Ctrl+K. Настройка своя для простого и для профессионального режима.', 'Tick which buttons to show on the toolbar. Hidden ones can still be found through the Ctrl+K search. The setting is separate for Simple and Professional mode.'],
+  'ui.bar.main': ['Кнопки панели', 'Toolbar buttons'], 'ui.bar.strip': ['Разделы под панелью', 'Sections under the toolbar'],
+  'ui.bar.fixed': ['Всегда на панели: Блок, Поиск, Настройки, Справка.', 'Always on the toolbar: Block, Search, Settings, Help.'],
+  'ui.bar.drag': ['Перетащите, чтобы поменять порядок', 'Drag to reorder'],
+  'ui.bar.reset': ['Вернуть панель по умолчанию', 'Restore the default toolbar'],
   'ui.g.map': ['Карта', 'Map'], 'ui.g.text': ['Тексты', 'Texts'], 'ui.g.check': ['Проверки', 'Checks'], 'ui.g.play': ['Игра', 'Play'], 'ui.g.team': ['Работа команды', 'Teamwork'],
   'ui.g.map.tip': ['Расстановка блоков, карта в PDF, заметки', 'Arranging blocks, map PDF, notes'],
   'ui.g.text.tip': ['Редактор, импорт, вычитка, таблица реплик, переименование, персонажи', 'Editor, import, proofreading digest, replica table, renaming, characters'],
@@ -47,18 +54,45 @@ const UI_MODS = ['analysis', 'text', 'team', 'collab', 'translate'];
 const UI_STRIP = [
   { id: 'map', ic: 'fit', items: ['layout', 'mappdf', 'notes'] },
   { id: 'text', ic: 'type', items: ['texted', 'docimport', 'digest', 'replicas', 'rename', 'charpage', 'resources', 'rpyimport'] },
-  { id: 'check', ic: 'check', items: ['checks', 'missingfiles', 'stats', 'varstates', 'branchstats', 'autorun', 'testlog'] },
+  { id: 'check', ic: 'check', items: ['checks', 'missingfiles', 'varstates', 'stats'] },
   { id: 'play', ic: 'play', items: ['player', 'htmlgame', 'renpy'] },
-  { id: 'team', ic: 'users', items: ['tasks', 'whodid', 'notify', 'review'] },
+  { id: 'team', ic: 'users', items: ['tasks', 'notify', 'review'] },
 ];
-/** Строка разделов для профессионального режима; в простом её нет. Раздел без доступных пунктов (выключен модуль) не рисуется. */
+/** Правая часть панели по режимам: что есть по умолчанию (порядок слева направо). Модульные кнопки появляются, пока модуль не выключен. */
+const BAR_MAIN = { simple: ['play', 'text', 'registry', 'build', 'file', 'open'], pro: ['play', 'text', 'registry', 'stats', 'team', 'translate', 'collab', 'export', 'open'] };
+const barMk = () => (uiPro() ? 'p' : 's');                      // порядок и скрытое хранятся отдельно для каждого режима
+function barCfg() {
+  const c = uiCfg(); if (!c.bar || typeof c.bar !== 'object') c.bar = {};
+  if (!c.bar.order || typeof c.bar.order !== 'object') c.bar.order = {};
+  if (!c.bar.hide || typeof c.bar.hide !== 'object') c.bar.hide = {};
+  return c.bar;
+}
+/** Разделы строки с хотя бы одним доступным пунктом (порядок по умолчанию). */
+function stripGroups() {
+  return UI_STRIP.map(g => ({ g, its: g.items.map(id => TOOL_ITEMS.find(x => x.id === id)).filter(x => x && uiShow(x.id)) })).filter(x => x.its.length);
+}
+/** Все доступные сейчас id кнопок вида kind ('main' — правая часть панели, 'strip' — разделы) в порядке пользователя; скрытые тоже. */
+function barAll(kind) {
+  const ids = kind === 'strip' ? (uiPro() ? stripGroups().map(x => x.g.id) : []) : BAR_MAIN[uiPro() ? 'pro' : 'simple'].filter(id => !/^(stats|team|translate|collab)$/.test(id) || uiShow('bar.' + id));
+  const ord = barCfg().order[barMk() + kind]; if (!Array.isArray(ord)) return ids;
+  const rank = id => { const i = ord.indexOf(id); return i < 0 ? 1e6 : i; };
+  return ids.map((id, i) => [id, i]).sort((a, b) => (rank(a[0]) - rank(b[0])) || a[1] - b[1]).map(x => x[0]);
+}
+const barIds = kind => barAll(kind).filter(id => !barCfg().hide[barMk() + kind + ':' + id]);
+function barSetOn(kind, id, on) { const c = barCfg(), k = barMk() + kind + ':' + id; if (on) delete c.hide[k]; else c.hide[k] = true; saveSettings(); buildChrome(); }
+function barMove(kind, from, to) {
+  const ids = barAll(kind); if (from === to || from < 0 || to < 0 || from >= ids.length || to >= ids.length) return;
+  const [x] = ids.splice(from, 1); ids.splice(to, 0, x); barCfg().order[barMk() + kind] = ids; saveSettings(); buildChrome();
+}
+function barReset() { const c = uiCfg(); delete c.bar; saveSettings(); buildChrome(); }
+/** Строка разделов для профессионального режима; в простом её нет. Раздел без доступных пунктов (выключен модуль) или скрытый в «Панели» не рисуется. */
 function uiStrip() {
   if (!uiPro()) return null;
+  const by = {}; for (const x of stripGroups()) by[x.g.id] = x;
   const groups = [];
-  for (const g of UI_STRIP) {
-    const its = g.items.map(id => TOOL_ITEMS.find(x => x.id === id)).filter(x => x && uiShow(x.id));
-    if (!its.length) continue;
-    groups.push(tbtn(g.ic, t('ui.g.' + g.id), t('ui.g.' + g.id + '.tip'), b => menuAt(b, its.map(x => ({ label: t(x.key), icon: x.ic, kbd: x.kbd, onClick: () => setTimeout(() => x.run(b), 0) }))), 'strip-btn strip-' + g.id));
+  for (const id of barIds('strip')) {
+    const x = by[id]; if (!x) continue;
+    groups.push(tbtn(x.g.ic, t('ui.g.' + id), t('ui.g.' + id + '.tip'), b => menuAt(b, x.its.map(it => ({ label: t(it.key), icon: it.ic, kbd: it.kbd, onClick: () => setTimeout(() => it.run(b), 0) }))), 'strip-btn strip-' + id));
   }
   return groups.length ? h('div', { class: 'bar strip', id: 'toolstrip' }, ...groups) : null;
 }
@@ -113,9 +147,10 @@ function openSettingsWindow(tab) {
       st.m = m; st.body = h('div', { class: 'set-body' });
       const render = () => {
         const tabs = [{ value: 'view', label: t('ui.tab.view') }, { value: 'conn', label: t('ui.tab.conn') }];
+        tabs.push({ value: 'bar', label: t('ui.tab.bar') });
         if (uiPro()) tabs.push({ value: 'mods', label: t('ui.tab.mods') });
         if (!tabs.some(x => x.value === st.tab)) st.tab = 'view';
-        st.body.replaceChildren(segmented(tabs, st.tab, v => { st.tab = v; render(); }), h('div', { class: 'set-pane' }, st.tab === 'view' ? setView(st, render) : st.tab === 'conn' ? setConn(st) : setMods(st, render)));
+        st.body.replaceChildren(segmented(tabs, st.tab, v => { st.tab = v; render(); }), h('div', { class: 'set-pane' }, st.tab === 'view' ? setView(st, render) : st.tab === 'conn' ? setConn(st) : st.tab === 'bar' ? setBar(st, render) : setMods(st, render)));
       };
       st.render = render; render();
       return h('div', { class: 'm-wrap' }, modalHead(t('ui.settings'), m), st.body);
@@ -159,6 +194,44 @@ function setConn(st) {
   if (typeof collabAvail === 'function' && collabAvail()) box.append(setCard(h('span', { class: 'nt-ch' }, icon('users', 15), t('ui.collab')), h('div', { class: 'hint' }, t('ui.collab.t')), h('div', { class: 'nt-btns' }, h('button', { class: 'btn sm', onclick: go(() => openCollabPanel()) }, t('ui.collab.btn')))));
   return box;
 }
+const BAR_META = {
+  play: ['play', 'pl.btn'], text: ['type', 'te.top'], registry: ['layers', 'top.registry'], stats: ['chart', 'sh.btn'], team: ['badge', 'team.btn'],
+  translate: ['globe', 'tl.btn'], collab: ['users', 'col.btn'], export: ['download', 'top.export'], build: ['box', 'ui.build'], file: ['save', 'ui.file'],
+};
+/** Вкладка «Панель»: галочки (везде) и перетаскивание порядка (мышью; на сенсорных экранах только галочки). */
+function setBar(st, render) {
+  const box = h('div', { class: 'nt-list' }), touch = !!(window.matchMedia && matchMedia('(pointer: coarse)').matches);
+  box.append(h('div', { class: 'hint' }, t(touch ? 'ui.bar.p.touch' : 'ui.bar.p')));
+  const list = (kind, title) => {
+    const ids = barAll(kind); if (!ids.length) return;
+    const rows = h('div', { class: 'bar-rows', 'data-kind': kind });
+    ids.forEach((id, i) => {
+      const meta = kind === 'strip' ? [UI_STRIP.find(g => g.id === id).ic, 'ui.g.' + id] : (id === 'open' ? [DESK ? 'folder' : 'upload', DESK ? 'desk.open.short' : 'top.import'] : BAR_META[id]);
+      const row = h('div', { class: 'bar-row', 'data-id': id, 'data-idx': String(i) },
+        touch ? null : h('span', { class: 'bar-grip', 'data-tip': t('ui.bar.drag') }, icon('grip', 14)),
+        h('span', { class: 'bar-ic' }, icon(meta[0], 16)),
+        switchEl(!barCfg().hide[barMk() + kind + ':' + id], v => barSetOn(kind, id, v), t(meta[1])));
+      if (!touch) {
+        row.draggable = true;
+        row.addEventListener('dragstart', ev => { row.classList.add('dragging'); ev.dataTransfer.effectAllowed = 'move'; ev.dataTransfer.setData('text/plain', kind + ':' + i); });
+        row.addEventListener('dragend', () => { row.classList.remove('dragging'); rows.querySelectorAll('.over').forEach(x => x.classList.remove('over')); });
+        row.addEventListener('dragover', ev => { ev.preventDefault(); ev.dataTransfer.dropEffect = 'move'; row.classList.add('over'); });
+        row.addEventListener('dragleave', () => row.classList.remove('over'));
+        row.addEventListener('drop', ev => {
+          ev.preventDefault(); row.classList.remove('over');
+          const [k, from] = String(ev.dataTransfer.getData('text/plain')).split(':');
+          if (k === kind && from !== '' && !isNaN(+from)) { barMove(kind, +from, i); render(); }
+        });
+      }
+      rows.append(row);
+    });
+    box.append(setCard(title, rows));
+  };
+  list('main', t('ui.bar.main'));
+  list('strip', t('ui.bar.strip'));
+  box.append(h('div', { class: 'hint' }, t('ui.bar.fixed')), h('div', { class: 'nt-btns' }, h('button', { class: 'btn sm', id: 'bar-reset', onclick: () => { barReset(); render(); } }, icon('undo', 15), t('ui.bar.reset'))));
+  return box;
+}
 function setMods(st, render) {
   const c = uiCfg(), box = h('div', { class: 'nt-list' });
   if (!uiPro()) { box.append(h('div', { class: 'hint warn' }, t('ui.mods.only'))); return box; }
@@ -166,4 +239,4 @@ function setMods(st, render) {
   for (const id of UI_MODS) box.append(setCard(switchEl(!c.off[id], v => uiSetMod(id, v), t('ui.mod.' + id)), h('div', { class: 'hint' }, t('ui.mod.' + id + '.h'))));
   return box;
 }
-TOOL_ITEMS.push({ id: 'stats', group: 'story', ic: 'chart', key: 'top.stats', kw: 'stats endings progress statistics статистика концовки прогресс', run: () => openStats() });
+TOOL_ITEMS.push({ id: 'stats', group: 'story', ic: 'chart', key: 'sh.btn', kw: 'stats endings progress statistics time branches autorun log team статистика концовки прогресс время ветки автопрогон журнал команда', run: () => openStatsHub() });

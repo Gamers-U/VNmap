@@ -5,24 +5,22 @@ const BTN = {};
 function tbtn(ic, label, tip, onClick, cls = '') {
   return h('button', { class: 'btn tbn ' + cls, 'data-tip': tip || label, onclick: ev => onClick(ev.currentTarget, ev) }, icon(ic, 18), label ? h('span', { class: 'tlbl' }, label) : null);
 }
-/** Правая часть верхней панели: зависит от режима интерфейса (uimode.js). */
-function topRight(langSeg) {
-  const pro = uiPro(), out = [];
+/** Кнопки правой части панели по id. Какие показывать и в каком порядке, решают режим интерфейса и вкладка «Панель» в Настройках (uimode.js). */
+function barBuilders() {
   const open = () => (DESK ? tbtn('folder', t('desk.open.short'), t('desk.open.tip') + ' (Ctrl+O)', () => deskCommand('open')) : tbtn('upload', t('top.import'), t('top.import.tip'), importJSONFile));
   const saveItems = () => (DESK ? [
     { label: t('desk.save'), icon: 'save', kbd: 'Ctrl+S', onClick: () => deskCommand('save') },
     { label: t('desk.saveas'), icon: 'save', kbd: 'Ctrl+Shift+S', onClick: () => deskCommand('saveas') },
     { label: t('desk.copy'), icon: 'copy', onClick: exportJSON }] : [{ label: t('exp.json'), icon: 'save', kbd: 'Ctrl+S', onClick: exportJSON }]);
-  out.push(
-    tbtn('play', t('pl.btn'), t('pl.tip'), () => openPlayer(), 'pl-top-btn'),
-    tbtn('type', t('te.top'), t('te.top.tip'), () => { const id = [...UI.sel][0], n = id && nodeById(id); openTextEditor(n && n.type !== 'note' ? { nodeId: n.id } : {}); }, 'te-top-btn'),
-    tbtn('layers', t('top.registry'), t('top.registry.tip'), () => openRegistry()));
-  if (uiShow('bar.stats')) out.push(tbtn('chart', t('top.stats'), t('top.stats.tip'), () => openStats()));
-  if (uiShow('bar.team')) out.push((BTN.team = tbtn('badge', t('team.btn'), t('team.btn.tip'), b => openTeamMenu(b))));
-  if (uiShow('bar.translate')) out.push(tbtn('globe', t('tl.btn'), t('tl.btn.tip'), () => openTranslate()));
-  if (uiShow('bar.collab')) out.push((BTN.collab = tbtn('users', t('col.btn'), t('col.btn.tip'), () => openCollabPanel(), 'collab-btn')));
-  if (pro) {
-    out.push(tbtn('download', t('top.export'), t('top.export.tip'), b => menuAt(b, [
+  return {
+    play: () => tbtn('play', t('pl.btn'), t('pl.tip'), () => openPlayer(), 'pl-top-btn'),
+    text: () => tbtn('type', t('te.top'), t('te.top.tip'), () => { const id = [...UI.sel][0], n = id && nodeById(id); openTextEditor(n && n.type !== 'note' ? { nodeId: n.id } : {}); }, 'te-top-btn'),
+    registry: () => tbtn('layers', t('top.registry'), t('top.registry.tip'), () => openRegistry()),
+    stats: () => (uiShow('bar.stats') ? tbtn('chart', t('sh.btn'), t('sh.tip'), () => openStatsHub()) : null),
+    team: () => (uiShow('bar.team') ? (BTN.team = tbtn('badge', t('team.btn'), t('team.btn.tip'), b => openTeamMenu(b))) : null),
+    translate: () => (uiShow('bar.translate') ? tbtn('globe', t('tl.btn'), t('tl.btn.tip'), () => openTranslate()) : null),
+    collab: () => (uiShow('bar.collab') ? (BTN.collab = tbtn('users', t('col.btn'), t('col.btn.tip'), () => openCollabPanel(), 'collab-btn')) : null),
+    export: () => (uiPro() ? tbtn('download', t('top.export'), t('top.export.tip'), b => menuAt(b, [
       { label: t('exp.build'), icon: 'box', kbd: DESK ? 'Ctrl+B' : undefined, onClick: () => openBuild() },
       { sep: true },
       { label: t('exp.svg.dark'), icon: 'image', onClick: () => exportSVG('dark') },
@@ -30,14 +28,19 @@ function topRight(langSeg) {
       { label: t('mp.menu'), icon: 'image', onClick: () => openMapPdf() },
       { label: t('dg.menu'), icon: 'rows', onClick: () => openDigest() },
       { sep: true }, ...saveItems(),
-      { label: t('exp.map'), icon: 'rows', onClick: exportMap }]), 'build-btn'), open());
-  } else {
-    out.push(tbtn('box', t('ui.build'), t('ui.build.tip') + (DESK ? ' (Ctrl+B)' : ''), () => openBuild(), 'build-btn'),
-      tbtn('save', t('ui.file'), t('ui.file.tip'), b => menuAt(b, [...saveItems(), { sep: true },
-        { label: t('exp.svg.dark'), icon: 'image', onClick: () => exportSVG('dark') },
-        { label: t('exp.svg.light'), icon: 'image', onClick: () => exportSVG('light') },
-        { label: t('mp.menu'), icon: 'image', onClick: () => openMapPdf() }]), 'file-btn'), open());
-  }
+      { label: t('exp.map'), icon: 'rows', onClick: exportMap }]), 'build-btn') : null),
+    build: () => (uiPro() ? null : tbtn('box', t('ui.build'), t('ui.build.tip') + (DESK ? ' (Ctrl+B)' : ''), () => openBuild(), 'build-btn')),
+    file: () => (uiPro() ? null : tbtn('save', t('ui.file'), t('ui.file.tip'), b => menuAt(b, [...saveItems(), { sep: true },
+      { label: t('exp.svg.dark'), icon: 'image', onClick: () => exportSVG('dark') },
+      { label: t('exp.svg.light'), icon: 'image', onClick: () => exportSVG('light') },
+      { label: t('mp.menu'), icon: 'image', onClick: () => openMapPdf() }]), 'file-btn')),
+    open,
+  };
+}
+/** Правая часть верхней панели: зависит от режима интерфейса и настройки «Панель» (uimode.js). */
+function topRight(langSeg) {
+  const B = barBuilders(), out = [];
+  for (const id of barIds('main')) { const b = B[id] && B[id](); if (b) out.push(b); }
   out.push(h('div', { class: 'tsep' }), tbtn('sliders', '', t('top.settings'), () => openSettingsWindow()));
   if (uiShow('bar.theme')) out.push(BTN.theme = tbtn(S.theme === 'dark' ? 'sun' : 'moon', '', t('top.theme'), () => toggleTheme()));
   else BTN.theme = null;
@@ -104,7 +107,7 @@ function updateStatus() {
   const st = projectStats();
   const stale = P.nodes.length && (!UI.lastBackup || Date.now() - UI.lastBackup > 864e5);
   el.replaceChildren(h('div', { class: 'bar' },
-    h('button', { class: 'btn stat', 'data-tip': t('top.stats.tip'), onclick: () => openStats() },
+    h('button', { class: 'btn stat', 'data-tip': t('sh.tip'), onclick: () => openStatsHub() },
       h('span', t('status.blocks', st.nodes)), h('span', { class: 'sep-dot' }, '·'), h('span', t('status.files', st.files)), h('span', { class: 'sep-dot' }, '·'), h('span', { class: 'strong' }, Math.round(st.pct * 100) + '%')),
     typeof aclChip === 'function' ? aclChip() : null,
     DESK ? [deskStatusChip(), driveChip(), ghChip(), updChip()]
