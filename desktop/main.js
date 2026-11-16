@@ -8,6 +8,7 @@ const { Updater, stage: stageUpdate, compareBuild, sha256 } = require('./updater
 const { MANIFEST, cleanRel, exists, pruneEmptyDirs, writeBuildFiles } = require('./buildwrite');
 const { RenpyHost } = require('./renpy');
 const { ShellUpdater } = require('./selfupdate');
+const { Notifier } = require('./notify');
 const { spawn } = require('child_process');
 const crypto = require('crypto');
 const path = require('path');
@@ -19,7 +20,7 @@ const HOST = 'app';
 const APP_DIR = path.join(__dirname, 'app');
 const PROJECT_EXTS = ['.vnmap', '.zip', '.json'];
 const DEV = process.argv.includes('--dev');
-const BRIDGE = 5;                      // версия «моста» оболочки: страница может потребовать не меньше (data-needs в её отметке сборки)
+const BRIDGE = 6;                      // версия «моста» оболочки: страница может потребовать не меньше (data-needs в её отметке сборки)
 const RECENT_MAX = 12;
 
 protocol.registerSchemesAsPrivileged([{ scheme: SCHEME, privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true } }]);
@@ -302,6 +303,19 @@ async function ghRequest(o) {
   } finally { clearTimeout(timer); }
 }
 
+/* ---------- уведомления в Telegram и Discord ----------
+   Как и GitHub: страница в сеть не ходит, секреты (токен бота, ссылка вебхука) живут только здесь, зашифрованные системой. */
+let nt = null;
+function getNt() {
+  if (!nt) { nt = new Notifier({ file: path.join(app.getPath('userData'), 'notify.json'), fetch: (u, o) => net.fetch(u, o), safeStorage }); nt.load(); }
+  return nt;
+}
+let ntLast = 0;
+const ntWrap = async fn => {
+  try { return Object.assign({ ok: true }, await fn()); }
+  catch (e) { const m = /^nt:(\w+)/.exec(e && e.message || ''); return { ok: false, code: m ? m[1] : 'fail' }; }
+};
+
 /* ---------- Google Диск ---------- */
 let gd = null;
 function testEndpoints() {
@@ -423,6 +437,20 @@ function registerIpc() {
   });
   handle('gh:clearToken', async () => { ghTok = null; ghLogin = ''; ghSave(); return true; });
   handle('gh:request', async (e, o) => ghRequest(o));
+
+  /* Уведомления */
+  handle('nt:status', async () => getNt().status());
+  handle('nt:setTelegram', async (e, o) => ntWrap(async () => ({ st: getNt().setTelegram(o) })));
+  handle('nt:setDiscord', async (e, o) => ntWrap(async () => ({ st: getNt().setDiscord(o) })));
+  handle('nt:clear', async (e, which) => ntWrap(async () => ({ st: getNt().clear(['tg', 'dc', 'all'].includes(which) ? which : 'all') })));
+  handle('nt:find', async () => ntWrap(async () => ({ st: await getNt().findTelegramChat() })));
+  handle('nt:send', async (e, text, only) => ntWrap(async () => {
+    if (Date.now() - ntLast < 800) throw new Error('nt:rate');                // страница не должна заваливать сервисы
+    ntLast = Date.now();
+    return { res: await getNt().send(String(text || '').slice(0, 4000), { only: only === 'tg' || only === 'dc' ? only : '' }) };
+  }));
+  handle('nt:mine', async (e, memberId) => ntWrap(async () => ({ line: getNt().getMine(memberId) })));
+  handle('nt:farewell', async (e, f) => { getNt().setFarewell(f && typeof f === 'object' ? { text: String(f.text || '').slice(0, 4000), since: f.since, min: f.min } : null); return true; });
 
   handle('desk:setLang', async (e, l) => { if (l === 'ru' || l === 'en') { lang = l; buildMenu(); applyTitle(); saveWinSettings(); } return true; });
 
@@ -615,7 +643,7 @@ function createWindow() {
     } else if (r.response === 1) { forceClose = true; closing = false; win.close(); }
     else closing = false;
   });
-  win.on('closed', () => { win = null; rendererReady = false; });
+  win.on('closed', () => { win = null; rendererReady = false; if (nt) nt.sendFarewell(); });             // «проект закрыт»: уходит из оболочки, страница уже не нужна
   win.loadURL(`${SCHEME}://${HOST}/index.html`);
 }
 
@@ -645,6 +673,10 @@ else {
     if (first) { try { pendingOpen = await readProjectFile(first); } catch (e) { /* нет файла */ } }
     app.on('activate', () => { if (!BrowserWindow.getAllWindows().length) { forceClose = false; createWindow(); } });
   });
-  app.on('before-quit', () => { if (rpHost) rpHost.shutdown(); });
+  let ntQuit = false;
+  app.on('before-quit', e => {
+    if (rpHost) rpHost.shutdown();
+    if (nt && nt.busy() && !ntQuit) { e.preventDefault(); ntQuit = true; nt.whenIdle(6000).then(() => app.quit()); }          // дать прощальному сообщению уйти
+  });
   app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
 }

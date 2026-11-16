@@ -60,6 +60,16 @@ contextBridge.exposeInMainWorld('vnDesktop', {
     clearToken: () => call('gh:clearToken'),
     request: o => call('gh:request', o),
   },
+  notify: {
+    status: () => call('nt:status'),
+    setTelegram: o => call('nt:setTelegram', o),
+    setDiscord: o => call('nt:setDiscord', o),
+    clear: which => call('nt:clear', which),
+    find: () => call('nt:find'),
+    send: (text, only) => call('nt:send', text, only),
+    mine: memberId => call('nt:mine', memberId),
+    farewell: f => call('nt:farewell', f),
+  },
   shellUpdate: {
     check: () => call('su:check'),
     download: () => call('su:download'),

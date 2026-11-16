@@ -1797,3 +1797,13 @@ body.game-mode{background:var(--bg)}
 .wd-feed{display:flex;flex-direction:column;gap:2px}
 .wd-ev{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:10px;font-size:13px}.wd-ev:nth-child(odd){background:var(--surface2)}
 @media(max-width:640px){.wd-tr{grid-template-columns:1.4fr repeat(3,.7fr) 0 0}.wd-tr>:nth-child(5),.wd-tr>:nth-child(6){display:none}}
+
+/* уведомления */
+.nt-modal .m-wrap{min-height:0;width:min(780px,96vw)}
+.nt-body{padding:4px 20px 18px;overflow:auto;display:flex;flex-direction:column;gap:12px}
+.nt-pane,.nt-list{display:flex;flex-direction:column;gap:12px}
+.nt-card{background:var(--surface2);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.nt-ch{display:flex;align-items:center;gap:8px;font-weight:700}
+.nt-state{margin-left:auto;font-weight:500;font-size:12px;color:var(--text3)}.nt-state.on{color:var(--ok,#2e9e5b)}
+.nt-btns{display:flex;flex-wrap:wrap;gap:8px}
+.nt-steps{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--text2)}
