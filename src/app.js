@@ -62,9 +62,11 @@ function buildChrome() {
     h('div', { class: 'bar' }, BTN.undo, BTN.redo, h('div', { class: 'tsep' }),
       tbtn('plus', t('top.add'), t('top.add.tip'), b => menuAt(b, NODE_TYPES.map(tp => ({ label: t('type.' + tp), icon: TYPE_ICON[tp], onClick: () => addNodeAtCenter(tp) })))),
       tbtn('search', t('top.search'), t('top.search') + ' (Ctrl+K)', () => openSearch()),
-      uiPro() ? tbtn('wand', t('tools.btn'), t('tools.tip'), b => toolsMenu(b), 'tools-btn') : tbtn('wand', t('ui.more'), t('ui.more.tip'), b => toolsMenu(b), 'tools-btn')),
+      uiPro() ? tbtn('wand', t('tools.btn'), t('tools.tip'), b => toolsMenu(b), 'tools-btn') : null),
+    uiStrip(),
     h('div', { class: 'grow' }),
     h('div', { class: 'bar' }, ...topRight(langSeg)));
+  document.body.classList.toggle('ui-pro', uiPro());
   const zb = $('#zoombar'); zb.replaceChildren(h('div', { class: 'bar' },
     tbtn('minus', '', t('zoom.out'), () => zoomCenter(1 / 1.25)),
     h('button', { class: 'btn zlabel', id: 'zoom-label', 'data-tip': t('zoom.reset'), onclick: () => { const r = stage.getBoundingClientRect(); zoomAt(r.left + r.width / 2, r.top + r.height / 2, 1); } }, '100%'),

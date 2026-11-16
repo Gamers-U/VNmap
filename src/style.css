@@ -1812,3 +1812,11 @@ body.game-mode{background:var(--bg)}
 .set-modal .m-wrap{min-height:0;width:min(720px,96vw)}
 .set-body{padding:4px 20px 18px;overflow:auto;display:flex;flex-direction:column;gap:12px}
 .set-pane{display:flex;flex-direction:column;gap:12px}
+
+/* ---- профессиональный режим: строка разделов под панелью ---- */
+.bar.strip{padding:3px}
+.strip .tbn{height:30px;padding:0 11px}
+.strip .tbn .tlbl{display:inline;font-size:12.5px;font-weight:600}
+@media (max-width:760px){.strip .tbn .tlbl{display:none}.strip .tbn{padding:0 9px}}
+/* узкие экраны: панели переносятся, чтобы все кнопки были доступны (профессиональный режим на телефоне) */
+@media (max-width:760px){#topbar .bar{flex-wrap:wrap;max-width:100%}}

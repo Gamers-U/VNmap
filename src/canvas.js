@@ -642,7 +642,8 @@ function bgMenu(cx, cy) {
   const w = toWorld(cx, cy);
   showMenu(cx, cy, [{ header: t('menu.newhere') },
     ...NODE_TYPES.map(tp => ({ label: t('type.' + tp), icon: TYPE_ICON[tp], onClick: () => createNodeAt(tp, w.x, w.y) })),
-    { sep: true }, { label: t('c.fit'), icon: 'fit', kbd: 'F', onClick: () => fitAll() }]);
+    { sep: true }, { label: t('c.fit'), icon: 'fit', kbd: 'F', onClick: () => fitAll() },
+    { label: t('ly.btn'), icon: 'wand', onClick: () => setTimeout(() => openLayoutDialog(null), 0) }]);
 }
 function onContext(e) {
   e.preventDefault(); hideTip();

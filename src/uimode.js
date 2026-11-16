@@ -1,6 +1,6 @@
 'use strict';
 /* ====== Режимы интерфейса и окно «Настройки» ======
-   «Простой» (по умолчанию) показывает только самое нужное: Карта, Текст, Играть, Реестр, Сборка, а остальное в меню «Ещё».
+   «Простой» (по умолчанию): функции просто спрятаны, видно Карту, Текст, Играть, Реестр, Сборку (скрытое находится через Ctrl+K).
    «Профессиональный» показывает всё, и там можно выключать целые модули, которыми вы не пользуетесь.
    Режим личный: он хранится в настройках программы на этом компьютере, в проект не попадает.
    Не путать с корпоративным режимом прав доступа: тот относится к проекту (Участники → Права доступа). */
@@ -10,12 +10,18 @@ Object.assign(D, {
   'ui.tab.view': ['Вид и режим', 'Look and mode'], 'ui.tab.conn': ['Подключения', 'Connections'], 'ui.tab.mods': ['Модули', 'Modules'],
   'ui.mode': ['Режим интерфейса', 'Interface mode'],
   'ui.mode.simple': ['Простой', 'Simple'], 'ui.mode.pro': ['Профессиональный', 'Professional'],
-  'ui.mode.simple.h': ['На панели самое нужное: Текст, Играть, Реестр, Сборка. Остальные возможности собраны в коротком меню «Ещё», редкие скрыты.', 'The toolbar has only what matters: Text, Play, Registry, Build. Other features sit in the short “More” menu, rare ones are hidden.'],
-  'ui.mode.pro.h': ['Все кнопки и меню на виду: статистика, команда, перевод, совместная работа, анализ. Ненужные модули можно выключить на вкладке «Модули».', 'All buttons and menus are in view: statistics, team, translation, collaboration, analysis. You can switch off unneeded modules on the “Modules” tab.'],
+  'ui.mode.simple.h': ['Видно только самое нужное: Карта, Текст, Играть, Реестр, Сборка. Остальные возможности спрятаны (их можно найти через поиск Ctrl+K).', 'Only what matters is visible: Map, Text, Play, Registry, Build. Other features are hidden (find them through the Ctrl+K search).'],
+  'ui.mode.pro.h': ['Всё на виду: под панелью отдельная строка разделов (Карта, Тексты, Проверки, Игра, Работа команды), плюс статистика, команда, перевод, совместная работа. Ненужные модули выключаются на вкладке «Модули».', 'Everything is in view: a separate row of sections under the toolbar (Map, Texts, Checks, Play, Teamwork), plus statistics, team, translation, collaboration. Switch off unneeded modules on the “Modules” tab.'],
   'ui.mode.note': ['Режим интерфейса личный и не меняет проект. Корпоративный режим прав доступа это другое: он относится к проекту (Участники → Права доступа).', 'The interface mode is personal and does not change the project. The corporate access-rights mode is a different thing: it belongs to the project (Members → Access rights).'],
-  'ui.mode.first': ['Включён простой режим: на панели самое нужное. Все функции: Настройки → Профессиональный.', 'Simple mode is on: the toolbar has only what matters. For everything: Settings → Professional.'],
+  'ui.mode.first': ['Включён простой режим: видно только самое нужное, остальное спрятано. Все функции: Настройки → Профессиональный.', 'Simple mode is on: only what matters is visible, the rest is hidden. For everything: Settings → Professional.'],
   'ui.look': ['Оформление', 'Appearance'], 'ui.theme': ['Тема', 'Theme'], 'ui.theme.dark': ['Тёмная', 'Dark'], 'ui.theme.light': ['Светлая', 'Light'], 'ui.lang': ['Язык интерфейса', 'Interface language'],
   'ui.mapset': ['Карта', 'Map'], 'ui.project': ['Проект', 'Project'],
+  'ui.g.map': ['Карта', 'Map'], 'ui.g.text': ['Тексты', 'Texts'], 'ui.g.check': ['Проверки', 'Checks'], 'ui.g.play': ['Игра', 'Play'], 'ui.g.team': ['Работа команды', 'Teamwork'],
+  'ui.g.map.tip': ['Расстановка блоков, карта в PDF, заметки', 'Arranging blocks, map PDF, notes'],
+  'ui.g.text.tip': ['Редактор, импорт, вычитка, таблица реплик, переименование, персонажи', 'Editor, import, proofreading digest, replica table, renaming, characters'],
+  'ui.g.check.tip': ['Проверка сюжета, переменные, ветки и время, автопрогон, журнал, статистика', 'Plot check, variables, branches and time, autorun, log, statistics'],
+  'ui.g.play.tip': ['Плеер, HTML-игра для тестеров, запуск в Ren\'Py', 'Player, HTML game for testers, run in Ren\'Py'],
+  'ui.g.team.tip': ['Задачи и сроки, кто что сделал, уведомления, проверка правок', 'Tasks and deadlines, who did what, notifications, review of changes'],
   'ui.more': ['Ещё', 'More'], 'ui.more.tip': ['Остальные возможности: расстановка, проверки, импорт, тесты', 'More features: arranging, checks, import, tests'],
   'ui.build': ['Сборка', 'Build'], 'ui.build.tip': ['Собрать игру для Ren\'Py', 'Build the game for Ren\'Py'],
   'ui.file': ['Файл', 'File'], 'ui.file.tip': ['Сохранить проект, открыть, сохранить карту: SVG, PDF', 'Save the project, open one, save the map: SVG, PDF'],
@@ -37,6 +43,25 @@ Object.assign(D, {
 });
 
 const UI_MODS = ['analysis', 'text', 'team', 'collab', 'translate'];
+/** Профессиональный режим: строка разделов под верхней панелью (инструменты на виду). Пункты берутся из TOOL_ITEMS по id и фильтруются uiShow. */
+const UI_STRIP = [
+  { id: 'map', ic: 'fit', items: ['layout', 'mappdf', 'notes'] },
+  { id: 'text', ic: 'type', items: ['texted', 'docimport', 'digest', 'replicas', 'rename', 'charpage', 'resources', 'rpyimport'] },
+  { id: 'check', ic: 'check', items: ['checks', 'missingfiles', 'stats', 'varstates', 'branchstats', 'autorun', 'testlog'] },
+  { id: 'play', ic: 'play', items: ['player', 'htmlgame', 'renpy'] },
+  { id: 'team', ic: 'users', items: ['tasks', 'whodid', 'notify', 'review'] },
+];
+/** Строка разделов для профессионального режима; в простом её нет. Раздел без доступных пунктов (выключен модуль) не рисуется. */
+function uiStrip() {
+  if (!uiPro()) return null;
+  const groups = [];
+  for (const g of UI_STRIP) {
+    const its = g.items.map(id => TOOL_ITEMS.find(x => x.id === id)).filter(x => x && uiShow(x.id));
+    if (!its.length) continue;
+    groups.push(tbtn(g.ic, t('ui.g.' + g.id), t('ui.g.' + g.id + '.tip'), b => menuAt(b, its.map(x => ({ label: t(x.key), icon: x.ic, kbd: x.kbd, onClick: () => setTimeout(() => x.run(b), 0) }))), 'strip-btn strip-' + g.id));
+  }
+  return groups.length ? h('div', { class: 'bar strip', id: 'toolstrip' }, ...groups) : null;
+}
 /* Что в каком режиме видно: 's' — в обоих режимах, 'p' — только в профессиональном (и пока модуль не выключен), 'x' — живёт в других местах (Настройки).
    Идентификаторы совпадают с пунктами меню «Инструменты» (TOOL_ITEMS) и с кнопками верхней панели. Незнакомое видно всегда. */
 const UI_LVL = {
@@ -45,7 +70,7 @@ const UI_LVL = {
   varstates: ['p', 'analysis'], branchstats: ['p', 'analysis'], autorun: ['p', 'analysis'], testlog: ['p', 'analysis'],
   whoami: ['p', 'team'], tasks: ['p', 'team'], whodid: ['p', 'team'], notify: ['p', 'team'], review: ['p', 'collab'],
   ghopen: ['x'],
-  'bar.stats': ['p', 'analysis'], 'bar.team': ['p', 'team'], 'bar.translate': ['p', 'translate'], 'bar.collab': ['p', 'collab'], 'bar.theme': ['p'], 'bar.lang': ['p'], 'bar.layers': ['p'],
+  'bar.stats': ['p', 'analysis'], 'bar.team': ['p', 'team'], 'bar.translate': ['p', 'translate'], 'bar.collab': ['p', 'collab'], 'bar.theme': ['x'], 'bar.lang': ['x'], 'bar.layers': ['p'],
 };
 function uiCfg() {
   const c = S.ui && typeof S.ui === 'object' ? S.ui : (S.ui = {});
