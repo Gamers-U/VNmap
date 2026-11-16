@@ -76,6 +76,7 @@ function flagAnalysis() {
     }
   };
   for (const n of P.nodes) for (const f of n.files) scan(n, f, f.script);
+  if (typeof ccScan === 'function') for (const c of P.code || []) if (c.on !== false) { const sc = ccScan(c.text); for (const d of sc.defs) declared.add(d.name.split('.')[0]); for (const nm of sc.names) pyDefs.add(nm); }   // свой код: определения оттуда
   const nodeOf = id => nodeById(id);
   for (const e of P.edges) {
     const from = nodeOf(e.from); if (!from) continue;

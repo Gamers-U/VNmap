@@ -376,6 +376,14 @@ function normalize(p) {
     s.code = s.code.slice(0, 20000); s.name = String(s.name == null ? '' : s.name).trim().slice(0, 80) || s.code.split('\n')[0].slice(0, 40);
     s.note = String(s.note || '').slice(0, 300); s.group = String(s.group || '').trim().slice(0, 40); s.at = Number(s.at) || 0;
   }
+  /* свой код проекта: P.code = [{ id, name, text, on, note, at }], файлы game/<name>.rpy как есть (customcode.js) */
+  const seenO = new Set();
+  p.code = (Array.isArray(p.code) ? p.code : []).filter(c => c && typeof c === 'object' && typeof c.text === 'string').slice(0, 60);
+  for (const c of p.code) {
+    c.id = typeof c.id === 'string' && c.id && !seenO.has(c.id) ? c.id : uid('o'); seenO.add(c.id);
+    c.name = ccSlug(c.name); c.text = c.text.slice(0, 400000); c.on = c.on !== false;
+    c.note = String(c.note || '').slice(0, 300); c.at = Number(c.at) || 0;
+  }
   p.acl = p.acl && typeof p.acl === 'object' && p.acl.on ? (p.acl.corp ? { on: true, corp: true } : { on: true }) : {};
   return p;
 }

@@ -34,7 +34,7 @@ function mgEntities(p) {
     M.set('n/' + n.id, mgClone(rest));
     for (const f of n.files || []) M.set('f/' + f.id, Object.assign(mgClone(f), { nodeId: n.id }));
   }
-  for (const [pre, arr] of [['e', p.edges], ['c', p.characters], ['a', p.assets], ['v', p.vars], ['m', p.members], ['k', p.cmts], ['x', p.ign], ['g', p.achs], ['q', p.tasks], ['s', p.snippets]]) for (const x of arr || []) M.set(pre + '/' + x.id, mgClone(x));
+  for (const [pre, arr] of [['e', p.edges], ['c', p.characters], ['a', p.assets], ['v', p.vars], ['m', p.members], ['k', p.cmts], ['x', p.ign], ['g', p.achs], ['q', p.tasks], ['s', p.snippets], ['o', p.code]]) for (const x of arr || []) M.set(pre + '/' + x.id, mgClone(x));
   for (const l of tl.langs || []) {
     M.set('l/' + l.id, mgClone(l));
     const groups = {};
@@ -76,7 +76,7 @@ function mgBuild(M, ref) {
     return n;
   });
   out.edges = list('e', ref && ref.edges); out.characters = list('c', ref && ref.characters); out.assets = list('a', ref && ref.assets);
-  out.vars = list('v', ref && ref.vars); out.members = list('m', ref && ref.members); out.cmts = list('k', ref && ref.cmts); out.ign = list('x', ref && ref.ign); out.achs = list('g', ref && ref.achs); out.tasks = list('q', ref && ref.tasks); out.snippets = list('s', ref && ref.snippets);
+  out.vars = list('v', ref && ref.vars); out.members = list('m', ref && ref.members); out.cmts = list('k', ref && ref.cmts); out.ign = list('x', ref && ref.ign); out.achs = list('g', ref && ref.achs); out.tasks = list('q', ref && ref.tasks); out.snippets = list('s', ref && ref.snippets); out.code = list('o', ref && ref.code);
   const langs = list('l', ref && ref.tl && ref.tl.langs);
   const rec = {};
   for (const l of langs) rec[l.id] = {};

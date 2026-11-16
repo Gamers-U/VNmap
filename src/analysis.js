@@ -358,27 +358,32 @@ function anChecks() {
   for (const d of anStates().dead) push('warn', 'edgedead', t('an.c.edgedead', (nodeById(d.edge.from) || {}).title || '?', (nodeById(d.edge.to) || {}).title || '?', d.edge.cond, d.why), { edgeId: d.edge.id, nodeId: d.edge.from, key: 'edgedead|' + d.edge.id });
   /* метки и переходы */
   const targets = jumpTargetMap(), seenLabel = new Map();
+  const ccLab = new Map();           // метки из «Своего кода» (customcode.js): переходы на них не ошибка, а совпадение с метками глав ошибка
+  if (typeof ccScan === 'function') for (const c of P.code || []) if (c.on !== false) for (const lb of ccScan(c.text).labels) if (!ccLab.has(lb)) ccLab.set(lb, c.name);
   for (const n of real) for (const f of n.files) {
     const lines = String(f.script || '').replace(/\r\n?/g, '\n').split('\n');
     const own = new Set();
-    for (const l of lines) { const m = RE_J_LABEL.exec(l.trim()); if (m) { own.add(m[1]); if (seenLabel.has(m[1]) && seenLabel.get(m[1]).f !== f.id) push('err', 'duplabel', t('an.c.duplabel', m[1], nn(seenLabel.get(m[1]).n), nn(n)), { nodeId: n.id, fileId: f.id, key: 'duplabel|' + m[1] + '|' + f.id }); else seenLabel.set(m[1], { n, f: f.id }); } }
+    for (const l of lines) { const m = RE_J_LABEL.exec(l.trim()); if (m) { own.add(m[1]); if (ccLab.has(m[1])) push('err', 'duplabel', t('an.c.duplabel', m[1], nn(n), t('cu.src', ccLab.get(m[1]))), { nodeId: n.id, fileId: f.id, key: 'duplabel|' + m[1] + '|' + f.id }); else if (seenLabel.has(m[1]) && seenLabel.get(m[1]).f !== f.id) push('err', 'duplabel', t('an.c.duplabel', m[1], nn(seenLabel.get(m[1]).n), nn(n)), { nodeId: n.id, fileId: f.id, key: 'duplabel|' + m[1] + '|' + f.id }); else seenLabel.set(m[1], { n, f: f.id }); } }
     const reported = new Set();
     for (const l of lines) {
       const m = RE_J_STMT.exec(l.trim()); if (!m) continue;
       const tg = m[2].replace(/^["']|["']$/g, '');
-      if (reported.has(tg) || AN_STD_LABELS.has(tg) || own.has(tg) || targets.has(jKey(tg)) || /^\[|[()+]/.test(tg)) continue;
+      if (reported.has(tg) || AN_STD_LABELS.has(tg) || own.has(tg) || ccLab.has(tg) || targets.has(jKey(tg)) || /^\[|[()+]/.test(tg)) continue;
       reported.add(tg); push('warn', 'badjump', t('an.c.badjump', tg, nn(n)), { nodeId: n.id, fileId: f.id, key: 'badjump|' + f.id + '|' + tg });
     }
   }
   /* персонажи */
   const sp = anSpeech(), tags = new Set(P.characters.map(c => c.tag)), defd = new Set();
   for (const n of real) for (const f of n.files) for (const m of String(f.script || '').matchAll(/^\s*define\s+([A-Za-z_]\w*)\s*=\s*Character\b/gm)) defd.add(m[1]);
+  if (typeof ccScan === 'function') for (const c of P.code || []) if (c.on !== false) for (const tg of ccScan(c.text).chars) defd.add(tg);
   for (const [who, r] of sp) if (!tags.has(who) && !defd.has(who)) { const nid = [...r.nodes][0]; push('warn', 'nochar', t('an.c.nochar', who, r.lines), { nodeId: nid, key: 'nochar|' + who }); }
   for (const c of P.characters) if (c.tag && !sp.has(c.tag) && !P.nodes.some(n => n.defaultCast.includes(c.id) || n.files.some(f => f.cast.includes(c.id))) && !c.always) push('info', 'charidle', t('an.c.charidle', c.name || c.tag), { key: 'charidle|' + c.id });
   /* ресурсы */
-  const miss = new Map();
+  const miss = new Map(), ccImg = new Set(), ccTag = new Set();      // картинки, определённые в «Своём коде»
+  if (typeof ccScan === 'function') for (const c of P.code || []) if (c.on !== false) { const sc = ccScan(c.text); sc.images.forEach(x => { ccImg.add(x); ccTag.add(x.split(' ')[0]); }); sc.imgTags.forEach(x => ccTag.add(x)); }
   for (const n of real) for (const f of n.files) for (const u of parseUsage(f.script)) {
     if (!['bg', 'sprite', 'music', 'sfx', 'voice'].includes(u.kind) || matchAsset(u)) continue;
+    if (u.kind === 'bg' ? ccImg.has(String(u.name).trim().replace(/\s+/g, ' ')) : u.kind === 'sprite' && ccTag.has(u.name)) continue;
     const k = u.kind + '|' + u.name; if (!miss.has(k)) miss.set(k, { u, n, f });
   }
   for (const { u, n, f } of miss.values()) push('info', 'noasset', t('an.c.noasset', t('kind1.' + u.kind), u.name), { nodeId: n.id, fileId: f.id, key: 'noasset|' + u.kind + '|' + u.name });

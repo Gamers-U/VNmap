@@ -179,6 +179,8 @@ function compileProject(over, blobSet) {
 
   /* ---------- известные имена (для проверки реплик) ---------- */
   const known = new Set(['narrator', 'extend', 'centered', 'vcentered', 'nvl_narrator', 'adv']);
+  const cc = typeof ccPrepare === 'function' ? ccPrepare() : null;          // свой код проекта (customcode.js): имена, которые он определяет
+  if (cc) for (const n of cc.names) known.add(n);
   const chars = [], charTags = new Set();
   for (const c of P.characters) {
     if (!c.tag) { add('warn', t('cmp.char.notag', c.name || '?')); continue; }
@@ -267,11 +269,14 @@ function compileProject(over, blobSet) {
   for (const [ref] of fontUnknown) add('warn', t('cmp.font.unknown', ref));
   for (const [a, set] of usedNoFile) add('warn', t('cmp.audio.nofile', a.name, set.size, opt.skipMissingAudio ? t('cmp.audio.skipped') : ''), null);
   const allLabels = new Set([...declared.keys(), ...[...info.values()].flatMap(I => [I.blk, ...I.files.map(F => F.label)]), 'start', 'quit', 'splashscreen', 'main_menu', 'after_load']);
+  const chapLabels = new Set([...declared.keys(), ...[...info.values()].flatMap(I => [I.blk, ...I.files.map(F => F.label)]), 'start']);
+  if (cc) for (const n of cc.labels) allLabels.add(n);
   for (const j of jumps) if (!allLabels.has(j.to)) add('warn', t('cmp.jump.missing', j.kw, j.to, j.ref.file.title || '?'), j.ref);
   if (emptyFiles.length) add('info', t('cmp.empty.files', emptyFiles.length, emptyFiles.slice(0, 4).map(r => r.file.title || '?').join(', ') + (emptyFiles.length > 4 ? '…' : '')), emptyFiles[0]);
 
   /* ---------- определения изображений ---------- */
   const imgDefs = new Map(); // имя → { code, ph }
+  if (cc) for (const n of cc.images) imgDefs.set(n, true);       // картинки из своего кода: сборка их не определяет, но знает
   const imgLines = [];
   const phBg = nm => `Fixed(Solid("${PH_COLORS[hashStr(nm) % PH_COLORS.length]}"), Text(${pyStr(nm)}, size=44, color="#ffffff88", xalign=0.5, yalign=0.5))`;
   const phSprite = nm => `Fixed(Solid("${PH_COLORS[hashStr(nm) % PH_COLORS.length]}", xsize=300, ysize=620), Text(${pyStr(nm.replace(/ /g, '\n'))}, size=32, color="#ffffffcc", xalign=0.5, yalign=0.12), xsize=300, ysize=620)`;
@@ -294,7 +299,7 @@ function compileProject(over, blobSet) {
   const extraImg = [];
   for (const [nm, u] of usedImgs) {
     const full = cmpImageName(nm);
-    if (imgDefs.has(full)) continue;
+    if (imgDefs.has(full) || (cc && cc.imgTags.has(u.tag))) continue;
     const spriteAsset = u.kind === 'sprite' ? P.assets.find(a => a.kind === 'sprite' && a.name === u.tag) : null;
     const r = u.refs[0];
     add('warn', spriteAsset ? t('cmp.expr.unknown', u.tag, u.expr.split(/\s+/)[0] || '?') : t('cmp.img.unknown', nm), r,
@@ -553,6 +558,7 @@ function compileProject(over, blobSet) {
 
   // story/*.rpy
   if (opt.mode !== 'single') for (const I of info.values()) for (const F of I.files) R.files.push({ path: F.path, text: fileBody(I, F), story: true });
+  if (cc) ccEmit(cc, R, add, { charTags, varNames: new Set(vars.map(v => v.name)), ownLabels: chapLabels });   // свой код: как есть + проверки
 
   // docs
   if (opt.includeDocs) {

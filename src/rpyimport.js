@@ -5,7 +5,7 @@
      jump / menu      → в самом конце метки это стрелки карты (названия вариантов и условия — подписи стрелок);
                         всё, что сложнее (if, вложенные переходы), остаётся в тексте и видно пунктиром («Стрелки по коду»);
      define Character → персонажи, default → переменные, image → ассеты, define Dissolve(…)/transform → эффекты;
-     остальное вне меток (init python, screen, style…) → заметка на карте: ничего не теряется, но в сборку это не попадает.
+     остальное вне меток (init python, screen, style…) → «Свой код» (customcode.js): по файлу на исходный файл, сборка пишет его в игру как есть.
    Стрелка вместо хвоста метки ставится, только если на эту метку никто не прыгает из текста: иначе переход в обход блока
    пропустил бы стрелки. Метка без завершения (после неё сразу следующая) получает стрелку к следующей: так в Ren'Py и устроено.
    rpiBuild — чистый разбор (ничего не меняет в проекте), rpiApply — запись в проект. */
@@ -27,7 +27,8 @@ Object.assign(D, {
   'ri.col.label': ['Метка', 'Label'], 'ri.col.block': ['Блок', 'Block'], 'ri.col.type': ['Тип', 'Type'], 'ri.col.arrows': ['Стрелки', 'Arrows'], 'ri.col.state': ['Что с ней', 'Status'],
   'ri.st.new': ['новый блок', 'new block'], 'ri.st.skip': ['пропущена', 'skipped'],
   'ri.arrows.n': ['{0} → {1}', '{0} → {1}'], 'ri.arrows.code': ['в тексте', 'in the text'],
-  'ri.sum': ['Блоков: {0} · стрелок: {1} · персонажей: {2} · переменных: {3} · ассетов: {4} · эффектов: {5}', 'Blocks: {0} · arrows: {1} · characters: {2} · variables: {3} · assets: {4} · effects: {5}'],
+  'ri.sum': ['Блоков: {0} · стрелок: {1} · персонажей: {2} · переменных: {3} · ассетов: {4} · эффектов: {5} · файлов кода: {6}', 'Blocks: {0} · arrows: {1} · characters: {2} · variables: {3} · assets: {4} · effects: {5} · code files: {6}'],
+  'ri.done.code': ['Файлов «Своего кода»: {0} (Инструменты → Свой код). Сборка запишет их в игру как есть.', 'Custom code files: {0} (Tools → Custom code). The build writes them into the game as they are.'],
   'ri.import': ['Импортировать', 'Import'],
   'ri.done.h': ['Готово: добавлено блоков {0}', 'Done: {0} blocks added'],
   'ri.done.p': ['Блоки лежат на карте и выделены. Загляните в «Проверку сюжета» и «Сборку»: там будет видно, чего не хватает (картинок, музыки).', 'The blocks are on the map and selected. Look at “Story check” and “Build” to see what is missing (images, music).'],
@@ -44,13 +45,11 @@ Object.assign(D, {
   'ri.r.fall': ['Метка «{0}» не заканчивается переходом: дальше в Ren\'Py идёт метка «{1}». Для неё ' + 'добавлена стрелка (или строка jump).', 'Label “{0}” does not end with a jump: Ren\'Py continues into the label “{1}”. An arrow (or a jump line) was added for it.'],
   'ri.r.dyn': ['В скриптах есть jump/call expression: куда они ведут, программа не знает, поэтому переходы остались в текстах, стрелок из них не сделано.', 'The scripts have jump/call expression: the app cannot know where they lead, so jumps stayed in the texts and no arrows were made from them.'],
   'ri.r.unk': ['Метка «{0}»: переход на «{1}», такой метки нет среди импортируемых и в проекте. Остался в тексте.', 'Label “{0}”: jump to “{1}”, no such label among the imported ones or in the project. It stayed in the text.'],
-  'ri.r.left': ['Код вне меток (init python, screen, style и т. п.) перенесён в заметку «{0}». В сборку он не попадёт: оставьте его в своём файле Ren\'Py.', 'Code outside labels (init python, screens, styles and so on) was moved into the note “{0}”. It does not reach the build: keep it in your own Ren\'Py file.'],
+  'ri.r.left': ['Код вне меток (init python, screen, style и т. п.) перенесён в «Инструменты → Свой код»: {0}. Сборка запишет его в игру как есть.', 'Code outside labels (init python, screens, styles and so on) was moved into “Tools → Custom code”: {0}. The build writes it into the game as it is.'],
   'ri.r.char': ['Персонаж «{0}» уже есть в проекте: пропущен.', 'The character “{0}” already exists in the project: skipped.'],
   'ri.r.charx': ['Персонаж {0}: доп. параметры Character (кроме имени и цвета) не перенесены.', 'Character {0}: extra Character parameters (other than name and color) were not imported.'],
   'ri.r.var': ['Переменная «{0}» уже есть в проекте: пропущена.', 'The variable “{0}” already exists in the project: skipped.'],
   'ri.r.endings': ['Блоки без выхода, на которые есть переходы и которые кончаются return, помечены как концовки: проверьте и поправьте типы на карте.', 'Blocks without exits that end with return and are jumped to were marked as endings: check and fix the types on the map.'],
-  'ri.r.cut': ['Заметка с кодом обрезана до {0} знаков.', 'The code note was cut to {0} characters.'],
-  'ri.note.title': ['Код вне меток', 'Code outside labels'],
   'ri.start.title': ['Начало', 'Start'],
   'ri.sel.hint': ['Импорт сценария из .rpy', 'Import a script from .rpy'],
 });
@@ -62,7 +61,6 @@ const RPI_CHOICE = /^("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')(?:\s+if\s+(.*?))?\s*:
 const RPI_MENU = /^menu\s*:\s*(?:#.*)?$/;
 const RPI_FX = /^(?:Dissolve|ImageDissolve|AlphaDissolve|Fade|Pixellate|MoveTransition|PushMove|ComposeTransitions|MultipleTransition|CropMove|Wipe|SlideTransition|ZoomInOut|Move|MoveFade)\s*\(/;
 const RPI_CODE_OK = /^(?:\$\s*\S|(?:play|stop|queue|show|hide|scene|with|pause|voice)\b)/;
-const RPI_MAX_NOTE = 30000;
 const rpiInd = l => /^ */.exec(l)[0].length;
 const rpiBlank = l => !l.trim();
 const rpiCom = l => /^\s*#/.test(l);
@@ -230,7 +228,7 @@ function rpiRefs(lines, from, to) {
  */
 function rpiBuild(sources, opt) {
   opt = Object.assign({ arrows: true }, opt || {});
-  const plan = { nodes: [], chars: [], vars: [], assets: [], fx: [], note: null, start: null, report: [], counts: { blocks: 0, arrows: 0, chars: 0, vars: 0, assets: 0, fx: 0 }, files: sources.length };
+  const plan = { nodes: [], chars: [], vars: [], assets: [], fx: [], code: [], note: null, start: null, report: [], counts: { blocks: 0, arrows: 0, chars: 0, vars: 0, assets: 0, fx: 0 }, files: sources.length };
   const rep = (level, msg) => plan.report.push({ level, msg });
   /* 1. куски каждого файла */
   const labels = [], leftovers = [], tops = [];
@@ -260,16 +258,17 @@ function rpiBuild(sources, opt) {
   /* 2. код вне меток: персонажи, переменные, картинки, эффекты, остальное — в заметку */
   const haveTag = new Set(P.characters.map(c => c.tag)), haveVar = new Set(P.vars.map(v => v.name));
   const haveAsset = new Set(P.assets.map(a => a.kind + '|' + a.name.toLowerCase()));
-  const left = [];
-  for (const { c, raw } of tops) {
-    if (raw) { left.push(c.lines.join('\n')); continue; }
+  const left = [], leftBy = new Map();          // остаток кода вне меток: всё вместе (для ссылок) и по исходным файлам (для «Своего кода»)
+  const pushLeft = (src, text) => { left.push(text); if (!leftBy.has(src)) leftBy.set(src, []); leftBy.get(src).push(text); };
+  for (const { c, raw, src } of tops) {
+    if (raw) { pushLeft(src, c.lines.join('\n')); continue; }
     const head = c.head, whole = c.lines.join('\n');
     let m;
     if ((m = /^define\s+(?:-?\d+\s+)?([A-Za-z_]\w*)\s*=\s*Character\s*\(([\s\S]*)\)\s*$/.exec(head))) {
       const tag = m[1], args = m[2];
       const first = /^\s*(None|(?:_\(\s*)?(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')(?:\s*\))?)/.exec(args);
       const nm = first ? (first[1] === 'None' ? '' : rpiStr(first[1])) : null;
-      if (nm === null || nm === '' ) { left.push(c.lead.concat(c.lines).join('\n')); continue; }
+      if (nm === null || nm === '' ) { pushLeft(src, c.lead.concat(c.lines).join('\n')); continue; }
       if (haveTag.has(tag)) { rep('info', t('ri.r.char', tag)); continue; }
       const col = /\bcolor\s*=\s*(["'])(#[0-9a-fA-F]{6})\1/.exec(args), wc = /\bwhat_color\s*=\s*(["'])(#[0-9a-fA-F]{6})\1/.exec(args);
       plan.chars.push({ tag, name: nm, color: col ? col[2].toLowerCase() : '', textColor: wc ? wc[2].toLowerCase() : '' });
@@ -306,7 +305,7 @@ function rpiBuild(sources, opt) {
         continue;
       }
     }
-    left.push(c.lead.concat(c.lines).join('\n'));
+    pushLeft(src, c.lead.concat(c.lines).join('\n'));
   }
   /* ссылки из кода вне меток тоже считаются: Jump("метка") в экране и т. п. */
   const leftText = left.join('\n');
@@ -413,14 +412,15 @@ function rpiBuild(sources, opt) {
   if (sn) {
     if (P.startId && P.nodes.some(x => x.id === P.startId)) rep('info', t('ri.r.start.kept', sn.title)); else { plan.start = sn; rep('info', t('ri.r.start', 'start_scene')); }
   }
-  const leftTrim = left.filter(x => x.trim()).join('\n\n');
-  if (leftTrim.split('\n').some(l => l.trim() && !/^\s*#/.test(l))) {
-    let txt = leftTrim;
-    if (txt.length > RPI_MAX_NOTE) { txt = txt.slice(0, RPI_MAX_NOTE); rep('info', t('ri.r.cut', RPI_MAX_NOTE)); }
-    plan.note = { title: t('ri.note.title'), text: txt };
-    rep('info', t('ri.r.left', t('ri.note.title')));
+  plan.code = [];
+  for (const [src, parts] of leftBy) {
+    const txt = parts.filter(x => x.trim()).join('\n\n');
+    if (!txt.split('\n').some(l => l.trim() && !/^\s*#/.test(l))) continue;
+    plan.code.push({ src, name: ccSlug(String(src).replace(/^.*[\\/]/, '')), text: txt.replace(/\s+$/, '') + '\n' });
   }
-  plan.counts = { blocks: plan.nodes.length, arrows: plan.nodes.reduce((s, n) => s + n.edges.length, 0), chars: plan.chars.length, vars: plan.vars.length, assets: plan.assets.length, fx: plan.fx.length };
+  plan.code = plan.code.filter(cf => { const dup = (P.code || []).some(c => c.name.toLowerCase() === cf.name.toLowerCase() && ccNorm(c.text).trim() === ccNorm(cf.text).trim()); if (dup) rep('info', t('cu.imp.same', cf.name + '.rpy')); return !dup; });
+  if (plan.code.length) rep('info', t('ri.r.left', plan.code.map(x => x.name + '.rpy').join(', ')));
+  plan.counts = { blocks: plan.nodes.length, arrows: plan.nodes.reduce((s, n) => s + n.edges.length, 0), chars: plan.chars.length, vars: plan.vars.length, assets: plan.assets.length, fx: plan.fx.length, code: plan.code.length };
   return plan;
 }
 
@@ -467,12 +467,8 @@ function rpiApply(plan, opt) {
     }
     P.nodes.push(n); made.set(pn, n); ids.push(n.id);
   }
-  let note = null;
-  if (plan.note) {
-    note = newNode('note', x0 - 360, y0); note.title = plan.note.title; note.desc = plan.note.text;
-    if (me) note.by = me;
-    P.nodes.push(note); ids.push(note.id);
-  }
+  let note = null, codeAdded = 0;
+  for (const cf of plan.code || []) if (ccAdd({ name: cf.name, text: cf.text, note: t('cu.imp.note', cf.src), silent: true })) codeAdded++;
   reindex();
   for (const pn of plan.nodes) {
     const from = made.get(pn);
@@ -506,7 +502,7 @@ function rpiApply(plan, opt) {
   }
   reindex();
   commit(true);
-  return { ids, orderBad: bad };
+  return { ids, orderBad: bad, code: codeAdded };
 }
 
 /* ---------- чтение файлов ---------- */
@@ -558,7 +554,7 @@ function openRpyImport() {
       const paintTable = () => {
         tableBox.replaceChildren();
         if (model.done) {
-          tableBox.append(h('div', { class: 'di-done' }, h('div', { class: 'di-done-h' }, icon('check', 22), t('ri.done.h', model.done.ids.length)), h('p', { class: 'hint' }, t('ri.done.p')), model.done.orderBad && model.done.orderBad.length ? h('p', { class: 'hint di-warn' }, icon('alert', 14), t('ri.done.order', model.done.orderBad.join(', '))) : null));
+          tableBox.append(h('div', { class: 'di-done' }, h('div', { class: 'di-done-h' }, icon('check', 22), t('ri.done.h', model.done.ids.length)), h('p', { class: 'hint' }, t('ri.done.p')), model.done.code ? h('p', { class: 'hint' }, t('ri.done.code', model.done.code)) : null, model.done.orderBad && model.done.orderBad.length ? h('p', { class: 'hint di-warn' }, icon('alert', 14), t('ri.done.order', model.done.orderBad.join(', '))) : null));
           return;
         }
         const p = model.plan;
@@ -569,11 +565,11 @@ function openRpyImport() {
           for (const n of p.nodes) tableBox.append(h('div', { class: 'di-row rpi-row' }, h('span', { class: 'mono' }, n.label), h('span', { class: 'di-t' }, n.title), h('span', { class: 'di-st' }, t('type.' + n.type)),
             h('span', { class: 'di-w' }, n.edges.length ? t('ri.arrows.n', n.edges.length, [...new Set(n.edges.map(e => e.to.node ? e.to.node.title : '…'))].slice(0, 2).join(', ')) : '')));
         }
-        tableBox.append(h('div', { class: 'hint di-info' }, t('ri.sum', p.counts.blocks, p.counts.arrows, p.counts.chars, p.counts.vars, p.counts.assets, p.counts.fx)));
+        tableBox.append(h('div', { class: 'hint di-info' }, t('ri.sum', p.counts.blocks, p.counts.arrows, p.counts.chars, p.counts.vars, p.counts.assets, p.counts.fx, p.counts.code)));
         if (p.report.length) tableBox.append(h('div', { class: 'ri-rep' }, h('b', t('ri.rep.h')), h('ul', {}, p.report.slice(0, 40).map(r => h('li', {}, r.msg)))));
       };
       const paintFoot = () => {
-        const p = model.plan, can = !!(p && (p.nodes.length || p.chars.length || p.vars.length || p.assets.length || p.fx.length)) && !model.done;
+        const p = model.plan, can = !!(p && (p.nodes.length || p.chars.length || p.vars.length || p.assets.length || p.fx.length || p.code.length)) && !model.done;
         foot.replaceChildren(h('span', { class: 'grow' }),
           h('button', { class: 'btn', id: 'ri-cancel', onclick: () => m.close() }, model.done ? t('ri.done.close') : t('c.cancel')),
           model.done ? null : h('button', { class: 'btn primary', id: 'ri-go', disabled: !can, onclick: () => {
