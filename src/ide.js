@@ -48,6 +48,7 @@ Object.assign(D, {
   'ide.lang.css': ['CSS', 'CSS'], 'ide.lang.javascript': ['JavaScript', 'JavaScript'], 'ide.lang.html': ['HTML', 'HTML'], 'ide.lang.xml': ['XML', 'XML'], 'ide.lang.yaml': ['YAML', 'YAML'], 'ide.lang.ini': ['INI', 'INI'],
   'ide.virt.note': ['Хранится в проекте, при сборке попадёт в game/{0}.rpy', 'Stored in the project, goes to game/{0}.rpy on build'],
   'ide.restored': ['Вернул несохранённые правки в «{0}»: окно закрылось раньше, чем вы их сохранили.', 'Restored the unsaved changes in “{0}”: the window was closed before you saved them.'],
+  'ch.var.flag': ['флаг', 'flag'], 'ch.var.number': ['число', 'number'], 'ch.var.choice': ['выбор', 'choice'],
   'ide.lang.pick': ['Язык подсветки (щёлкните, чтобы сменить)', 'Highlight language (click to change)'],
   'ide.toggle.side': ['Показать или скрыть проводник (Ctrl+B)', 'Show or hide the explorer (Ctrl+B)'],
 });
@@ -118,7 +119,67 @@ function openIde(opts) {
     if (S_.files) return S_.files;
     const out = ccList().map(c => ({ virt: true, id: c.id, name: c.name + '.rpy', path: c.name + '.rpy' }));
     if (api && S_.root) { try { const r = await api.files(key); if (r && r.ok) for (const f of r.files) out.push({ virt: false, path: f, name: ideBase(f) }); } catch (e) { /* нет списка */ } }
-    S_.files = out; return out;
+    S_.files = out; hintFiles = out; return out;
+  };
+
+  /* ---------- подсказки: имена проекта для списка в редакторе (codehint.js) ---------- */
+  let hintFiles = [];
+  const hintIx = new Map();                                       // путь → имена из .rpy на диске (для файлов, которые не открыты во вкладках)
+  const hintScan = new Map();                                     // кэш разбора текста: id → { text, scan }
+  let hintBusy = false;
+  async function buildHintIx() {
+    if (!api || !S_.root || hintBusy) return; hintBusy = true;
+    try {
+      const files = await filesList();
+      for (const f of files.filter(x => !x.virt && /\.rpy$/i.test(x.path)).slice(0, 150)) {
+        if (S_.dead) break; if (hintIx.has(f.path)) continue;
+        const r = await api.read(key, f.path).catch(() => null);
+        hintIx.set(f.path, r && r.ok ? chScan(r.text) : chScan(''));
+      }
+    } finally { hintBusy = false; }
+  }
+  const scanOf = (id, text) => { let c = hintScan.get(id); if (!c || c.text !== text) { c = { text, scan: chScan(text) }; hintScan.set(id, c); } return c.scan; };
+  const hintScans = () => {
+    const out = [], open = new Set();
+    for (const c of ccList()) out.push(scanOf('v' + c.id, c.text || ''));
+    for (const tb of S_.tabs) if (tb.kind === 'disk' && tb.ed) { open.add(tb.path); if (/\.rpy$/i.test(tb.path)) out.push(scanOf('d' + tb.path, tb.ed.get())); }
+    for (const [pth, sc] of hintIx) if (!open.has(pth)) out.push(sc);
+    return out;
+  };
+  let hintMemo = null;
+  const hintOnce = (k, fn) => { const now = Date.now(); if (!hintMemo || now - hintMemo.t > 400) hintMemo = { t: now, v: {} }; return k in hintMemo.v ? hintMemo.v[k] : (hintMemo.v[k] = fn()); };
+  const IMG_RE = /\.(?:png|jpe?g|webp|avif|gif|svg|bmp)$/i, AUD_RE = /\.(?:ogg|mp3|wav|opus|flac|m4a|aac)$/i;
+  const hintEnv = {
+    labels: () => hintOnce('lab', () => {
+      const out = new Map(), put = (n, d, code) => { if (n && !out.has(n)) out.set(n, { d: d || '', code: !!code }); };
+      for (const sc of hintScans()) for (const l of sc.labels) put(l, '', true);                 // метки из файлов с кодом идут первыми
+      for (const n of P.nodes) {
+        if (n.type === 'note') continue;
+        put('blk_' + cmpIdent(slug(n.title), 'scene'), n.title);
+        for (const f of n.files) { put(fileLabel(f), f.title || n.title); for (const l of String(f.script || '').split('\n')) { const m = RE_J_LABEL.exec(l); if (m) put(m[1], f.title || n.title); } }
+      }
+      return [...out].map(([name, o]) => ({ name, detail: o.d, code: o.code }));
+    }),
+    chars: () => hintOnce('chr', () => {
+      const out = new Map();
+      for (const c of P.characters) if (c.tag && !out.has(c.tag)) out.set(c.tag, c.name || '');
+      for (const sc of hintScans()) for (const c of sc.chars) if (!out.has(c.tag)) out.set(c.tag, c.name || '');
+      return [...out].map(([tag, name]) => ({ tag, name }));
+    }),
+    vars: () => hintOnce('var', () => {
+      const out = new Map(), tn = { flag: t('ch.var.flag'), number: t('ch.var.number'), choice: t('ch.var.choice') };
+      for (const v of P.vars) if (v.name && !out.has(v.name)) out.set(v.name, tn[v.type] || '');
+      for (const sc of hintScans()) for (const v of sc.vars) if (!out.has(v)) out.set(v, '');
+      return [...out].map(([name, detail]) => ({ name, detail }));
+    }),
+    images: () => hintOnce('img', () => {
+      const out = new Map(), put = nm => { nm = String(nm || '').trim().replace(/\s+/g, ' '); if (!nm || out.has(nm)) return; const w = nm.split(' '); out.set(nm, { name: nm, tag: w[0], attrs: w.slice(1) }); };
+      for (const f of hintFiles) if (!f.virt && IMG_RE.test(f.path) && /(^|\/)images\//.test(f.path)) put(ideBase(f.path).replace(IMG_RE, ''));
+      for (const sc of hintScans()) for (const nm of sc.images) put(nm);
+      return [...out.values()];
+    }),
+    audio: () => hintOnce('aud', () => hintFiles.filter(f => !f.virt && AUD_RE.test(f.path)).map(f => f.path.replace(/^game\//, '')).slice(0, 400)),
+    transforms: () => hintOnce('trf', () => { const o = new Set(); for (const sc of hintScans()) for (const x of sc.trans) o.add(x); return [...o]; }),
   };
 
   /* ---------- дерево ---------- */
@@ -243,6 +304,7 @@ function openIde(opts) {
     const ed = ceCreate({
       text, lang: tab.lang, label: tab.name,
       fontSize: S_.fs,
+      hint: ctx => chHint(ctx, hintEnv),
       onChange: v => onEdit(tab, v), onCursor: c => { if (S_.active === tab.id) paintStatus(c); }, onSave: () => saveTab(tab),
       onFont: v => { if (S_.fs === v) return; S_.fs = v; saveS(); for (const tb of S_.tabs) if (tb.ed && tb.ed.fs !== v) tb.ed.setFont(v); },
     });
@@ -304,6 +366,7 @@ function openIde(opts) {
       r = await api.write(key, tab.path, { text, eol: tab.eol, bom: tab.bom }).catch(() => ({ ok: false, code: 'io' }));
     }
     if (!r.ok) { fail(r); return false; }
+    hintIx.set(tab.path, chScan(text));
     tab.saved = text; tab.mtime = r.mtime; tab.dirty = tab.ed.get() !== text; tab.conflict = ''; bakPut(tab, true); paintTabs(); paintBanner(); paintTree(); flashSaved();
     return true;
   }
@@ -499,7 +562,7 @@ function openIde(opts) {
       sideEl = h('div', { class: 'ide-side' + (S_.side ? '' : ' hide') },
         h('div', { class: 'ide-sh' }, h('b', t('ide.explorer')), h('div', { class: 'grow' }),
           sbtn('new', t('ide.new.file'), () => newItem('file', parentFor()), 'ide-newfile'), sbtn('folder', t('ide.new.dir'), () => newItem('dir', parentFor()), 'ide-newdir'),
-          sbtn('refresh', t('ide.refresh'), () => refreshOpenDirs(), 'ide-refresh'), sbtn('eye', t('ide.hidden'), () => { S_.hidden = !S_.hidden; saveS(); eyeBtn.classList.toggle('on', S_.hidden); paintTree(); }, 'ide-hidden')),
+          sbtn('refresh', t('ide.refresh'), () => { hintIx.clear(); refreshOpenDirs().then(buildHintIx); }, 'ide-refresh'), sbtn('eye', t('ide.hidden'), () => { S_.hidden = !S_.hidden; saveS(); eyeBtn.classList.toggle('on', S_.hidden); paintTree(); }, 'ide-hidden')),
         h('div', { class: 'ide-sf' }, qEl), tree);
       const eyeBtn = sideEl.querySelector('#ide-hidden'); eyeBtn.classList.toggle('on', S_.hidden);
       tabsEl = h('div', { class: 'ide-tabs scroll-x', id: 'ide-tabs' });
@@ -585,6 +648,7 @@ function openIde(opts) {
     paintTree(); paintHead(); paintTabs(); paintStatus();
     emptyEl.hidden = false;
     S_.poll = setInterval(pollDisk, 2500);
+    buildHintIx();
     if (opts.file) openByPath(opts.file);
     else if (!S_.tabs.length) { const first = ccList()[0]; if (first && !S_.root) openVirt(first.id, false); }
   })();

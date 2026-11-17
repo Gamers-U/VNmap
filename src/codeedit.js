@@ -23,6 +23,7 @@ const CE_FS = 13, CE_FS_MIN = 10, CE_FS_MAX = 28;
 const ceLh = fs => Math.round(fs * 1.55);
 const CE_PADY = 8;                // отступ сверху и снизу
 const CE_PADX = 12;
+let CE_ID = 0;
 const CE_LANGS = {};              // заполняет codelang.js
 const ceLang = name => CE_LANGS[name] || CE_LANGS.text || null;
 const CE_COMMENT = { renpy: '# ', python: '# ', yaml: '# ', ini: '; ', javascript: '// ', css: '/* ', json: null, markdown: null, html: null, xml: null, text: null };
@@ -30,7 +31,7 @@ const CE_COMMENT = { renpy: '# ', python: '# ', yaml: '# ', ini: '; ', javascrip
 function ceCreate(opts) {
   opts = opts || {};
   const E = {
-    lang: opts.lang || 'text', tab: opts.tabSize || 4, ro: !!opts.readOnly, onChange: opts.onChange || null, onCursor: opts.onCursor || null, onSave: opts.onSave || null, onFont: opts.onFont || null,
+    lang: opts.lang || 'text', tab: opts.tabSize || 4, ro: !!opts.readOnly, onChange: opts.onChange || null, onCursor: opts.onCursor || null, onSave: opts.onSave || null, onFont: opts.onFont || null, hint: opts.hint || null,
     lines: [], els: [], hlState: [], wrap: false, cw: 8, fs: Math.max(CE_FS_MIN, Math.min(CE_FS_MAX, +opts.fontSize || CE_FS)), lh: CE_LH, br: null,
     find: { open: false, rep: false, q: '', r: '', cs: false, ww: false, re: false, matches: [], idx: -1, err: false },
   };
@@ -125,7 +126,7 @@ function ceCreate(opts) {
     const s = ta.selectionStart, e = ta.selectionEnd, ln = lineOf(s), col = s - lineStart(s);
     cur.style.top = (CE_PADY + ln * E.lh) + 'px'; cur.style.display = s === e && !E.ro ? 'block' : 'none'; cur.classList.toggle('on', document.activeElement === ta);
     const key = ln + ':' + col + ':' + (e - s);
-    if (key !== lastCur) { lastCur = key; matchBracket(); paintOv(); if (E.onCursor) E.onCursor({ line: ln + 1, col: col + 1, len: e - s, pos: s, lines: E.lines.length }); }
+    if (key !== lastCur) { lastCur = key; matchBracket(); paintOv(); acSoon(); if (E.onCursor) E.onCursor({ line: ln + 1, col: col + 1, len: e - s, pos: s, lines: E.lines.length }); }
   };
   const keepVisible = () => {
     const s = ta.selectionStart, ln = lineOf(s), top = CE_PADY + ln * E.lh, bot = top + E.lh;
@@ -137,9 +138,10 @@ function ceCreate(opts) {
   };
 
   /* ---------- правки через execCommand (сохраняют отмену) ---------- */
+  let inRep = 0;                                                  // идёт правка из самого редактора (не набор пользователя): подсказки на неё не открываются
   const replace = (from, to, str, selFrom, selTo) => {
-    ta.focus(); ta.setSelectionRange(from, to);
-    if (!document.execCommand('insertText', false, str)) { ta.setRangeText(str, from, to, 'end'); ta.dispatchEvent(new Event('input', { bubbles: true })); }
+    ta.focus(); ta.setSelectionRange(from, to); inRep++;
+    try { if (!document.execCommand('insertText', false, str)) { ta.setRangeText(str, from, to, 'end'); ta.dispatchEvent(new Event('input', { bubbles: true })); } } finally { inRep--; }
     if (selFrom != null) ta.setSelectionRange(selFrom, selTo == null ? selFrom : selTo);
   };
   E.replace = replace;
@@ -209,10 +211,12 @@ function ceCreate(opts) {
     if (E.ro) return;
     const mod = ev.ctrlKey || ev.metaKey, k = ev.key;
     if (mod && !ev.shiftKey && !ev.altKey && k.toLowerCase() === 's') { ev.preventDefault(); if (E.onSave) E.onSave(); return; }
+    if (acKey(ev)) return;
     if (E.extraKey && E.extraKey(ev)) return;
     if (k === 'Escape' && F.open) { ev.preventDefault(); ev.stopPropagation(); E.closeFind(false); return; }
     if (k === 'Tab' && !mod && !ev.altKey) { ev.preventDefault(); onTab(ev); return; }
     if (k === 'Enter') { if (onEnter(ev)) ev.preventDefault(); return; }
+    if (mod && !ev.altKey && !ev.shiftKey && k === ' ') { ev.preventDefault(); acRefresh(true, true); return; }
     if (mod && k === '/') { ev.preventDefault(); toggleComment(); return; }
     if (ev.altKey && !mod && (k === 'ArrowUp' || k === 'ArrowDown')) { ev.preventDefault(); if (ev.shiftKey) dupLine(k === 'ArrowDown'); else moveLines(k === 'ArrowUp' ? -1 : 1); return; }
     if (mod && ev.shiftKey && k.toLowerCase() === 'k') { ev.preventDefault(); deleteLine(); return; }
@@ -233,7 +237,7 @@ function ceCreate(opts) {
         if (/[\w\\]/.test(prev) || (E.lang === 'renpy' && k === "'" && /\w/.test(prev))) return;
       }
       if (/[\w]/.test(next) && k !== '"' && k !== "'") return;
-      ev.preventDefault(); replace(s, e, k + close, s + 1); return;
+      ev.preventDefault(); replace(s, e, k + close, s + 1); if (k === '[' || k === '{') acRefresh(false, true); return;
     }
     if (!mod && !ev.altKey && (k === ')' || k === ']' || k === '}' || k === '"' || k === "'") && ta.selectionStart === ta.selectionEnd && ta.value[ta.selectionStart] === k) { ev.preventDefault(); ta.setSelectionRange(ta.selectionStart + 1, ta.selectionStart + 1); cursor(); return; }
     if (k === 'Backspace' && !mod && !ev.altKey && ta.selectionStart === ta.selectionEnd) {
@@ -246,7 +250,7 @@ function ceCreate(opts) {
 
   /* ---------- события ---------- */
   let sigT = 0;
-  const onInput = () => { sync(); cursor(); keepVisible(); if (F.open) { clearTimeout(fT); fT = setTimeout(() => compute(false), 120); } if (E.onChange) E.onChange(ta.value); };
+  const onInput = ev => { ver++; sync(); cursor(); keepVisible(); acOnInput(ev); if (F.open) { clearTimeout(fT); fT = setTimeout(() => compute(false), 120); } if (E.onChange) E.onChange(ta.value); };
   let fT = 0;
   ta.addEventListener('input', onInput);
   ta.addEventListener('keydown', onKeyDown);
@@ -410,10 +414,148 @@ function ceCreate(opts) {
   };
   scroll.addEventListener('wheel', ev => { if (ev.ctrlKey || ev.metaKey) { ev.preventDefault(); E.setFont(E.fs + (ev.deltaY < 0 ? 1 : -1)); } }, { passive: false });
 
+
+  /* ---------- подсказки: список имён рядом с курсором (Ctrl+Пробел или при наборе) ----------
+     Откуда брать имена, решает функция opts.hint(ctx) → [{ label, insert?, kind?, detail?, pri? }]; движок только фильтрует, сортирует и показывает.
+     ctx: { lang, line, col, text, before, after, prefix, start, explicit, cls (класс подсветки знака перед курсором), inStr (курсор внутри строки в кавычках), words() (слова файла), lines }. */
+  const AC = { open: false, items: [], idx: 0, start: 0 };
+  const acId = 'ceac' + (++CE_ID);
+  const acList = h('div', { class: 'ce-ac-list', role: 'listbox', id: acId });
+  const acBox = h('div', { class: 'ce-ac', hidden: true }, acList);
+  root.append(acBox);
+  ta.setAttribute('aria-autocomplete', 'list'); ta.setAttribute('aria-expanded', 'false'); ta.setAttribute('aria-controls', acId);
+  const WORD_CH = /[\p{L}\p{N}_]/u;
+  let ver = 0, words = null, wordsVer = -1, acRaf = 0;
+  const docWords = () => {
+    if (words && wordsVer === ver) return words;
+    const m = new Map(), re = /[\p{L}_][\p{L}\p{N}_]{2,}/gu, v = ta.value; let r, n = 0;
+    while ((r = re.exec(v)) && n < 60000) { m.set(r[0], (m.get(r[0]) || 0) + 1); n++; }
+    words = m; wordsVer = ver; return m;
+  };
+  const clsAt = (li, col) => {
+    const L = tok(); if (!L || !E.lines[li]) return '';
+    try { const r = L.tokenize(E.lines[li], li > 0 ? E.hlState[li - 1] : undefined); for (const [a, b, c] of r.tokens) if (col > a && col <= b) return c || ''; } catch (e) { /* без класса */ }
+    return '';
+  };
+  /** Стоит ли знак перед курсором внутри строки в кавычках (с учётом тройных кавычек с прошлых строк). */
+  const inStrAt = (li, col) => {
+    const st = li > 0 ? E.hlState[li - 1] : undefined, text = E.lines[li] || '';
+    let q = st && st.tri ? st.tri : '';
+    for (let i = 0; i < col; i++) {
+      const c = text[i];
+      if (q) { if (c === '\\') { i++; continue; } if (q.length === 3 ? text.startsWith(q, i) : c === q) { i += q.length - 1; q = ''; } }
+      else if (c === '#' && E.lang !== 'css' && E.lang !== 'javascript') return false;
+      else if (c === '"' || c === "'") { q = text.startsWith(c + c + c, i) ? c + c + c : c; i += q.length - 1; }
+    }
+    return !!q;
+  };
+  const acContext = explicit => {
+    if (!E.hint || E.ro) return null;
+    const s = ta.selectionStart; if (s !== ta.selectionEnd) return null;
+    const li = lineOf(s), text = E.lines[li] || '', col = s - ls[li];
+    let a = col; while (a > 0 && WORD_CH.test(text[a - 1])) a--;
+    return { lang: E.lang, line: li, col, text, before: text.slice(0, col), after: text.slice(col), prefix: text.slice(a, col), start: ls[li] + a, explicit: !!explicit, cls: clsAt(li, col), inStr: inStrAt(li, col), words: docWords, lines: E.lines };
+  };
+  /** Насколько запрос подходит к имени: 0 — с начала, 1 — с начала слова внутри имени, 2 — где-то внутри, 3 — по буквам; -1 — не подходит. */
+  const acRank = (label, p) => {
+    if (!p) return 0;
+    const l = label.toLowerCase(), q = p.toLowerCase();
+    if (l.startsWith(q)) return label.startsWith(p) ? 0 : 0.5;
+    const i = l.indexOf(q); if (i > 0) return /[\s_.\-\/:]/.test(l[i - 1]) ? 1 : 2;
+    if (q.length >= 3) { let k = 0; for (const c of l) if (c === q[k]) k++; if (k === q.length) return 3; }
+    return -1;
+  };
+  const acClose = () => {
+    if (!AC.open && acBox.hidden) return;
+    AC.open = false; AC.items = []; acBox.hidden = true; acList.replaceChildren(); ta.setAttribute('aria-expanded', 'false'); ta.removeAttribute('aria-activedescendant');
+  };
+  const acPaintSel = () => {
+    const kids = acList.children;
+    for (let i = 0; i < kids.length; i++) { const on = i === AC.idx; kids[i].classList.toggle('on', on); kids[i].setAttribute('aria-selected', String(on)); if (on) { ta.setAttribute('aria-activedescendant', kids[i].id); const t0 = kids[i].offsetTop, t1 = t0 + kids[i].offsetHeight; if (t0 < acList.scrollTop) acList.scrollTop = t0; else if (t1 > acList.scrollTop + acList.clientHeight) acList.scrollTop = t1 - acList.clientHeight; } }
+  };
+  const acPlace = () => {
+    if (!AC.open) return;
+    const li = lineOf(AC.start), col = AC.start - ls[li];
+    const x = gutter.offsetWidth + CE_PADX + vcol(li, col) * E.cw - scroll.scrollLeft;
+    const yTop = CE_PADY + li * E.lh - scroll.scrollTop, yBot = yTop + E.lh;
+    acBox.hidden = false; acBox.style.left = '0px'; acBox.style.top = '0px';
+    const bw = acBox.offsetWidth, bh = acBox.offsetHeight, W = root.clientWidth, H = root.clientHeight;
+    const left = Math.max(gutter.offsetWidth, Math.min(x - 6, W - bw - 10));
+    let top = yBot + 2; if (top + bh > H - 4 && yTop - bh - 2 > 4) top = yTop - bh - 2;
+    acBox.style.left = Math.round(left) + 'px'; acBox.style.top = Math.round(top) + 'px';
+    acBox.style.visibility = yBot < 0 || yTop > H ? 'hidden' : '';
+  };
+  const acRender = () => {
+    const f = document.createDocumentFragment();
+    AC.items.forEach((it, i) => {
+      const row = h('div', { class: 'ce-ac-i', role: 'option', id: acId + '-' + i, 'aria-selected': 'false' },
+        h('span', { class: 'ce-ac-k k-' + (it.kind || 'word'), 'aria-hidden': 'true' }, it.mark || ''),
+        h('span', { class: 'ce-ac-l' }, it.label), it.detail ? h('span', { class: 'ce-ac-d' }, it.detail) : null);
+      row.addEventListener('mousedown', ev => { ev.preventDefault(); });
+      row.addEventListener('click', () => { acAccept(i); });
+      f.append(row);
+    });
+    acList.replaceChildren(f);
+  };
+  /** Пересчитать список. mayOpen — можно ли открыть закрытый список (при наборе да, при движении курсора нет). */
+  const acRefresh = (explicit, mayOpen) => {
+    if (!AC.open && !mayOpen) return;
+    const ctx = acContext(explicit);
+    if (!ctx) { acClose(); return; }
+    if (AC.open && !mayOpen && ctx.start !== AC.start) { acClose(); return; }
+    if (!explicit && /^[\p{L}\p{N}_]/u.test(ctx.after)) { acClose(); return; }             // курсор в середине слова: не мешаем
+    let raw; try { raw = E.hint(ctx) || []; } catch (e) { raw = []; }
+    if (!Array.isArray(raw)) { if (raw.prefix != null) { ctx.prefix = raw.prefix; ctx.start = ls[ctx.line] + (raw.from != null ? raw.from : ctx.col - raw.prefix.length); } raw = raw.items || []; }
+    const seen = new Set(), list = [];
+    for (const it of raw) {
+      if (!it || !it.label || seen.has(it.label)) continue;
+      const r = acRank(it.label, ctx.prefix); if (r < 0) continue;
+      seen.add(it.label); list.push({ it, r });
+    }
+    list.sort((a, b) => a.r - b.r || (a.it.pri == null ? 5 : a.it.pri) - (b.it.pri == null ? 5 : b.it.pri) || (a.it.label < b.it.label ? -1 : a.it.label > b.it.label ? 1 : 0));
+    const items = list.slice(0, 60).map(x => x.it);
+    if (!items.length || (items[0].label === ctx.prefix && items[0].insert == null && !ctx.explicit)) { acClose(); return; }   // слово уже набрано целиком: нечего дополнять
+    const keep = AC.open ? (AC.items[AC.idx] || {}).label : null;
+    AC.items = items; AC.start = ctx.start; AC.open = true;
+    const k = keep ? items.findIndex(x => x.label === keep) : -1; AC.idx = k >= 0 ? k : 0;
+    acRender(); ta.setAttribute('aria-expanded', 'true'); acBox.hidden = false; acPlace(); acPaintSel();
+  };
+  const acSoon = () => { if (!AC.open || acRaf) return; acRaf = requestAnimationFrame(() => { acRaf = 0; acRefresh(false, false); }); };
+  const acAccept = idx => {
+    const it = AC.items[idx == null ? AC.idx : idx]; if (!it) return false;
+    const start = AC.start, end = ta.selectionStart, text = it.insert != null ? it.insert : it.label;
+    acClose();
+    replace(start, end, text, start + (it.caret != null ? it.caret : text.length));
+    keepVisible(); cursor();
+    return true;
+  };
+  const acOnInput = ev => {
+    if (!E.hint) return;
+    if (AC.open) { acRefresh(false, true); return; }
+    if (inRep || !ev || ev.inputType !== 'insertText' || !ev.data || ev.data.length > 2) return;
+    if (WORD_CH.test(ev.data) || /^[ \[{.\/"']$/.test(ev.data)) acRefresh(false, true);
+  };
+  const acKey = ev => {
+    if (!AC.open) return false;
+    const k = ev.key, n = AC.items.length;
+    if (ev.ctrlKey || ev.metaKey || ev.altKey) return false;
+    if (k === 'ArrowDown' || k === 'ArrowUp') { ev.preventDefault(); AC.idx = (AC.idx + (k === 'ArrowDown' ? 1 : -1) + n) % n; acPaintSel(); return true; }
+    if (k === 'PageDown' || k === 'PageUp') { ev.preventDefault(); AC.idx = Math.max(0, Math.min(n - 1, AC.idx + (k === 'PageDown' ? 8 : -8))); acPaintSel(); return true; }
+    if ((k === 'Enter' || k === 'Tab') && !ev.shiftKey) { ev.preventDefault(); acAccept(); return true; }
+    if (k === 'Escape') { ev.preventDefault(); ev.stopPropagation(); acClose(); return true; }
+    return false;
+  };
+  ta.addEventListener('blur', () => acClose());
+  scroll.addEventListener('scroll', () => { if (AC.open) acPlace(); }, { passive: true });
+  E.setHint = fn => { E.hint = fn || null; if (!E.hint) acClose(); };
+  E.showHints = () => { ta.focus(); acRefresh(true, true); };
+  E.hints = () => ({ open: AC.open, items: AC.items.map(x => x.label), idx: AC.idx, start: AC.start });
+  E.acceptHint = () => acAccept();
+
   /* ---------- внешний вид API ---------- */
   E.get = () => ta.value;
   E.set = (text, o) => {
-    o = o || {}; ta.value = String(text == null ? '' : text); patch(ta.value.split('\n'), !!o.force);
+    o = o || {}; ver++; acClose(); ta.value = String(text == null ? '' : text); patch(ta.value.split('\n'), !!o.force);
     if (o.keepSel) { /* позиция уже сохранена браузером при записи value обычно сбрасывается: вернём */ ta.setSelectionRange(o.keepSel[0], o.keepSel[1]); } else ta.setSelectionRange(0, 0);
     if (F.open) compute(true); else cursor();
   };

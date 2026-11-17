@@ -2334,3 +2334,14 @@ html.sat-win .modal.win-free{position:relative}
 .ce-ftr{width:18px;min-width:18px;padding:0}.ce-ftr svg{transition:transform .12s}.ce-ftr.open svg{transform:rotate(90deg)}
 .ce-fr2{padding-left:21px}
 .ide-lang{width:auto;padding:0 8px;font-size:12px}
+/* ===== подсказки в редакторе кода ===== */
+.ce-ac{position:absolute;z-index:7;min-width:220px;max-width:min(520px,94%);padding:4px;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);font:12.5px var(--mono);color:var(--text)}
+.ce-ac[hidden]{display:none}
+.ce-ac-list{max-height:216px;overflow:auto;overscroll-behavior:contain}
+.ce-ac-i{display:flex;align-items:center;gap:8px;height:27px;padding:0 8px 0 6px;border-radius:6px;cursor:pointer;white-space:nowrap}
+.ce-ac-i:hover{background:var(--hover)}
+.ce-ac-i.on{background:var(--accent-soft)}
+.ce-ac-k{flex:none;width:16px;height:16px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;font:700 10px var(--font);color:var(--text2);background:var(--hover)}
+.ce-ac-k.k-kw{color:var(--ce-kw)}.ce-ac-k.k-label{color:var(--ce-fn)}.ce-ac-k.k-char{color:var(--ce-type)}.ce-ac-k.k-var{color:var(--ce-var)}.ce-ac-k.k-img{color:var(--ce-const)}.ce-ac-k.k-audio{color:var(--ce-str)}.ce-ac-k.k-tag{color:var(--ce-tag)}
+.ce-ac-l{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.ce-ac-d{flex:none;max-width:180px;overflow:hidden;text-overflow:ellipsis;color:var(--text2);font:11.5px var(--font)}
