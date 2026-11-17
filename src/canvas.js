@@ -28,7 +28,7 @@ function applyView() {
   if (UI.edge) renderHandles();
   positionToolbar();
   if (typeof updateZoomLabel === 'function') updateZoomLabel();
-  scheduleSave();
+  scheduleViewSave();
 }
 function applyGrid() {
   const v = P.view, mode = S.grid;
@@ -364,7 +364,7 @@ function onUp(e) {
   const now = performance.now();
   switch (d.type) {
     case 'pan':
-      if (d.moved) { scheduleSave(); break; }
+      if (d.moved) { scheduleViewSave(); break; }
       if (d.btn !== 0) break;
       if (!d.shift) setSel([]);
       if (lastClick.key === 'bg' && now - lastClick.t < 420 && Math.hypot(e.clientX - lastClick.x, e.clientY - lastClick.y) < 8) {

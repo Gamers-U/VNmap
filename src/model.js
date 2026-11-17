@@ -446,6 +446,8 @@ const canRedo = () => HIST.i < HIST.stack.length - 1;
 
 let _saveTimer = null;
 function scheduleSave() { clearTimeout(_saveTimer); _saveTimer = setTimeout(saveNow, 700); if (typeof deskDirty === 'function') deskDirty(); if (typeof ghDirty === 'function') ghDirty(); }
+/** Только положение и масштаб карты изменились: копия в браузере обновится, но проект не считается изменённым (без плашки «есть изменения», автосохранения в файл, GitHub и Диска). */
+function scheduleViewSave() { clearTimeout(_saveTimer); _saveTimer = setTimeout(saveNow, 700); }
 function saveNow() {
   clearTimeout(_saveTimer);
   if (typeof GAME !== 'undefined' && GAME) return;                 // в HTML-игре для тестеров проект не сохраняется

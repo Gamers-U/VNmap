@@ -784,11 +784,18 @@ class PlGame {
     this.vars = plClone(s.vars); this.disp = plClone(s.disp); this.log.length = s.logLen; this.lastSay = s.lastSay; this.curLabel = s.curLabel;
     this.over = false; this.pend = null; this.notices = []; this.fx = []; this.trans = null;
   }
-  get canBack() { return this.hist.length > (this.pend && (this.pend.type === 'end' || this.pend.type === 'error') ? 0 : 1); }
+  /** Откат делается к реплике или выбору: паузы точками возврата не считаются (как в Ren'Py), иначе «Назад» попадал на паузу, она сама шла дальше, и казалось, что откат не сработал. */
+  get canBack() {
+    const fin = !!(this.pend && (this.pend.type === 'end' || this.pend.type === 'error')), lim = fin ? this.hist.length : this.hist.length - 1;
+    for (let i = 0; i < lim; i++) if (this.hist[i].k !== 'pause') return true;
+    return false;
+  }
   back() {
     if (!this.canBack) return null;
     if (!(this.pend && (this.pend.type === 'end' || this.pend.type === 'error'))) this.hist.pop();   // текущее событие снова появится при повторе
-    const s = this.hist.pop(); this.restore(s);
+    let s = this.hist.pop();
+    while (s.k === 'pause') s = this.hist.pop();                                                        // canBack гарантирует, что ниже есть реплика или выбор
+    this.restore(s);
     return this.run();
   }
   /** Переход на метку без сброса переменных (кнопка «с блока»). */
@@ -854,15 +861,16 @@ class PlGame {
     switch (s.k) {
       case 'say': {
         this.hist.push(this.snap()); f.i++;
-        const ch = this.prog.chars.get(s.who);
+        const ext = s.who === 'extend' && this.lastSay ? this.lastSay : null, tag = ext && ext.tag ? ext.tag : s.who;   // extend продолжает реплику того же персонажа: цвет и тег берём у неё
+        const ch = this.prog.chars.get(tag);
         let who = s.who === 'centered' || s.who === 'vcentered' || s.who === 'narrator' || s.who === 'extend' ? '' : (ch ? ch.name : s.who);
-        if (s.who === 'extend' && this.lastSay) who = this.lastSay.who;
+        if (ext) who = ext.who;
         who = this.interp(who);
         let text = this.interp(s.text);
         if (s.who === 'extend' && this.lastSay) text = this.lastSay.text + text;
         const rich = plRich(text);
-        const ev = { type: 'say', who, color: ch ? ch.color : '', whatColor: ch ? ch.whatColor : '', rich, text: plPlain(rich), centered: s.who === 'centered' || s.who === 'vcentered', noWait: !!rich.nw, tag: s.who };
-        this.lastSay = { who, text };
+        const ev = { type: 'say', who, color: ch ? ch.color : '', whatColor: ch ? ch.whatColor : '', rich, text: plPlain(rich), centered: s.who === 'centered' || s.who === 'vcentered', noWait: !!rich.nw, tag };
+        this.lastSay = { who, text, tag };
         this.log.push({ who, text: ev.text, color: ev.color, label: this.curLabel });
         return this.fin(ev);
       }
@@ -878,7 +886,7 @@ class PlGame {
       case 'pause': {
         let secs = null;
         if (s.secs) { try { secs = Number(this.eval(s.secs)); } catch (e) { secs = null; } }
-        this.hist.push(this.snap()); f.i++;
+        this.hist.push(Object.assign(this.snap(), { k: 'pause' })); f.i++;
         return this.fin({ type: 'pause', secs: Number.isFinite(secs) ? secs : null });
       }
       case 'py': {

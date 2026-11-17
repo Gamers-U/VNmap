@@ -38,6 +38,9 @@ Object.assign(D, {
     'The app could not create the branch (it needs the latest version or write access). Create it on GitHub: repository → “Branches” → “New branch”, name {0}, source {1}. Then press the button again.'],
   'rv.err.nomain': ['Основная ветка не найдена в репозитории.', 'The main branch was not found in the repository.'],
   'rv.err.mine': ['Вы сами работаете в ветке автора. Проверять правки нужно из основной ветки (у владельца).', 'You work in an author branch yourself. Changes are reviewed from the main branch (by the owner).'],
+  'rv.need.t': ['Проверка правок работает через GitHub', 'Reviewing changes works through GitHub'],
+  'rv.need.p': ['Каждый автор пишет в своей ветке репозитория, а владелец проекта проверяет и принимает их правки здесь. Для этого проект должен быть подключён к GitHub. Сейчас он не подключён. Открыть панель GitHub, чтобы подключить?', 'Each author writes in their own branch of the repository, and the project owner reviews and accepts their changes here. For that the project has to be linked to GitHub, and it is not linked now. Open the GitHub panel to link it?'],
+  'rv.need.btn': ['Открыть панель GitHub', 'Open the GitHub panel'],
   'rv.err.gh': ['Сначала подключите проект к GitHub (панель «GitHub»).', 'First connect the project to GitHub (the “GitHub” panel).'],
   'rv.err.base': ['Не нашлась версия, от которой отошёл автор.', 'The version the author started from was not found.'],
   /* список веток */
@@ -412,7 +415,7 @@ const rvDis = (m, branch) => { if (!m.rv || typeof m.rv !== 'object') m.rv = {};
 function openReviewList() {
   closePopover();
   const m = gmeta();
-  if (!m || !m.on) { toast(t('rv.err.gh'), 5000); openGhPanel(); return; }
+  if (!m || !m.on) { confirmDlg({ title: t('rv.need.t'), text: t('rv.need.p'), ok: t('rv.need.btn') }).then(yes => { if (yes) openGhPanel(); }); return; }   // раньше сразу выбрасывало в панель GitHub без объяснений
   if (rvIsAuthor(m)) { toast(t('rv.err.mine'), 6000); return; }
   const st = { m: null, root: h('div', { class: 'view rv-view' }), list: null, err: '', last: {} };
   st.m = openModal({ cls: 'drive-m rv-m', build: mm => { st.m = mm; return h('div', { class: 'm-wrap' }, modalHead(t('rv.l.title'), mm), h('div', { class: 'm-body' }, h('div', { class: 'm-main' }, st.root))); } });
