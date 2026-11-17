@@ -319,6 +319,7 @@ function bldRenpyView(st) {
   const stat = h('span', { class: 'rp-stat hint' }, RP.status || '');
   const out = h('div', { class: 'codepre rp-out' });
   const bar = h('div', { class: 'sec-head', style: { marginTop: '4px' } }, icon('file', 16), h('b', t('rp.out')), stat, h('div', { class: 'grow' }),
+    h('button', { class: 'btn sm rp-ask', id: 'rp-ask', 'data-tip': t('aie.tip'), onclick: () => aiAskRenpy() }, icon('wand', 14), t('aie.rp.btn')),
     h('button', { class: 'btn sm', onclick: () => copyText(RP.out.map(l => l.text).join('\n')).then(() => toast(t('rp.copied'))) }, icon('copy', 14), t('rp.copy')),
     h('button', { class: 'btn sm', onclick: () => { RP.out = []; for (const k in RP.part) RP.part[k] = ''; rpFillOut(); } }, icon('trash', 14), t('rp.clear')));
   root.append(ctl, bar, out);

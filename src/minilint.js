@@ -253,7 +253,7 @@ function mlReport(add, node, file, lines, lead) {
       }).join('\n');
       commit(true);
     } } : null;
-    arr.slice(0, ML_SHOW).forEach((x, i) => add(x.level, mlMessage(x), ref, i === 0 ? fix : null));
+    arr.slice(0, ML_SHOW).forEach((x, i) => add(x.level, mlMessage(x), { node, file, line: x.line }, i === 0 ? fix : null));
     if (arr.length > ML_SHOW) add('info', t('ml.more', arr.length - ML_SHOW), ref);
   }
 }

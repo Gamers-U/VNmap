@@ -753,7 +753,13 @@ function openIde(opts) {
   }
 
   /* ---------- окно ---------- */
-  const win = { m: null, focus: o => { if (o && o.file) openByPath(o.file); }, tabs: () => S_.tabs, cur: () => cur() };           // tabs и cur нужны проверкам
+  /** «Спросить ИИ» у ошибки (aiask.js): показывает чат, при необходимости открывает файл на нужной строке и передаёт вопрос с контекстом. */
+  async function askAi(spec) {
+    toggleAi(true);
+    if (spec.file) { try { await openByPath(spec.file); const tb = cur(); if (tb && tb.ed && spec.line) tb.ed.goto(spec.line, 1); } catch (e) { /* файла может не быть в папке: вопрос всё равно задаём */ } }
+    if (aiP) aiP.ask(spec);
+  }
+  const win = { m: null, focus: o => { if (o && o.ask) askAi(o.ask); else if (o && o.file) openByPath(o.file); }, tabs: () => S_.tabs, cur: () => cur() };           // tabs и cur нужны проверкам
   async function openByPath(p) {
     p = String(p || '');
     const virt = ccList().find(c => p === c.name + '.rpy' || p === 'v:' + c.id);
@@ -879,7 +885,8 @@ function openIde(opts) {
     emptyEl.hidden = false;
     S_.poll = setInterval(pollDisk, 2500);
     buildHintIx();
-    if (opts.file) openByPath(opts.file);
+    if (opts.ask) await askAi(opts.ask);
+    else if (opts.file) openByPath(opts.file);
     else if (!S_.tabs.length) { const first = ccList()[0]; if (first && !S_.root) openVirt(first.id, false); }
   })();
   return m;

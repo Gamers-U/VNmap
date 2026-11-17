@@ -118,6 +118,7 @@ function bldItem(st) {
     const acts = h('div', { class: 'rep-acts' });
     if (it.fix) acts.append(h('button', { class: 'btn sm', onclick: () => { it.fix.run(); bldRecompile(st); } }, icon('plus', 14), it.fix.label));
     if (it.nodeId && nodeById(it.nodeId)) acts.append(h('button', { class: 'btn sm', onclick: () => { openNodeModal(it.nodeId, it.fileId || undefined); bldAfterEdit(st); } }, icon('open', 14), t('bld.show')));
+    if ((it.level === 'error' || it.level === 'warn') && typeof aiReady === 'function' && aiReady()) acts.append(h('button', { class: 'btn sm aie-btn', 'data-tip': t('aie.tip'), onclick: () => aiAskBuild(it) }, icon('wand', 14), t('aie.btn')));
     if (acts.childNodes.length) row.append(acts);
     return row;
   };

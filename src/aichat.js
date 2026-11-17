@@ -61,6 +61,7 @@ function aiSystem() {
     '4. Если правишь присланный фрагмент, верни его целиком в одном блоке, а не отдельные строки. Для нового файла или сниппета назови подходящее имя в тексте перед блоком.',
     '5. Ты ничего не меняешь сам: человек видит твой ответ и сам решает, применять ли код.',
     '6. Если не хватает данных (какие метки, переменные, картинки есть в проекте), задай один короткий вопрос.',
+    '7. Если прислана ошибка: сначала объясни причину простыми словами (одно-три предложения), потом дай исправление. Файлы в game/story/ программа собирает сама из блоков карты: если ошибка в них, скажи, какую строку скрипта главы поправить, и покажи исправленные строки. Чини только сломанное (тег, кавычку, отступ, имя метки), слова реплик не меняй.',
   ].join('\n');
 }
 /** Обрезает длинный текст по строке; cut — сколько было и сколько оставлено. */
@@ -259,7 +260,7 @@ function aiApplyDlg(code, lang, host) {
 /* ---------- панель ---------- */
 /** host: { file() → {name, lang, text}|null, sel() → {text, from, to, tabId}|null, project() → строка|'', line(), canInsert(), canNew(), apply(kind, o), onClose() }. */
 function aiPanel(host) {
-  const st = { busy: false, ac: null, on: {}, applied: new Map(), timer: 0 };
+  const st = { busy: false, ac: null, on: {}, applied: new Map(), timer: 0, extra: [] };
   const box = h('div', { class: 'aic', id: 'aic' });
   const msgsEl = h('div', { class: 'aic-msgs scroll', id: 'aic-msgs' });
   const ctxEl = h('div', { class: 'aic-ctx', id: 'aic-ctx' });
@@ -282,7 +283,7 @@ function aiPanel(host) {
   };
   /* что уйдёт: выделение, файл, сводка проекта; галочки запоминаются на время работы окна */
   function ctxItems() {
-    const items = [], sel = host.sel ? host.sel() : null, f = host.file ? host.file() : null, lang = f && f.lang && f.lang !== 'text' ? f.lang : '';
+    const items = st.extra.map(x => ({ ...x, on: st.on[x.id] !== undefined ? st.on[x.id] : x.on !== false })), sel = host.sel ? host.sel() : null, f = host.file ? host.file() : null, lang = f && f.lang && f.lang !== 'text' ? f.lang : '';
     if (sel && sel.text.trim()) {
       const c = aiClip(sel.text, AIC_SEL_MAX);
       items.push({ id: 'sel', label: t('aic.ctx.sel', t('aic.lines', sel.text.split('\n').length)), title: 'Выделенный фрагмент' + (f ? ' (файл ' + f.name + ')' : ''), lang, text: c.text, cut: c.cut, on: st.on.sel !== false });
@@ -346,6 +347,9 @@ function aiPanel(host) {
     ta.value = ''; ta.style.height = '';
     st.busy = true; st.ac = new AbortController(); paintMsgs(); paintBusy();
     const api = aiApiMessages(AICH.msgs.slice(0, -1), items);
+    for (const x of st.extra) delete st.on[x.id];
+    if (st.noFile) { delete st.on.file; st.noFile = false; }      // «без файла» относилось только к этому вопросу
+    st.extra = [];                                   // ошибка и фрагмент уходят один раз: следующий вопрос их не повторяет
     let r;
     try { r = await aiChat({ provider: p.id, model: aiModel(p.id), system: aiSystem(), messages: api, signal: st.ac.signal, onDelta: (d, all) => { am.text = all; softPaint(); } }); }
     catch (e) { r = { ok: false, err: { code: 'fail', msg: String((e && e.message) || e) }, text: am.text }; }
@@ -364,5 +368,16 @@ function aiPanel(host) {
   ta.addEventListener('focus', () => { paintCtx(); paintProv(); });
   paintProv(); paintBusy(); paintMsgs(); paintCtx();
   aiRefresh().then(() => { paintProv(); paintBusy(); });
-  return { el: box, input: ta, focus: () => ta.focus(), touch: () => { if (document.activeElement === ta) return; clearTimeout(st.tt); st.tt = setTimeout(paintCtx, 150); }, refresh: () => { paintProv(); paintBusy(); paintCtx(); }, stop, send, items: ctxItems, dead: () => { stop(); } };
+  /** «Спросить ИИ» у ошибки: кладёт вопрос и добавочный контекст; spec.send и готовое подключение отправляют сразу, иначе вопрос ждёт в поле. Возвращает true, если отправлено. */
+  function ask(spec) {
+    spec = spec || {};
+    st.extra = (spec.items || []).filter(x => x && x.text);
+    for (const k of Object.keys(spec.on || {})) st.on[k] = !!spec.on[k];
+    if (spec.noFile) { st.on.file = false; st.noFile = true; }
+    ta.value = String(spec.q || ''); ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight + 2, 160) + 'px';
+    paintProv(); paintBusy(); paintCtx();
+    if (spec.send && aiReady() && !st.busy && ta.value.trim()) { send(); return true; }
+    ta.focus(); return false;
+  }
+  return { el: box, input: ta, ask, focus: () => ta.focus(), touch: () => { if (document.activeElement === ta) return; clearTimeout(st.tt); st.tt = setTimeout(paintCtx, 150); }, refresh: () => { paintProv(); paintBusy(); paintCtx(); }, stop, send, items: ctxItems, dead: () => { stop(); } };
 }

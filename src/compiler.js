@@ -39,7 +39,7 @@ const cmpBalanced = c => { let d = 0, q = null; for (const ch of c) { if (q) { i
 function compileProject(over, blobSet) {
   const opt = Object.assign({}, DEFAULT_BUILD, P.build || {}, over || {});
   const R = { files: [], bin: [], items: [], stats: {}, order: [], opt };
-  const add = (level, msg, ref, fix) => R.items.push({ level, msg, nodeId: ref && ref.node ? ref.node.id : null, fileId: ref && ref.file ? ref.file.id : null, fix: fix || null });
+  const add = (level, msg, ref, fix) => R.items.push({ level, msg, nodeId: ref && ref.node ? ref.node.id : null, fileId: ref && ref.file ? ref.file.id : null, line: ref && ref.line ? ref.line : 0, fix: fix || null });
   const byXY = (a, b) => a.x - b.x || a.y - b.y;
   const have = bid => !blobSet || blobSet.has(bid);
 
