@@ -4,12 +4,13 @@
 const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
 const call = (ch, ...a) => ipcRenderer.invoke(ch, ...a);
-const listeners = { cmd: new Set(), open: new Set(), rp: new Set(), su: new Set(), win: new Set(), sat: new Set() };
+const listeners = { cmd: new Set(), open: new Set(), rp: new Set(), su: new Set(), ai: new Set(), win: new Set(), sat: new Set() };
 ipcRenderer.on('desk:cmd', (e, cmd, arg) => listeners.cmd.forEach(fn => { try { fn(cmd, arg); } catch (x) { console.error(x); } }));
 ipcRenderer.on('desk:open', (e, file) => listeners.open.forEach(fn => { try { fn(file); } catch (x) { console.error(x); } }));
 ipcRenderer.on('rp:evt', (e, ev) => listeners.rp.forEach(fn => { try { fn(ev); } catch (x) { console.error(x); } }));
 ipcRenderer.on('desk:winState', (e, st) => listeners.win.forEach(fn => { try { fn(st); } catch (x) { console.error(x); } }));
 ipcRenderer.on('desk:sat:msg', (e, m) => listeners.sat.forEach(fn => { try { fn(m); } catch (x) { console.error(x); } }));
+ipcRenderer.on('ai:evt', (e, ev) => listeners.ai.forEach(fn => { try { fn(ev); } catch (x) { console.error(x); } }));
 ipcRenderer.on('su:evt', (e, ev) => listeners.su.forEach(fn => { try { fn(ev); } catch (x) { console.error(x); } }));
 const sub = (set, fn) => { set.add(fn); return () => set.delete(fn); };
 
@@ -87,6 +88,15 @@ contextBridge.exposeInMainWorld('vnDesktop', {
     send: (text, only) => call('nt:send', text, only),
     mine: memberId => call('nt:mine', memberId),
     farewell: f => call('nt:farewell', f),
+  },
+  ai: {                        // ИИ-помощник: ключи и сеть живут в оболочке, страница получает только ответ
+    status: () => call('ai:status'),
+    setKey: (id, key) => call('ai:setKey', id, key),
+    clearKey: id => call('ai:clearKey', id),
+    setBase: (id, url) => call('ai:setBase', id, url),
+    request: o => call('ai:request', o),
+    abort: id => call('ai:abort', id),
+    onEvent: fn => sub(listeners.ai, fn),
   },
   snap: {
     info: () => call('sn:info'),

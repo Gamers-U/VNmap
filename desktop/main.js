@@ -9,6 +9,7 @@ const { MANIFEST, cleanRel, exists, pruneEmptyDirs, writeBuildFiles } = require(
 const { RenpyHost } = require('./renpy');
 const { ShellUpdater } = require('./selfupdate');
 const { Notifier } = require('./notify');
+const { AiHub } = require('./ai');
 const { spawn } = require('child_process');
 const crypto = require('crypto');
 const path = require('path');
@@ -26,7 +27,7 @@ const DEV = process.argv.includes('--dev');
 const FRAMELESS = process.platform !== 'darwin' && !process.env.VN_NATIVE_FRAME;
 const WINBAR_H = 26;
 const CHROME_DEF = { dark: { color: '#343439', symbolColor: '#a4a4ac' }, light: { color: '#f0f0f5', symbolColor: '#6a6a72' } };
-const BRIDGE = 9;                      // версия «моста» оболочки: страница может потребовать не меньше (data-needs в её отметке сборки)
+const BRIDGE = 10;                     // версия «моста» оболочки: страница может потребовать не меньше (data-needs в её отметке сборки)
 const RECENT_MAX = 12;
 
 protocol.registerSchemesAsPrivileged([{ scheme: SCHEME, privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true } }]);
@@ -329,6 +330,18 @@ const ntWrap = async fn => {
   catch (e) { const m = /^nt:(\w+)/.exec(e && e.message || ''); return { ok: false, code: m ? m[1] : 'fail' }; }
 };
 
+/* ---------- ИИ-помощник ----------
+   Окно в сеть не ходит, ключи не уходят на страницу: хаб подставляет ключ в запрос и отдаёт ответ потоком (см. ai.js). */
+let aiHub = null;
+function getAi() {
+  if (!aiHub) { aiHub = new AiHub({ file: path.join(app.getPath('userData'), 'ai.json'), fetch: (u, o) => net.fetch(u, o), safeStorage }); aiHub.load(); }
+  return aiHub;
+}
+const aiWrap = async fn => {
+  try { return Object.assign({ ok: true }, await fn()); }
+  catch (e) { const m = /^ai:(\w+)/.exec(e && e.message || ''); return { ok: false, code: m ? m[1] : 'fail' }; }
+};
+
 /* ---------- Google Диск ---------- */
 let gd = null;
 function testEndpoints() {
@@ -465,6 +478,14 @@ function registerIpc() {
   }));
   handle('nt:mine', async (e, memberId) => ntWrap(async () => ({ line: getNt().getMine(memberId) })));
   handle('nt:farewell', async (e, f) => { getNt().setFarewell(f && typeof f === 'object' ? { text: String(f.text || '').slice(0, 4000), since: f.since, min: f.min } : null); return true; });
+
+  /* ИИ-помощник */
+  handle('ai:status', async () => getAi().status());
+  handle('ai:setKey', async (e, id, key) => aiWrap(async () => ({ st: getAi().setKey(String(id || ''), key) })));
+  handle('ai:clearKey', async (e, id) => aiWrap(async () => ({ st: getAi().clearKey(String(id || '')) })));
+  handle('ai:setBase', async (e, id, url) => aiWrap(async () => ({ st: getAi().setBase(String(id || ''), url) })));
+  handle('ai:request', async (e, o) => aiWrap(async () => getAi().start(o, ev => { if (!e.sender.isDestroyed()) e.sender.send('ai:evt', ev); })));
+  handle('ai:abort', async (e, id) => getAi().abort(id));
 
   handle('desk:setLang', async (e, l) => { if (l === 'ru' || l === 'en') { lang = l; buildMenu(); applyTitle(); saveWinSettings(); } return true; });
 
@@ -802,6 +823,7 @@ else {
   let ntQuit = false;
   app.on('before-quit', e => {
     if (rpHost) rpHost.shutdown();
+    if (aiHub) aiHub.abortAll();
     if (nt && nt.busy() && !ntQuit) { e.preventDefault(); ntQuit = true; nt.whenIdle(6000).then(() => app.quit()); }          // дать прощальному сообщению уйти
   });
   app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });

@@ -221,9 +221,10 @@ function openSettingsWindow(tab) {
       const render = () => {
         const tabs = [{ value: 'view', label: t('ui.tab.view') }, { value: 'conn', label: t('ui.tab.conn') }];
         tabs.push({ value: 'bar', label: t('ui.tab.bar') });
+        tabs.push({ value: 'ai', label: t('ui.tab.ai') });
         if (uiPro()) tabs.push({ value: 'mods', label: t('ui.tab.mods') });
         if (!tabs.some(x => x.value === st.tab)) st.tab = 'view';
-        st.body.replaceChildren(segmented(tabs, st.tab, v => { st.tab = v; render(); }), h('div', { class: 'set-pane' }, st.tab === 'view' ? setView(st, render) : st.tab === 'conn' ? setConn(st, render) : st.tab === 'bar' ? setBar(st, render) : setMods(st, render)));
+        st.body.replaceChildren(segmented(tabs, st.tab, v => { st.tab = v; render(); }), h('div', { class: 'set-pane' }, st.tab === 'view' ? setView(st, render) : st.tab === 'conn' ? setConn(st, render) : st.tab === 'bar' ? setBar(st, render) : st.tab === 'ai' ? setAi(st, render) : setMods(st, render)));
       };
       st.render = render; render();
       const ver = h('div', { class: 'set-ver', id: 'set-ver', role: 'button', tabindex: '-1' }, t('ui.ver', APP_VERSION && APP_VERSION.charAt(0) !== '/' ? APP_VERSION : APP_BUILD));
