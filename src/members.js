@@ -128,11 +128,15 @@ function memberPicker(obj, key, onChange, { single = false } = {}) {
 }
 
 /* ---------- кнопка «Команда» на панели ---------- */
-function openTeamMenu(anchor) {
+function openTeamMenu(anchor) { menuAt(anchor, teamMenuItems()); }
+/** Пункты меню «Команда»; в разделе «Работа команды» они раскрываются сбоку подменю (с 1.7.8). */
+function teamMenuItems() {
   const items = [];
   if (!P.members.length) items.push({ header: t('team.none.short') });
   else {
     const me = meMember();
+    const tk = typeof tkMineCount === 'function' ? tkMineCount() : null;
+    if (tk) items.push({ label: tk.n ? t('tk.chip', tk.n) : t('tk.menu.mine'), icon: 'flag', onClick: () => openTasks('mine') }, { sep: true });
     items.push({ header: t('me.h') }, { label: me ? t('me.is', me.name) : t('me.pick'), icon: 'user', onClick: () => openSettingsWindow('team') });
     if (me) items.push({ label: UI.mf === me.id ? t('me.mine.off') : t('me.mine'), icon: UI.mf === me.id ? 'check' : 'eye', onClick: () => setMemberFilter(UI.mf === me.id ? null : me.id) });
     items.push({ sep: true }, { header: t('team.filter.h') });
@@ -143,7 +147,7 @@ function openTeamMenu(anchor) {
     if (UI.mf) items.push({ label: t('team.filter.off'), icon: 'x', onClick: () => setMemberFilter(null) });
   }
   items.push({ sep: true }, { label: t('team.manage'), icon: 'users', onClick: () => openRegistry('team') }, { label: t('team.credits'), icon: 'list', onClick: () => openCredits() });
-  menuAt(anchor, items);
+  return items;
 }
 
 /* ---------- вкладка реестра «Участники» ---------- */

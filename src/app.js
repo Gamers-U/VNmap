@@ -105,6 +105,7 @@ function updateStatus() {
     h('button', { class: 'btn stat', 'data-tip': t('sh.tip'), onclick: () => openStatsHub() },
       h('span', t('status.blocks', st.nodes)), h('span', { class: 'sep-dot' }, '·'), h('span', t('status.files', st.files)), h('span', { class: 'sep-dot' }, '·'), h('span', { class: 'strong' }, Math.round(st.pct * 100) + '%')),
     typeof aclChip === 'function' ? aclChip() : null,
+    typeof tkChip === 'function' ? tkChip() : null,
     DESK ? [deskStatusChip(), syncChip(), updChip()]
       : [h('button', { class: 'btn stat' + (stale ? ' warn' : ''), 'data-tip': t('status.backup.tip'), onclick: () => exportJSON() }, icon('save', 15), UI.lastBackup ? t('status.backup', ago(UI.lastBackup)) : t('status.nobackup')), syncChip()]));
   if (typeof syRefreshOpen === 'function') syRefreshOpen();

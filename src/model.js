@@ -417,6 +417,7 @@ function histPush() {
     while (HIST.stack.length > 2 && (HIST.stack.length > 100 || total > 60e6)) { total -= HIST.stack[0].length; HIST.stack.shift(); HIST.i--; }
   }
   updateUndoButtons();
+  if (typeof tkChipRefresh === 'function') tkChipRefresh();
   scheduleSave();
 }
 function flushHistory() { if (HIST.timer) histPush(); }

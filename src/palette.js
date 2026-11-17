@@ -57,7 +57,7 @@ function palCommands() {
   for (const tp of NODE_TYPES) add(t('pal.add', t('type.' + tp)), TYPE_ICON[tp], () => addNodeAtCenter(tp), 'add new block создать добавить блок ' + t('type.' + tp));
   add(t('c.fit'), 'fit', () => fitAll(), 'fit zoom map показать всю карту масштаб', 'F');
   for (const tb of REG_TABS) add(t('pal.reg', t('reg.tab.' + tb.id)), tb.icon, () => openRegistry(tb.id), 'registry реестр ' + tb.id);
-  if (typeof collabAvail === 'function' && collabAvail() && !uiCfg().off.collab) add(t('col.btn'), 'users', () => openCollabPanel(), 'collab together realtime live совместная работа вместе в реальном времени');
+  if (typeof collabAvail === 'function' && collabAvail() && !uiCfg().off.team) add(t('col.btn'), 'users', () => openCollabPanel(), 'collab together realtime live совместная работа вместе в реальном времени');
   if (typeof openNotify === 'function' && !uiCfg().off.team) add(t('nt.menu'), 'chat', () => openNotify(), 'notify notifications telegram discord bot webhook reminder deadline уведомления телеграм дискорд напоминания сроки');
   add(t('exp.build'), 'box', () => openBuild(), 'build export renpy собрать игру экспорт', DESK ? 'Ctrl+B' : undefined);
   add(t('exp.svg.dark'), 'image', () => exportSVG('dark'), 'svg image картинка карта');

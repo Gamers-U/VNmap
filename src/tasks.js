@@ -5,7 +5,7 @@
 
 Object.assign(D, {
   'tk.menu': ['Задачи и сроки', 'Tasks and deadlines'],
-  'tk.need': ['Задачи работают в корпоративном режиме: Участники → Права доступа → режим «Корпоративный».', 'Tasks work in the corporate mode: Members → Access rights → “Corporate” mode.'],
+  'tk.need': ['Задачи работают в корпоративном режиме: Настройки → Команда → Права доступа → режим «Корпоративный».', 'Tasks work in the corporate mode: Members → Access rights → “Corporate” mode.'],
   'tk.h': ['Задачи', 'Tasks'],
   'tk.tab.mine': ['Мои', 'Mine'], 'tk.tab.all': ['Все задачи', 'All tasks'], 'tk.tab.sum': ['Сводка', 'Summary'],
   'tk.st.new': ['Новая', 'New'], 'tk.st.doing': ['В работе', 'In progress'], 'tk.st.review': ['На проверке', 'In review'], 'tk.st.done': ['Готово', 'Done'],
@@ -30,6 +30,8 @@ Object.assign(D, {
   'tk.ro': ['Задачи ведут владелец и руководители; свою задачу вы можете двигать по статусам и писать к ней комментарий.', 'The owner and project leads manage tasks; you can move your own task through the statuses and comment on it.'],
   'tk.res': ['ресурс', 'resource'], 'tk.res.open': ['Открыть в реестре', 'Open in the registry'],
   'tk.res.st': ['Статус работы над ресурсом', 'Work status of the resource'],
+  'tk.chip': ['Мои задачи: {0}', 'My tasks: {0}'], 'tk.chip.over': [' · просрочено {0}', ' · overdue {0}'], 'tk.menu.mine': ['Мои задачи', 'My tasks'],
+  'tk.chip.tip': ['Задачи и блоки со сроком, назначенные вам. Нажмите, чтобы открыть список «Мои».', 'Tasks and blocks with a deadline assigned to you. Click to open the “Mine” list.'],
   'tk.filter.who': ['Исполнитель', 'Assignee'], 'tk.filter.all': ['Все', 'All'], 'acl.area.tasks': ['задачи и сроки', 'tasks and deadlines'],
 });
 
@@ -62,6 +64,25 @@ function taskItems() {
     out.push({ kind: 'asset', id: a.id, title: a.name || a.path || t('tk.untitled'), node: '', who: a.owners || [], due, st: s, pri: 0, done: fin, ref: a });
   }
   return out;
+}
+/** Сколько открытых задач назначено мне (null, если задач нет в этом режиме или не выбрано, кто я). */
+function tkMineCount() {
+  const me = typeof meMember === 'function' ? meMember() : null;
+  if (!me || !tasksOn()) return null;
+  const mine = taskItems().filter(i => !i.done && (i.who || []).includes(me.id));
+  return { n: mine.length, over: mine.filter(i => i.due && dayDiff(i.due) < 0).length };
+}
+/** Значок в строке состояния: «Мои задачи: N» (рядом с замочком), красится при просрочке; без задач его нет. */
+function tkChip() {
+  const c = tkMineCount(); if (!c || !c.n) return null;
+  return h('button', { class: 'btn stat tk-chip' + (c.over ? ' warn' : ''), id: 'tk-chip', 'data-tip': t('tk.chip.tip'), onclick: () => openTasks('mine') },
+    icon('flag', 14), t('tk.chip', c.n) + (c.over ? t('tk.chip.over', c.over) : ''));
+}
+let TKSIG = '';
+/** После каждой правки проекта: перерисовать строку состояния, только если число задач изменилось. */
+function tkChipRefresh() {
+  const c = typeof tkMineCount === 'function' ? tkMineCount() : null, sig = c ? c.n + ':' + c.over : '';
+  if (sig !== TKSIG) { TKSIG = sig; if (typeof updateStatus === 'function') updateStatus(); }
 }
 const taskCanManage = () => { const rt = aclRights(); return rt.all || rt.grant; };
 

@@ -36,14 +36,14 @@ Object.assign(D, {
 });
 
 const UI_PRESETS = {
-  write: { mode: 'simple', off: ['team', 'collab', 'translate'] },
-  build: { mode: 'pro', off: ['team', 'collab', 'translate'] },
+  write: { mode: 'simple', off: ['team', 'translate'] },
+  build: { mode: 'pro', off: ['team', 'translate'] },
   team: { mode: 'pro', off: [] },
 };
 /** Вопросник первого запуска: каждая галочка включает или выключает свои модули. «Все разделы на панели» — это режим. */
 const UI_QUIZ = [
   { id: 'analysis', mods: ['analysis'] },
-  { id: 'team', mods: ['team', 'collab'] },
+  { id: 'team', mods: ['team'] },
   { id: 'translate', mods: ['translate'] },
   { id: 'pro', mode: true },
 ];

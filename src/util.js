@@ -282,7 +282,22 @@ async function saveFile(name, data, mime) {
 
 /* ---- всплывающие панели (popover) и меню ---- */
 let POP = null;
+/* Каскадные подменю: пункт с `sub` (массив пунктов или функция, которая его возвращает) раскрывается сбоку и не заменяет меню. */
+let SUBPOP = null, SUBT = 0;
+function closeSub() { clearTimeout(SUBT); if (SUBPOP) { SUBPOP.row.classList.remove('open'); SUBPOP.el.remove(); SUBPOP = null; } }
+function openSub(row, items) {
+  clearTimeout(SUBT);
+  if (SUBPOP && SUBPOP.row === row) return;
+  closeSub();
+  const el = h('div', { class: 'pop menu-pop sub-pop' }, menuBox(typeof items === 'function' ? items() : items, true));
+  layer().append(el);
+  const a = row.getBoundingClientRect(), r = el.getBoundingClientRect();
+  placeEl(el, row, null, a.right + 8 + r.width > window.innerWidth - 8 && a.left - 8 - r.width >= 8 ? 'left' : 'right');
+  el.addEventListener('pointerenter', () => clearTimeout(SUBT));
+  row.classList.add('open'); SUBPOP = { el, row };
+}
 function closePopover() {
+  closeSub();
   if (!POP) return;
   const p = POP; POP = null;
   p.el.remove();
@@ -314,24 +329,30 @@ function popover(anchor, content, opts = {}) {
   const el = h('div', { class: 'pop ' + (opts.cls || '') }, content);
   layer().append(el);
   placeEl(el, anchor, opts.at, opts.side);
-  const onDoc = ev => { if (el.contains(ev.target)) return; if (anchor && anchor.contains(ev.target)) return; closePopover(); };
+  const onDoc = ev => { if (el.contains(ev.target)) return; if (SUBPOP && SUBPOP.el.contains(ev.target)) return; if (anchor && anchor.contains(ev.target)) return; closePopover(); };
   const onKey = ev => { if (ev.key === 'Escape') { ev.stopPropagation(); closePopover(); } };
   document.addEventListener('pointerdown', onDoc, true);
   document.addEventListener('keydown', onKey, true);
   POP = { el, anchor, onDoc, onKey, onClose: opts.onClose };
   return { el, close: closePopover, reposition: () => placeEl(el, anchor, opts.at, opts.side) };
 }
-/* items: {label, icon, onClick, danger, sep, swatches:{value,onPick,none}, header} */
+/* items: {label, icon, onClick, danger, sep, swatches:{value,onPick,none}, header, sub: [пункты] | () => [пункты]} */
 function menuAt(anchor, items) { return popover(anchor, menuBox(items), { cls: 'menu-pop' }); }
 function showMenu(x, y, items) { return popover(null, menuBox(items), { at: { x, y }, cls: 'menu-pop' }); }
-function menuBox(items) {
+function menuBox(items, inSub) {
   const box = h('div', { class: 'menu' });
   for (const it of items) {
     if (!it) continue;
     if (it.sep) { box.append(h('div', { class: 'msep' })); continue; }
     if (it.header) { box.append(h('div', { class: 'mhead' }, it.header)); continue; }
     if (it.swatches) { box.append(swatchRow(it.swatches.value, c => { closePopover(); it.swatches.onPick(c); }, it.swatches.none)); continue; }
-    box.append(h('div', { class: 'mi' + (it.danger ? ' danger' : '') + (it.disabled ? ' off' : ''), onclick: () => { if (it.disabled) return; closePopover(); it.onClick && it.onClick(); } },
+    if (it.sub && !inSub) {
+      const row = h('div', { class: 'mi has-sub' + (it.disabled ? ' off' : ''), onclick: () => { if (!it.disabled) openSub(row, it.sub); }, onmouseenter: () => { if (!it.disabled) openSub(row, it.sub); } },
+        it.icon ? icon(it.icon, 16) : h('span', { class: 'mi-sp' }), h('span', { class: 'mi-l' }, it.label), icon('chevR', 14));
+      box.append(row); continue;
+    }
+    box.append(h('div', { class: 'mi' + (it.danger ? ' danger' : '') + (it.disabled ? ' off' : ''), onclick: () => { if (it.disabled) return; closePopover(); it.onClick && it.onClick(); },
+      onmouseenter: inSub ? null : () => { if (SUBPOP) { clearTimeout(SUBT); SUBT = setTimeout(closeSub, 220); } } },
       it.icon ? icon(it.icon, 16) : h('span', { class: 'mi-sp' }), h('span', { class: 'mi-l' }, it.label), it.kbd ? h('span', { class: 'mi-k' }, it.kbd) : null));
   }
   return box;

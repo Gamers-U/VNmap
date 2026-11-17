@@ -134,6 +134,7 @@ kbd{font:600 11px/1 var(--font);display:inline-block;padding:3px 6px;border-radi
 .mi.danger{color:var(--danger)}.mi.danger:hover{background:var(--danger);color:#fff}
 .mi.off{opacity:.4;pointer-events:none}
 .mi-sp{width:16px}.mi-l{flex:1}.mi-k{opacity:.6;font-size:11px}
+.mi.has-sub.open{background:var(--hover)}.mi.has-sub .ic:last-child{opacity:.6}.pop.sub-pop{z-index:201}
 .msep{height:1px;background:var(--border);margin:5px 4px}
 .mhead{padding:5px 10px;font-size:11px;font-weight:650;color:var(--text3);text-transform:uppercase;letter-spacing:.06em}
 .swatches{display:flex;flex-wrap:wrap;gap:7px;padding:8px 10px;max-width:214px}

@@ -4,7 +4,7 @@
    кнопкой «Ещё», чтобы не бросаться в глаза, но всегда были под рукой.
    «Профессиональный» выкладывает их на виду (строка разделов под панелью), и там можно выключать целые модули, которыми вы не пользуетесь.
    Режим личный: он хранится в настройках программы на этом компьютере, в проект не попадает.
-   Не путать с корпоративным режимом прав доступа: тот относится к проекту (Участники → Права доступа). */
+   Не путать с корпоративным режимом прав доступа: тот относится к проекту (Настройки → Команда → Права доступа). */
 
 Object.assign(D, {
   'ui.ver': ['Версия {0}', 'Version {0}'],
@@ -24,7 +24,7 @@ Object.assign(D, {
   'ui.mode.simple': ['Простой', 'Simple'], 'ui.mode.pro': ['Профессиональный', 'Professional'],
   'ui.mode.simple.h': ['На панели только самое нужное: Играть, Текст, Реестр, Сборка, Файл. Все остальные возможности лежат под кнопкой «Ещё», по разделам.', 'The toolbar only has what matters: Play, Text, Registry, Build, File. Every other feature is under the “More” button, by section.'],
   'ui.mode.pro.h': ['Всё на виду: под панелью строка разделов (Карта, Тексты, Код, Проверки, Игра, Работа команды), у каждого раздела свои функции. Что не вошло в показанные разделы, лежит в «Инструментах». Ненужные модули выключаются на вкладке «Модули».', 'Everything is in view: a row of sections under the toolbar (Map, Texts, Code, Checks, Play, Teamwork), each with its own features. Whatever is not in a shown section is under “Tools”. Switch off unneeded modules on the “Modules” tab.'],
-  'ui.mode.note': ['Режим интерфейса личный и не меняет проект. Корпоративный режим прав доступа это другое: он относится к проекту (Участники → Права доступа).', 'The interface mode is personal and does not change the project. The corporate access-rights mode is a different thing: it belongs to the project (Members → Access rights).'],
+  'ui.mode.note': ['Режим интерфейса личный и не меняет проект. Корпоративный режим прав доступа это другое: он относится к проекту (Настройки → Команда → Права доступа).', 'The interface mode is personal and does not change the project. The corporate access-rights mode is a different thing: it belongs to the project (Settings → Team → Access rights).'],
   'ui.mode.first': ['Простой режим: на панели только главное, все остальные функции под кнопкой «Ещё». Чтобы они были на виду: Настройки → Профессиональный.', 'Simple mode: only the essentials are on the toolbar, every other feature is under the “More” button. To have them in view: Settings → Professional.'],
   'ui.look': ['Оформление', 'Appearance'], 'ui.theme': ['Тема', 'Theme'], 'ui.theme.dark': ['Тёмная', 'Dark'], 'ui.theme.light': ['Светлая', 'Light'], 'ui.lang': ['Язык интерфейса', 'Interface language'],
   'ui.mapset': ['Карта', 'Map'], 'ui.project': ['Проект', 'Project'],
@@ -64,12 +64,11 @@ Object.assign(D, {
   'ui.mods.only': ['Модули настраиваются в профессиональном режиме.', 'Modules are configured in the professional mode.'],
   'ui.mod.analysis': ['Анализ и статистика', 'Analysis and statistics'], 'ui.mod.analysis.h': ['Статистика, ветки и время, автопрогон, журнал прохождений, переменные в блоках.', 'Statistics, branches and time, auto-run, playthrough log, variables in blocks.'],
   'ui.mod.text': ['Тонкая работа с текстом', 'Fine text work'], 'ui.mod.text.h': ['Таблица реплик, переименование везде, страница персонажа, список ресурсов, импорт .rpy.', 'The replica table, rename everywhere, the character page, the resource list, .rpy import.'],
-  'ui.mod.team': ['Команда', 'Team'], 'ui.mod.team.h': ['Участники и роли, задачи и сроки, «кто что сделал», выбор «кто я». Раздел «Работа команды».', 'Members and roles, tasks and deadlines, “who did what”, “who am I”. The “Teamwork” section.'],
-  'ui.mod.collab': ['Совместная работа', 'Collaboration'], 'ui.mod.collab.h': ['Работа в реальном времени (карточка в «Настройки → Подключения»), проверка правок авторов.', 'Real-time work (a card in “Settings → Connections”), review of the authors\' changes.'],
+  'ui.mod.team': ['Команда и совместная работа', 'Team and collaboration'], 'ui.mod.team.h': ['Участники и роли, задачи и сроки, «кто что сделал», проверка правок авторов, работа в реальном времени (карточка в «Настройки → Подключения»). Раздел «Работа команды». До 1.7.8 это были два модуля.', 'Members and roles, tasks and deadlines, “who did what”, review of the authors\' changes, real-time work (a card in “Settings → Connections”). The “Teamwork” section. Before 1.7.8 these were two modules.'],
   'ui.mod.translate': ['Переводы', 'Translations'], 'ui.mod.translate.h': ['Языки игры: перевод реплик и озвучка на каждом языке. Пункт «Перевод» в разделе «Тексты».', 'Game languages: dialogue translation and voice per language. The “Translate” item in the “Texts” section.'],
 });
 
-const UI_MODS = ['analysis', 'text', 'team', 'collab', 'translate'];
+const UI_MODS = ['analysis', 'text', 'team', 'translate'];      // «Совместная работа» с 1.7.8 слита с «Командой» (старая отметка `off.collab` при чтении настроек отбрасывается)
 /** Профессиональный режим: строка разделов под верхней панелью (инструменты на виду). Пункты берутся из TOOL_ITEMS по id и фильтруются uiShow. */
 const UI_STRIP = [
   { id: 'map', ic: 'fit', items: ['layout', 'mappdf', 'notes'] },
@@ -111,6 +110,8 @@ function barMove(kind, from, to) {
   const [x] = ids.splice(from, 1); ids.splice(to, 0, x); barCfg().order[barMk() + kind] = ids; saveSettings(); buildChrome();
 }
 function barReset() { const c = uiCfg(); delete c.bar; delete c.dock; saveSettings(); buildChrome(); }
+/** Пункт меню из TOOL_ITEMS: обычный, а у пункта с `sub` (например «Команда») раскрывается сбоку подменю, а не заменяет меню. */
+const toolEntry = (it, anchor) => it.sub ? { label: t(it.key), icon: it.ic, sub: it.sub } : { label: t(it.key), icon: it.ic, kbd: it.kbd, onClick: () => setTimeout(() => it.run(anchor), 0) };
 /** Строка разделов для профессионального режима; в простом её нет. Раздел без доступных пунктов (выключен модуль) или скрытый в «Панели» не рисуется. */
 function uiStrip() {
   if (!uiPro()) return null;
@@ -118,7 +119,7 @@ function uiStrip() {
   const groups = [];
   for (const id of barIds('strip')) {
     const x = by[id]; if (!x) continue;
-    groups.push(tbtn(x.g.ic, t('ui.g.' + id), t('ui.g.' + id + '.tip'), b => menuAt(b, x.its.map(it => ({ label: t(it.key), icon: it.ic, kbd: it.kbd, onClick: () => setTimeout(() => it.run(b), 0) }))), 'strip-btn strip-' + id));
+    groups.push(tbtn(x.g.ic, t('ui.g.' + id), t('ui.g.' + id + '.tip'), b => menuAt(b, x.its.map(it => toolEntry(it, b))), 'strip-btn strip-' + id));
   }
   return groups.length ? h('div', { class: 'bar strip', id: 'toolstrip' }, ...groups) : null;
 }
@@ -129,7 +130,7 @@ const UI_LVL = {
   layout: ['s'], mappdf: ['s'], notes: ['s'], texted: ['s'], docimport: ['s'], digest: ['s'], checks: ['s'], missingfiles: ['s'], htmlgame: ['s'], renpy: ['s'], player: ['s'], stats: ['s'],
   replicas: ['p', 'text'], rename: ['p', 'text'], charpage: ['p', 'text'], resources: ['p', 'text'], weight: ['s'], snippets: ['s'], endguide: ['p', 'analysis'], voicesheet: ['p', 'text'], recipes: ['s'], customcode: ['p'], ide: ['p'], rpyimport: ['p', 'text'],
   varstates: ['p', 'analysis'], branchstats: ['p', 'analysis'], autorun: ['p', 'analysis'], testlog: ['p', 'analysis'],
-  whoami: ['p', 'team'], tasks: ['p', 'team'], whodid: ['p', 'team'], notify: ['x'], review: ['p', 'collab'], team: ['p', 'team'], translate: ['p', 'translate'], collab: ['x'], gui: ['s'],
+  whoami: ['p', 'team'], tasks: ['p', 'team'], whodid: ['p', 'team'], notify: ['x'], review: ['p', 'team'], team: ['p', 'team'], translate: ['p', 'translate'], collab: ['x'], gui: ['s'],
   ghopen: ['x'], snapshots: ['s'],
   'bar.theme': ['x'], 'bar.lang': ['x'], 'bar.layers': ['p'],
 };
@@ -147,6 +148,7 @@ function uiCfg() {
   const c = S.ui && typeof S.ui === 'object' ? S.ui : (S.ui = {});
   if (c.mode !== 'pro') c.mode = 'simple';
   if (!c.off || typeof c.off !== 'object') c.off = {};
+  if ('collab' in c.off) delete c.off.collab;                                  // модуль «Совместная работа» слит с «Командой»
   return c;
 }
 const uiPro = () => uiCfg().mode === 'pro';
@@ -172,16 +174,16 @@ function uiToolsMenu(anchor) {
     const L = by.get(g); if (!L) continue;
     const sg = UI_STRIP.find(x => x.id === g); if (sg) L.sort((a, b) => sg.items.indexOf(a.id) - sg.items.indexOf(b.id));          // порядок такой же, как в самом разделе
     if (items.length) items.push({ sep: true });
-    items.push({ header: g === 'other' ? t('help.other') : t('ui.g.' + g) }, ...L.map(it => ({ label: t(it.key), icon: it.ic, kbd: it.kbd, onClick: () => setTimeout(() => it.run(anchor), 0) })));
+    items.push({ header: g === 'other' ? t('help.other') : t('ui.g.' + g) }, ...L.map(it => toolEntry(it, anchor)));
   }
   return popover(anchor, menuBox(items), { cls: 'menu-pop more-pop' });
 }
 /** Меню «Ещё» простого режима: все возможности программы по разделам (те же, что в профессиональном режиме лежат на виду). */
 function uiMoreMenu(anchor) {
   const items = [], add = (head, list) => { list = list.filter(Boolean); if (!list.length) return; if (items.length) items.push({ sep: true }); items.push({ header: head }, ...list); };
-  for (const { g, its } of stripGroups()) add(t('ui.g.' + g.id), its.map(it => ({ label: t(it.key), icon: it.ic, kbd: it.kbd, onClick: () => setTimeout(() => it.run(anchor), 0) })));
+  for (const { g, its } of stripGroups()) add(t('ui.g.' + g.id), its.map(it => toolEntry(it, anchor)));
   add(t('ui.more.other'), [
-    ...uiLeftovers().map(it => ({ label: t(it.key), icon: it.ic, kbd: it.kbd, onClick: () => setTimeout(() => it.run(anchor), 0) })),
+    ...uiLeftovers().map(it => toolEntry(it, anchor)),
     { label: t('exp.map'), icon: 'rows', onClick: exportMap },
     { label: t('tour.btn'), icon: 'sparkles', onClick: () => setTimeout(() => openTour(), 0) },
     { label: t('tb.echo'), icon: S.echo ? 'check' : null, onClick: () => { S.echo = !S.echo; saveSettings(); renderEchoes(); } },
@@ -311,7 +313,7 @@ function setConn(st, render) {
   /* Google Диск */
   box.append(setDriveCard(st, render, go, part('drive')));
   box.append(setCard(h('span', { class: 'nt-ch' }, icon('chat', 15), t('ui.notify')), h('div', { class: 'hint' }, t('ui.notify.t')), h('div', { class: 'nt-btns' }, h('button', { class: 'btn sm', onclick: go(() => openNotify()) }, t('ui.notify.btn')))));
-  if (typeof collabAvail === 'function' && collabAvail() && !c0.off.collab) box.append(setCard(h('span', { class: 'nt-ch' }, icon('users', 15), t('ui.collab')), h('div', { class: 'hint' }, t('ui.collab.t')), h('div', { class: 'nt-btns' }, h('button', { class: 'btn sm', onclick: go(() => openCollabPanel()) }, t('ui.collab.btn')))));
+  if (typeof collabAvail === 'function' && collabAvail() && !c0.off.team) box.append(setCard(h('span', { class: 'nt-ch' }, icon('users', 15), t('ui.collab')), h('div', { class: 'hint' }, t('ui.collab.t')), h('div', { class: 'nt-btns' }, h('button', { class: 'btn sm', onclick: go(() => openCollabPanel()) }, t('ui.collab.btn')))));
   if (typeof setAi === 'function') box.append(h('div', { class: 'set-sec', id: 'set-sec-ai' }, icon('wand', 16), h('b', t('ui.conn.ai'))), setAi(st, render));       // ИИ-помощник (с 1.7.7 здесь, а не отдельной вкладкой)
   return box;
 }
@@ -387,7 +389,7 @@ function setMods(st, render) {
 }
 TOOL_ITEMS.push({ id: 'stats', group: 'story', ic: 'chart', key: 'sh.btn', kw: 'stats endings progress statistics time branches autorun log team статистика концовки прогресс время ветки автопрогон журнал команда', run: () => openStatsHub() });
 /* Пункты, которые раньше жили отдельными кнопками на панели (Команда, Перевод, Совместно). Теперь это обычные пункты разделов; совместная работа и уведомления открываются из «Настройки → Подключения» и по Ctrl+K. */
-TOOL_ITEMS.push({ id: 'team', group: 'team', ic: 'badge', key: 'team.btn', kw: 'team members roles credits participants команда участники роли титры', run: a => openTeamMenu(a) });
+TOOL_ITEMS.push({ id: 'team', group: 'team', ic: 'badge', key: 'team.btn', kw: 'team members roles credits participants команда участники роли титры', run: a => openTeamMenu(a), sub: () => teamMenuItems() });
 TOOL_ITEMS.push({ id: 'translate', group: 'story', ic: 'globe', key: 'tl.btn', kw: 'translate translation languages localization перевод переводы язык локализация', run: () => openTranslate() });
 TOOL_ITEMS.push({ id: 'collab', group: 'team', ic: 'users', key: 'col.btn', menu: false, kw: 'collab together realtime live совместная работа вместе в реальном времени', run: () => openCollabPanel() });
 TOOL_ITEMS.push({ id: 'gui', group: 'story', ic: 'palette', key: 'reg.tab.gui', kw: 'gui interface dialogue window namebox choice buttons colors fonts интерфейс игры окно диалога плашка имени кнопки цвета шрифты', run: () => openRegistry('gui') });
