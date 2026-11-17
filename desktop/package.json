@@ -1,7 +1,7 @@
 {
   "name": "vnmap-desktop",
   "productName": "Карта новеллы",
-  "version": "1.7.1",
+  "version": "1.7.2",
   "description": "Конструктор визуальных новелл: карта сюжета, сценарии, ресурсы и компилятор в Ren'Py",
   "author": "Карта новеллы",
   "license": "UNLICENSED",
@@ -26,7 +26,7 @@
     "executableName": "vnmap",
     "artifactName": "VNMap-${os}-${arch}.${ext}",
     "directories": { "output": "release", "buildResources": "build" },
-    "files": ["main.js", "preload.js", "gdrive.js", "updater.js", "buildwrite.js", "renpy.js", "selfupdate.js", "notify.js", "google-oauth.json", "package.json", "app/**/*", "build/icon.png"],
+    "files": ["*.js", "google-oauth.json", "package.json", "app/**/*", "build/icon.png"],
     "fileAssociations": [
       { "ext": "vnmap", "name": "Проект «Карты новеллы»", "description": "Проект «Карты новеллы»", "role": "Editor", "icon": "build/icon" }
     ],

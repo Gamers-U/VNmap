@@ -18,7 +18,7 @@ PKG = json.load(open(os.path.join(HERE, 'package.json'), encoding='utf-8'))
 VERSION = PKG['version']
 ELECTRON = PKG['devDependencies']['electron'].lstrip('^~')
 TARGETS = {'win-x64': 'win32-x64', 'win-arm64': 'win32-arm64', 'linux-x64': 'linux-x64'}
-APP_FILES = ['main.js', 'preload.js', 'gdrive.js', 'updater.js', 'buildwrite.js', 'renpy.js', 'selfupdate.js', 'notify.js']
+APP_FILES = sorted(f for f in os.listdir(HERE) if f.endswith('.js'))   # все модули оболочки: список вручную уже терял файлы (ai.js, projfs.js, sat.js)
 OPTIONAL_FILES = ['google-oauth.json']   # ключ Google, если вы положили его рядом: см. README.md
 
 

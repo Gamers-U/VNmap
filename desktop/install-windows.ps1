@@ -48,7 +48,8 @@ Rename-Item (Join-Path $out 'electron.exe') 'VNMap.exe'
 $res = Join-Path $out 'resources'
 $app = Join-Path $res 'app'
 New-Item -ItemType Directory -Force $app | Out-Null
-foreach ($f in 'main.js', 'preload.js', 'gdrive.js', 'updater.js', 'package.json', 'google-oauth.json') {
+$files = @(Get-ChildItem -Path $here -Filter '*.js' -File | ForEach-Object { $_.Name }) + @('package.json', 'google-oauth.json')
+foreach ($f in $files) {
   $src = Join-Path $here $f
   if (Test-Path $src) { Copy-Item $src $app; if ($f -eq 'google-oauth.json') { Write-Host 'В сборку добавлен ключ Google (google-oauth.json)' } }
 }

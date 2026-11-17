@@ -104,6 +104,10 @@ jobs:
             macos-latest)   npx electron-builder --mac --x64 --arm64 --publish never ;;
           esac
           ls -la release
+      - name: Проверка пакета (все файлы оболочки внутри app.asar)
+        working-directory: desktop
+        shell: bash
+        run: node tools/checkpkg.js release
       - uses: actions/upload-artifact@v4
         with:
           name: shell-${{ matrix.os }}

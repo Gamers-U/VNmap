@@ -12,6 +12,7 @@ Object.assign(D, {
   'ide.pick': ['Выбрать папку проекта Ren\'Py…', 'Choose the Ren\'Py project folder…'],
   'ide.change': ['Другая папка…', 'Another folder…'],
   'ide.pick.t': ['Чтобы править файлы игры, выберите папку проекта Ren\'Py (в ней лежит папка game). Эту же папку использует запуск в Ren\'Py.', 'To edit the game files, choose the Ren\'Py project folder (the one that contains the game folder). The same folder is used to run in Ren\'Py.'],
+  'ide.oldshell': ['Установленная оболочка программы старая: она не умеет работать с папками проекта. Скачайте свежую версию и установите поверх: проекты и входы сохранятся. Пока можно править «Код внутри проекта».', 'The installed app shell is old: it cannot work with project folders. Download the latest version and install it over the old one: projects and sign-ins are kept. Meanwhile you can edit "Code inside the project".'],
   'ide.web': ['Папки на диске доступны в программе для компьютера. Здесь можно править «Код внутри проекта».', 'Folders on disk are available in the desktop app. Here you can edit the “Code inside the project”.'],
   'ide.nofolder': ['Папка проекта не выбрана', 'No project folder chosen'],
   'ide.new.file': ['Новый файл', 'New file'], 'ide.new.dir': ['Новая папка', 'New folder'], 'ide.refresh': ['Обновить', 'Refresh'], 'ide.collapse': ['Свернуть все папки', 'Collapse all folders'],
@@ -324,7 +325,10 @@ function openIde(opts) {
     tree.append(frag);
     if (api && !S_.root) {
       tree.append(h('div', { class: 'ide-pickbox' }, h('div', { class: 'hint' }, t('ide.pick.t')), h('button', { class: 'btn primary', id: 'ide-pick', onclick: pickFolder }, icon('folder', 15), t('ide.pick'))));
-    } else if (!api) tree.append(h('div', { class: 'ide-pickbox' }, h('div', { class: 'hint' }, t('ide.web'))));
+    } else if (!api) {
+      const old = typeof DESK !== 'undefined' && DESK;                       // окно программы, но оболочка без доступа к папкам: нужно обновить, а не «открыть в программе»
+      tree.append(h('div', { class: 'ide-pickbox' }, h('div', { class: 'hint' + (old ? ' warn-t' : ''), id: old ? 'ide-oldshell' : 'ide-webonly' }, t(old ? 'ide.oldshell' : 'ide.web')), old && typeof ghShellButtons === 'function' ? ghShellButtons() : null));
+    }
     tree.scrollTop = top;
   }
   async function paintFilter() {
