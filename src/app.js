@@ -8,7 +8,7 @@ function tbtn(ic, label, tip, onClick, cls = '') {
 /** Кнопки правой части панели по id. Какие показывать и в каком порядке, решают режим интерфейса и вкладка «Панель» в Настройках (uimode.js). */
 function barBuilders() {
   const open = () => (DESK ? tbtn('folder', t('desk.open.short'), t('desk.open.tip') + ' (Ctrl+O)', () => deskCommand('open')) : tbtn('upload', t('top.import'), t('top.import.tip'), importJSONFile));
-  const saveItems = () => [{ label: t('sn.btn'), icon: 'undo', onClick: () => openSnapshots() }, ...(DESK ? [
+  const saveItems = (withBackups = true) => [...(withBackups ? [{ label: t('sn.btn'), icon: 'undo', onClick: () => openSnapshots() }] : []), ...(DESK ? [
     { label: t('desk.save'), icon: 'save', kbd: 'Ctrl+S', onClick: () => deskCommand('save') },
     { label: t('desk.saveas'), icon: 'save', kbd: 'Ctrl+Shift+S', onClick: () => deskCommand('saveas') },
     { label: t('desk.copy'), icon: 'copy', onClick: exportJSON }] : [{ label: t('exp.json'), icon: 'save', kbd: 'Ctrl+S', onClick: exportJSON }])];
@@ -23,7 +23,7 @@ function barBuilders() {
       { label: t('exp.svg.light'), icon: 'image', onClick: () => exportSVG('light') },
       { label: t('mp.menu'), icon: 'image', onClick: () => openMapPdf() },
       { label: t('dg.menu'), icon: 'rows', onClick: () => openDigest() },
-      { sep: true }, ...saveItems(),
+      { sep: true }, ...saveItems(false),                                   // резервные копии в «Экспорте» не нужны: они в «Настройки → Копии» и в меню «Файл» простого режима
       { label: t('exp.map'), icon: 'rows', onClick: exportMap }]), 'build-btn') : null),
     build: () => (uiPro() ? null : tbtn('box', t('ui.build'), t('ui.build.tip') + (DESK ? ' (Ctrl+B)' : ''), () => openBuild(), 'build-btn')),
     file: () => (uiPro() ? null : tbtn('save', t('ui.file'), t('ui.file.tip'), b => menuAt(b, [...saveItems(), { sep: true },

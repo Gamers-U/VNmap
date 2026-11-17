@@ -1810,6 +1810,8 @@ body.game-mode{background:var(--bg)}
 .set-modal .m-wrap{min-height:0;width:min(720px,96vw)}
 .set-body{padding:4px 20px 18px;overflow:auto;display:flex;flex-direction:column;gap:12px}
 .set-pane{display:flex;flex-direction:column;gap:12px}
+.set-sec{display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:12px;border-top:1px solid var(--border);font-size:15px}
+.sn-pane{padding:0;overflow:visible}
 
 /* ---- профессиональный режим: строка разделов под панелью ---- */
 .bar.strip{padding:3px}

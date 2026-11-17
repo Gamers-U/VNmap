@@ -16,7 +16,7 @@ Object.assign(D, {
   'aic.empty': ['Спросите про код: «объясни эту ошибку», «сделай экран с кнопками», «напиши функцию, которая…». Выделите кусок кода в редакторе, и помощник увидит именно его (если вы это разрешите ниже).', 'Ask about code: "explain this error", "make a screen with buttons", "write a function that…". Select a piece of code in the editor and the helper will see exactly that (if you allow it below).'],
   'aic.setup.t': ['Помощник ещё не подключён.', 'The helper is not connected yet.'],
   'aic.setup.h': ['Выберите поставщика, сохраните ключ и нажмите «Проверить связь»: в настройках у каждого написано, насколько это просто и что потребуется.', 'Pick a provider, save the key and press "Test connection": the settings say for each one how easy it is and what you need.'],
-  'aic.setup.btn': ['Подключить (Настройки → ИИ)', 'Connect (Settings → AI)'],
+  'aic.setup.btn': ['Подключить (Настройки → Подключения → ИИ)', 'Connect (Settings → Connections → AI)'],
   'aic.using': ['{0}, модель {1}', '{0}, model {1}'], 'aic.using.tip': ['Поставщик и модель. Нажмите, чтобы изменить в настройках.', 'Provider and model. Click to change them in the settings.'],
   'aic.ctx.h': ['Что уйдёт помощнику вместе с вопросом', 'What goes to the helper with your question'],
   'aic.ctx.sel': ['Выделенный фрагмент ({0})', 'Selected fragment ({0})'], 'aic.ctx.file': ['Файл «{0}» ({1})', 'File "{0}" ({1})'],

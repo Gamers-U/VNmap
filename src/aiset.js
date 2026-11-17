@@ -1,10 +1,10 @@
 'use strict';
-/* ====== ИИ-помощник: вкладка «ИИ» в настройках ======
+/* ====== ИИ-помощник: блок «ИИ-помощник» внизу вкладки «Подключения» в настройках (до 1.7.7 была отдельная вкладка «ИИ») ======
    Список поставщиков с короткой справкой («насколько это просто, что потребуется от вас и от компьютера»), ключ, адрес, модель и «Проверить связь».
    Цены и условия бесплатных уровней в тексте не называются (они часто меняются): есть кнопка «Сайт и условия». */
 
 Object.assign(D, {
-  'ui.tab.ai': ['ИИ', 'AI'], 'ai.pal': ['ИИ-помощник: подключение (настройки)', 'AI helper: connect (settings)'],
+  'ui.tab.ai': ['ИИ', 'AI'], 'ui.conn.ai': ['ИИ-помощник', 'AI helper'], 'ai.pal': ['ИИ-помощник: подключение (настройки)', 'AI helper: connect (settings)'],
   'ai.intro': ['Помощник для кода: пишет и правит сниппеты, мини-игры и функции на Python и Ren\'Py, подсказывает, где что искать. Текст новеллы он не пишет и не переписывает, а любые изменения предлагает, и они попадают в проект только после вашего «Применить».', 'A helper for code: it writes and fixes snippets, mini-games and Python and Ren\'Py functions, and helps you find things. It does not write or rewrite the text of your novel, and it only proposes changes: they reach the project after you press Apply.'],
   'ai.priv': ['Ничего не отправляется само: запрос уходит поставщику, только когда вы сами его отправили. Выберите поставщика из списка: у каждого коротко написано, насколько это просто и что потребуется.', 'Nothing is sent by itself: a request goes to the provider only when you send it. Pick a provider from the list: each one says briefly how easy it is and what you will need.'],
   'ai.where.desktop': ['Ключи хранятся в программе в зашифрованном виде (средствами вашей системы), только на этом компьютере. В проект, на GitHub и на Диск они не попадают, а странице программы не показываются.', 'Keys are kept inside the app, encrypted by your system, on this computer only. They never go into the project, GitHub or Drive, and the app page never sees them.'],

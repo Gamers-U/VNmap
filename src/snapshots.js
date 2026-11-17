@@ -1,49 +1,50 @@
 'use strict';
-/* ====== Снимки проекта ======
-   Снимок это полная копия проекта на момент времени. Три вида:
+/* ====== Резервные копии проекта (до 1.7.7 назывались «Снимки проекта»; живут во вкладке «Копии» настроек) ======
+   Резервная копия это полная копия проекта на момент времени. Три вида:
    • автокопия: программа делает её сама, пока вы работаете (раз в N минут, если что-то изменилось, и при открытии программы);
    • страховка: делается перед тем, как проект заменяется другим (открыли файл, загрузили с GitHub, новый проект) и перед восстановлением снимка;
-   • свой снимок: вы назвали его сами, он не удаляется сам.
+   • своя копия: вы назвали её сами, она не удаляется сама.
    Хранятся внутри программы (IndexedDB), не в файле проекта и не на GitHub, поэтому работают одинаково в браузере, на телефоне и в десктопе.
    Восстановление идёт как обычная правка: его можно отменить Ctrl+Z, привязка к файлу и к GitHub не сбивается. */
 
 Object.assign(D, {
-  'sn.btn': ['Снимки проекта…', 'Project snapshots…'],
-  'sn.badge': [' Нажмите, чтобы открыть снимки проекта.', ' Click to open the project snapshots.'],
-  'sn.tip': ['Копии проекта на разные моменты: вернуться назад или посмотреть, что изменилось', 'Copies of the project at different moments: go back or see what has changed'],
-  'sn.title': ['Снимки проекта', 'Project snapshots'],
-  'sn.lead': ['Копия проекта на момент времени. Программа делает её сама, пока вы работаете, и перед тем, как заменить проект другим. Свой снимок удобно сделать перед рискованной правкой.',
-    'A copy of the project at a moment in time. The app makes them by itself while you work and before replacing the project with another. A snapshot of your own is handy before a risky edit.'],
-  'sn.name': ['Название снимка', 'Snapshot name'], 'sn.name.ph': ['Например: до правки финала', 'For example: before the finale rewrite'],
-  'sn.take': ['Сделать снимок', 'Take a snapshot'], 'sn.taken': ['Снимок сохранён', 'Snapshot saved'],
+  'sn.btn': ['Резервные копии…', 'Backups…'],
+  'sn.badge': [' Нажмите, чтобы открыть резервные копии.', ' Click to open the backups.'],
+  'sn.tip': ['Резервные копии проекта на разные моменты: вернуться назад или посмотреть, что изменилось', 'Backups of the project at different moments: go back or see what has changed'],
+  'sn.title': ['Резервные копии', 'Backups'],
+  'ui.tab.backup': ['Копии', 'Backups'],
+  'sn.lead': ['Копия проекта на момент времени. Программа делает её сама, пока вы работаете, и перед тем, как заменить проект другим. Свою копию удобно сделать перед рискованной правкой.',
+    'A copy of the project at a moment in time. The app makes them by itself while you work and before replacing the project with another. A copy of your own is handy before a risky edit.'],
+  'sn.name': ['Название копии', 'Backup name'], 'sn.name.ph': ['Например: до правки финала', 'For example: before the finale rewrite'],
+  'sn.take': ['Сделать копию', 'Make a backup'], 'sn.taken': ['Копия сохранена', 'Backup saved'],
   'sn.auto': ['Автокопии', 'Automatic copies'], 'sn.every': ['раз в', 'every'], 'sn.min': ['{0} мин', '{0} min'], 'sn.keep': ['хранить', 'keep'], 'sn.n': ['{0} шт.', '{0}'],
-  'sn.k.auto': ['Автокопия', 'Automatic'], 'sn.k.safe': ['Страховка', 'Safety'], 'sn.k.named': ['Свой снимок', 'Yours'],
+  'sn.k.auto': ['Автокопия', 'Automatic'], 'sn.k.safe': ['Страховка', 'Safety'], 'sn.k.named': ['Моя копия', 'Yours'],
   'sn.why.tick': ['пока вы работали', 'while you worked'], 'sn.why.open': ['при открытии программы', 'when the app was opened'], 'sn.why.hide': ['при выходе из окна', 'when you left the window'],
-  'sn.why.replace': ['перед заменой проекта', 'before the project was replaced'], 'sn.why.restore': ['перед восстановлением снимка', 'before a snapshot was restored'],
+  'sn.why.replace': ['перед заменой проекта', 'before the project was replaced'], 'sn.why.restore': ['перед восстановлением копии', 'before a backup was restored'],
   'sn.meta': ['{0} · блоков: {1} · слов: {2} · {3}', '{0} · blocks: {1} · words: {2} · {3}'],
   'sn.today': ['сегодня {0}', 'today {0}'], 'sn.yday': ['вчера {0}', 'yesterday {0}'],
   'sn.compare': ['Сравнить', 'Compare'], 'sn.restore': ['Восстановить', 'Restore'], 'sn.dl': ['Скачать копию', 'Download a copy'], 'sn.ren': ['Переименовать', 'Rename'], 'sn.del': ['Удалить', 'Delete'],
-  'sn.empty': ['Снимков пока нет. Первая автокопия появится через несколько минут работы или сразу после того, как вы нажмёте «Сделать снимок».', 'No snapshots yet. The first automatic copy appears after a few minutes of work, or right away when you press Take a snapshot.'],
-  'sn.nodb': ['В этом браузере хранилище для снимков недоступно (возможно, включён приватный режим). Скачивайте резервные копии через «Файл → Сохранить».', 'Snapshot storage is not available in this browser (private mode, maybe). Download backups with File → Save.'],
-  'sn.foot': ['Снимки лежат в этой программе или браузере, а не в файле проекта и не на GitHub. Чтобы унести снимок, нажмите «Скачать копию».', 'Snapshots live in this app or browser, not in the project file or on GitHub. To take one away press Download a copy.'],
-  'sn.rest.q': ['Вернуть проект к снимку?', 'Return the project to the snapshot?'],
-  'sn.rest.t': ['Проект станет таким, каким он был {0}. Текущее состояние программа сохранит отдельным снимком «Страховка», а само восстановление можно отменить Ctrl+Z.', 'The project will become what it was {0}. The app saves the current state as a Safety snapshot, and the restore itself can be undone with Ctrl+Z.'],
-  'sn.rest.done': ['Проект возвращён к снимку. Отменить: Ctrl+Z', 'The project was returned to the snapshot. Undo: Ctrl+Z'],
-  'sn.del.q': ['Удалить снимок?', 'Delete the snapshot?'], 'sn.del.t': ['«{0}» будет удалён без возможности вернуть.', '“{0}” will be deleted for good.'],
-  'sn.ren.q': ['Новое название снимка', 'New snapshot name'],
-  'sn.disk': ['Копировать снимки в папку рядом с файлом проекта', 'Copy snapshots to a folder next to the project file'],
-  'sn.disk.h': ['Папка «<имя проекта> (snapshots)» появится рядом с файлом при первом снимке. Так снимки переживают очистку данных программы и переезжают вместе с проектом. Файлы из неё можно открыть как обычный проект.', 'The “<project name> (snapshots)” folder appears next to the file with the first snapshot. That way snapshots survive clearing the app data and travel with the project. The files can be opened as an ordinary project.'],
+  'sn.empty': ['Копий пока нет. Первая автокопия появится через несколько минут работы или сразу после того, как вы нажмёте «Сделать копию».', 'No backups yet. The first automatic copy appears after a few minutes of work, or right away when you press Make a backup.'],
+  'sn.nodb': ['В этом браузере хранилище для копий недоступно (возможно, включён приватный режим). Скачивайте проект через «Файл → Сохранить».', 'Backup storage is not available in this browser (private mode, maybe). Download the project with File → Save.'],
+  'sn.foot': ['Копии лежат в этой программе или браузере, а не в файле проекта и не на GitHub. Чтобы унести копию, нажмите «Скачать копию».', 'Backups live in this app or browser, not in the project file or on GitHub. To take one away press Download a copy.'],
+  'sn.rest.q': ['Вернуть проект к копии?', 'Return the project to the backup?'],
+  'sn.rest.t': ['Проект станет таким, каким он был {0}. Текущее состояние программа сохранит отдельной копией «Страховка», а само восстановление можно отменить Ctrl+Z.', 'The project will become what it was {0}. The app saves the current state as a Safety copy, and the restore itself can be undone with Ctrl+Z.'],
+  'sn.rest.done': ['Проект возвращён к копии. Отменить: Ctrl+Z', 'The project was returned to the backup. Undo: Ctrl+Z'],
+  'sn.del.q': ['Удалить копию?', 'Delete the backup?'], 'sn.del.t': ['«{0}» будет удалена без возможности вернуть.', '“{0}” will be deleted for good.'],
+  'sn.ren.q': ['Новое название копии', 'New backup name'],
+  'sn.disk': ['Копировать резервные копии в папку рядом с файлом проекта', 'Copy backups to a folder next to the project file'],
+  'sn.disk.h': ['Папка «<имя проекта> (snapshots)» появится рядом с файлом при первой копии. Так копии переживают очистку данных программы и переезжают вместе с проектом. Файлы из неё можно открыть как обычный проект.', 'The “<project name> (snapshots)” folder appears next to the file with the first backup. That way backups survive clearing the app data and travel with the project. The files can be opened as an ordinary project.'],
   'sn.disk.at': ['Папка: {0}. Файлов в ней: {1}.', 'Folder: {0}. Files in it: {1}.'],
   'sn.disk.open': ['Открыть папку', 'Open the folder'],
-  'sn.foot.disk': ['Снимки лежат в этой программе и в папке рядом с файлом проекта, но не внутри самого файла и не на GitHub. Чтобы унести снимок, возьмите файл из папки или нажмите «Скачать копию».', 'Snapshots live in this app and in the folder next to the project file, but not inside the file itself and not on GitHub. To take one away, grab the file from the folder or press “Download a copy”.'],
-  'sn.disk.old': ['Чтобы снимки копировались в папку рядом с файлом проекта, переустановите программу (нужна оболочка версии 1.6.13 или новее).', 'To copy snapshots next to the project file, reinstall the app (shell version 1.6.13 or newer is needed).'],
-  'sn.disk.nobind': ['Сохраните проект в файл (Ctrl+S): тогда снимки будут копироваться ещё и в папку рядом с ним.', 'Save the project to a file (Ctrl+S): snapshots will then also be copied to a folder next to it.'],
-  'sn.disk.fail': ['Не удалось записать снимок в папку рядом с проектом: {0}', 'Could not write the snapshot to the folder next to the project: {0}'],
+  'sn.foot.disk': ['Копии лежат в этой программе и в папке рядом с файлом проекта, но не внутри самого файла и не на GitHub. Чтобы унести копию, возьмите файл из папки или нажмите «Скачать копию».', 'Backups live in this app and in the folder next to the project file, but not inside the file itself and not on GitHub. To take one away, grab the file from the folder or press “Download a copy”.'],
+  'sn.disk.old': ['Чтобы резервные копии записывались в папку рядом с файлом проекта, переустановите программу (нужна оболочка версии 1.6.13 или новее).', 'To write backups next to the project file, reinstall the app (shell version 1.6.13 or newer is needed).'],
+  'sn.disk.nobind': ['Сохраните проект в файл (Ctrl+S): тогда копии будут записываться ещё и в папку рядом с ним.', 'Save the project to a file (Ctrl+S): backups will then also be written to a folder next to it.'],
+  'sn.disk.fail': ['Не удалось записать копию в папку рядом с проектом: {0}', 'Could not write the backup to the folder next to the project: {0}'],
   'sn.meta.disk': ['{0} · из папки рядом с проектом · {1}', '{0} · from the folder next to the project · {1}'],
-  'sn.bad': ['Снимок повреждён или не читается', 'The snapshot is damaged or unreadable'],
-  'sn.d.title': ['Что изменилось с этого снимка', 'What has changed since this snapshot'],
-  'sn.d.lead': ['Снимок от {0} и проект сейчас. Новое это то, что появилось после снимка, «Пропало» то, что было в снимке, а сейчас нет и вернётся при восстановлении.', 'The snapshot of {0} against the project now. New is what appeared after the snapshot; Gone is what was in the snapshot but is not now and would come back on restore.'],
-  'sn.d.same': ['Снимок и проект сейчас совпадают.', 'The snapshot and the project are identical now.'],
+  'sn.bad': ['Копия повреждена или не читается', 'The backup is damaged or unreadable'],
+  'sn.d.title': ['Что изменилось с этой копии', 'What has changed since this backup'],
+  'sn.d.lead': ['Копия от {0} и проект сейчас. «Новое» — то, что появилось после копии, «Пропало» — то, что было в копии, а сейчас нет и вернётся при восстановлении.', 'The backup of {0} against the project now. New is what appeared after the backup; Gone is what was in the backup but is not now and would come back on restore.'],
+  'sn.d.same': ['Копия и проект сейчас совпадают.', 'The backup and the project are identical now.'],
   'sn.d.added': ['Новые блоки', 'New blocks'], 'sn.d.removed': ['Пропали блоки', 'Gone blocks'], 'sn.d.changed': ['Изменены блоки', 'Changed blocks'],
   'sn.d.other': ['Остальное', 'Everything else'],
   'sn.d.words': ['слов: {0}', 'words: {0}'],
@@ -278,13 +279,12 @@ async function snCompare(m) {
 
 /* ---------- окно ---------- */
 let SNW = null;
-function openSnapshots() {
-  closePopover();
+/** Содержимое вкладки «Копии» в «Настройках»: сделать копию, автокопии, папка на диске, список с «Сравнить / Восстановить». m — окно настроек. */
+function snPane(m) {
   const st = { list: undefined, name: '' };
-  openModal({
-    cls: 'sn-m', onClose: () => { SNW = null; },
-    build: m => {
-      const body = h('div', { class: 'sn-body' });
+  {
+    {
+      const body = h('div', { class: 'sn-body sn-pane' });
       SNW = { m, body, paint: null };
       const sel = (opts, val, fmt, on) => { const s = h('select', { class: 'inp sn-sel' }, opts.map(o => h('option', { value: o, selected: o === val }, fmt(o)))); s.addEventListener('change', () => on(+s.value)); return s; };
       const load = async () => { const r = await snListAll(P.uid); st.list = r.list; st.disk = r.disk; paint(); };
@@ -327,8 +327,10 @@ function openSnapshots() {
       };
       SNW.paint = load;
       load();
-      return h('div', { class: 'm-wrap' }, modalHead(t('sn.title'), m), body);
+      return body;
     }
-  });
+  }
 }
-TOOL_ITEMS.push({ id: 'snapshots', group: 'files', ic: 'undo', key: 'sn.btn', kw: 'snapshots backup restore history versions copy undo return снимки резервная копия восстановить вернуть версия история автокопия сравнить', run: () => openSnapshots() });
+/** Старый вход (метка «Сохранено», меню «Файл», палитра) ведёт во вкладку «Копии» настроек. */
+function openSnapshots() { openSettingsWindow('backup'); }
+TOOL_ITEMS.push({ id: 'snapshots', group: 'files', ic: 'undo', key: 'sn.btn', kw: 'snapshots backup restore history versions copy undo return снимки резервная копия восстановить вернуть версия история автокопия сравнить', run: () => openSnapshots(), menu: false });

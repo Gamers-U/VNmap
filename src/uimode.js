@@ -211,24 +211,28 @@ function uiFirstNotice() {
 let SETW = null;                     // открытое окно настроек: вкладка «Подключения» обновляется, пока идёт синхронизация
 function syRefreshOpen() {
   const w = SETW; if (!w || !w.m || w.m.closed || w.tab !== 'conn' || !w.render || !w.body) return;
+  const ae = document.activeElement; if (ae && ae.closest && ae.closest('#ai-set') && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) return;   // человек вводит ключ ИИ: не сбивать ввод
   const sc = w.body.scrollTop; w.render(); w.body.scrollTop = sc;
 }
 function openSettingsWindow(tab) {
   closePopover();
   const st = { tab: tab || 'view' };
+  if (st.tab === 'ai') { st.tab = 'conn'; st.focus = 'set-sec-ai'; }      // «ИИ» теперь внутри «Подключений» (с 1.7.7); старые входы ведут туда же
   SETW = st;
   openModal({
-    cls: 'set-modal', onClose: () => { if (SETW === st) SETW = null; },
+    cls: 'set-modal', onClose: () => { if (SETW === st) SETW = null; if (SNW && SNW.m === st.m) SNW = null; },
     build: m => {
       st.m = m; st.body = h('div', { class: 'set-body' });
       const render = () => {
         const tabs = [{ value: 'view', label: t('ui.tab.view') }, { value: 'conn', label: t('ui.tab.conn') }];
         tabs.push({ value: 'team', label: t('ui.tab.team') });
+        tabs.push({ value: 'backup', label: t('ui.tab.backup') });
         tabs.push({ value: 'bar', label: t('ui.tab.bar') });
-        tabs.push({ value: 'ai', label: t('ui.tab.ai') });
         if (uiPro()) tabs.push({ value: 'mods', label: t('ui.tab.mods') });
         if (!tabs.some(x => x.value === st.tab)) st.tab = 'view';
-        st.body.replaceChildren(segmented(tabs, st.tab, v => { st.tab = v; render(); }), h('div', { class: 'set-pane' }, st.tab === 'view' ? setView(st, render) : st.tab === 'conn' ? setConn(st, render) : st.tab === 'team' ? setTeam(st, render) : st.tab === 'bar' ? setBar(st, render) : st.tab === 'ai' ? setAi(st, render) : setMods(st, render)));
+        st.body.replaceChildren(segmented(tabs, st.tab, v => { st.tab = v; render(); }), h('div', { class: 'set-pane' }, st.tab === 'view' ? setView(st, render) : st.tab === 'conn' ? setConn(st, render) : st.tab === 'team' ? setTeam(st, render) : st.tab === 'backup' ? snPane(m) : st.tab === 'bar' ? setBar(st, render) : setMods(st, render)));
+        if (st.tab !== 'backup' && SNW && SNW.m === m) SNW = null;      // список копий перерисовывается, только пока открыта его вкладка
+        if (st.focus) { const f = st.focus; st.focus = null; const el = st.body.querySelector('#' + f); if (el) setTimeout(() => el.scrollIntoView({ block: 'start' }), 30); }
       };
       st.render = render; render();
       const ver = h('div', { class: 'set-ver', id: 'set-ver', role: 'button', tabindex: '-1' }, t('ui.ver', APP_VERSION && APP_VERSION.charAt(0) !== '/' ? APP_VERSION : APP_BUILD));
@@ -308,6 +312,7 @@ function setConn(st, render) {
   box.append(setDriveCard(st, render, go, part('drive')));
   box.append(setCard(h('span', { class: 'nt-ch' }, icon('chat', 15), t('ui.notify')), h('div', { class: 'hint' }, t('ui.notify.t')), h('div', { class: 'nt-btns' }, h('button', { class: 'btn sm', onclick: go(() => openNotify()) }, t('ui.notify.btn')))));
   if (typeof collabAvail === 'function' && collabAvail() && !c0.off.collab) box.append(setCard(h('span', { class: 'nt-ch' }, icon('users', 15), t('ui.collab')), h('div', { class: 'hint' }, t('ui.collab.t')), h('div', { class: 'nt-btns' }, h('button', { class: 'btn sm', onclick: go(() => openCollabPanel()) }, t('ui.collab.btn')))));
+  if (typeof setAi === 'function') box.append(h('div', { class: 'set-sec', id: 'set-sec-ai' }, icon('wand', 16), h('b', t('ui.conn.ai'))), setAi(st, render));       // ИИ-помощник (с 1.7.7 здесь, а не отдельной вкладкой)
   return box;
 }
 /** Карточка Google Диска: вход, включение синхронизации для проекта и ручной обмен, не уходя из настроек. */
