@@ -261,26 +261,32 @@ function aclRoleLines() {
   });
 }
 async function aclEnable() {
-  if (!P.members.length || !meMember()) { toast(t('acl.need.me'), 5200); openMeDialog(); return; }
+  if (!P.members.length || !meMember()) { toast(t('acl.need.me'), 5200); teamRefresh(); return; }
   const me = meMember();
   me.access = 'owner';
   P.acl = { on: true, corp: false };
-  commit(true); toast(t('acl.enabled'), 4200); renderReg(); updateStatus();
+  commit(true); toast(t('acl.enabled'), 4200); teamRefresh(); updateStatus();
 }
 async function aclDisable() {
   if (!(await confirmDlg({ title: t('acl.off.q'), text: t('acl.off.t'), ok: t('acl.off'), danger: true }))) return;
-  P.acl = {}; commit(true); renderReg(); updateStatus(); renderAll();
+  P.acl = {}; commit(true); teamRefresh(); updateStatus(); renderAll();
 }
-function aclSetCorp(v) { P.acl = { on: true, corp: !!v }; commit(true); renderReg(); updateStatus(); }
+function aclSetCorp(v) { P.acl = { on: true, corp: !!v }; commit(true); teamRefresh(); updateStatus(); }
 async function aclTransfer(m) {
   if (!(await confirmDlg({ title: t('acl.transfer.q', m.name || '?'), text: t('acl.transfer.t'), ok: t('acl.transfer.ok') }))) return;
   const me = meMember(); if (me) me.access = 'editor';
-  m.access = 'owner'; commit(true); toast(t('acl.transfer.done', m.name), 4200); renderReg(); updateStatus();
+  m.access = 'owner'; commit(true); toast(t('acl.transfer.done', m.name), 4200); teamRefresh(); updateStatus();
 }
-/** Карточка «Права доступа» вверху вкладки «Участники». */
+/** Перерисовать то, что показывает права и «кто я»: открытое окно настроек (вкладка «Команда») и реестр участников. */
+function teamRefresh() {
+  if (typeof REG !== 'undefined' && REG && REG.m && !REG.m.closed) renderReg();
+  const w = typeof SETW !== 'undefined' ? SETW : null;
+  if (w && w.m && !w.m.closed && w.tab === 'team' && w.render) { const sc = w.body.scrollTop; w.render(); w.body.scrollTop = sc; }
+}
+/** Карточка «Права доступа» во вкладке настроек «Команда». */
 function aclTeamCard() {
-  const rt = aclRights(), box = h('div', { class: 'reg-card acl-card' }), body = h('div', { class: 'reg-body' });
-  body.append(h('div', { class: 'acl-h' }, icon('lock', 16), h('b', t('acl.h'))), h('div', { class: 'hint' }, t('acl.intro')));
+  const rt = aclRights(), box = h('div', { class: 'nt-card acl-card', id: 'set-acl' }), body = box;
+  body.append(h('div', { class: 'nt-ch' }, icon('lock', 15), t('acl.h')), h('div', { class: 'hint' }, t('acl.intro')));
   if (!rt.on) {
     body.append(h('div', { class: 'acl-row' }, switchEl(false, v => { if (v) aclEnable(); }, t('acl.on')), h('span', { class: 'hint' }, t('acl.on.hint'))));
   } else {
@@ -295,7 +301,7 @@ function aclTeamCard() {
     if (P.acl.corp) body.append(h('details', { class: 'acl-roles' }, h('summary', t('acl.roles.h')), h('div', { class: 'acl-rls' }, aclRoleLines())));
   }
   body.append(h('div', { class: 'hint acl-honest' }, t('acl.honest')));
-  box.append(body); return box;
+  return box;
 }
 /** Вкладка «Участники»: у кого нет права выдавать права, карточки закрыты (свою карточку можно править, кроме уровня и ролей). */
 function aclTeamFreeze(st, list, root, rt) {
@@ -346,11 +352,11 @@ function aclAutoJoin() {
   const m = addMember(nm, { ids: ids.slice(0, 6) });
   S.me = S.me && typeof S.me === 'object' ? S.me : {}; S.me[P.uid] = m.id; saveSettings();
   toast(t('acl.joined'), 4200);
-  if (REG && !REG.m.closed) renderReg();
+  teamRefresh();
 }
 /** Чип в строке состояния: ваш уровень в проекте. */
 function aclChip() {
   const rt = aclRights(); if (!rt.on) return null;
   const lab = aclLabel(rt);
-  return h('button', { class: 'btn stat acl-chip' + (rt.all ? '' : ' ro'), 'data-tip': t('acl.chip.tip', lab), onclick: () => openRegistry('team') }, icon('lock', 14), lab);
+  return h('button', { class: 'btn stat acl-chip' + (rt.all ? '' : ' ro'), 'data-tip': t('acl.chip.tip', lab), onclick: () => openSettingsWindow('team') }, icon('lock', 14), lab);
 }

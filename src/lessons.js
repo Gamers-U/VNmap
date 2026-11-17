@@ -216,6 +216,7 @@ const TOUR_LESSONS = [
     how: [['Добавьте участников: в меню откройте «Управление участниками».', 'Add the members: in the menu open “Manage members”.'], ['Назначайте ответственных в окне блока или файла.', 'Assign people responsible in the window of a block or a file.'], ['Включите фильтр карты по человеку, чтобы видеть только его работу.', 'Turn on the map filter by person to see only their work.']],
     tip: ['Роли попадают в титры игры, их не нужно набирать второй раз.', 'The roles go into the game credits, so you do not have to type them again.'] },
   { id: 'whoami', g: 'team', tool: 'whoami',
+    where: ['Настройки → вкладка «Команда» → «Кто я в этом проекте» (или Ctrl+K → «Выбрать, кто я»).', 'Settings → the Team tab → “Who I am in this project” (or Ctrl+K → “Choose who I am”).'], open: () => openSettingsWindow('team'),
     why: ['Привязывает вас к участнику команды, чтобы программа записывала авторство ваших правок.', 'Ties you to a team member so that the app records the authorship of your edits.'],
     how: [['Выберите себя в списке участников.', 'Pick yourself in the list of members.'], ['Теперь «мои блоки» и сводка «Кто что сделал» знают, кто вы.', 'Now my blocks and the Who did what summary know who you are.']],
     tip: ['Выбор хранится на вашем компьютере и не меняет проект для других.', 'The choice is stored on your computer and does not change the project for others.'] },

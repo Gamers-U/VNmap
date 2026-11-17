@@ -133,7 +133,7 @@ function openTeamMenu(anchor) {
   if (!P.members.length) items.push({ header: t('team.none.short') });
   else {
     const me = meMember();
-    items.push({ header: t('me.h') }, { label: me ? t('me.is', me.name) : t('me.pick'), icon: 'user', onClick: () => openMeDialog() });
+    items.push({ header: t('me.h') }, { label: me ? t('me.is', me.name) : t('me.pick'), icon: 'user', onClick: () => openSettingsWindow('team') });
     if (me) items.push({ label: UI.mf === me.id ? t('me.mine.off') : t('me.mine'), icon: UI.mf === me.id ? 'check' : 'eye', onClick: () => setMemberFilter(UI.mf === me.id ? null : me.id) });
     items.push({ sep: true }, { header: t('team.filter.h') });
     P.members.forEach(m => {
@@ -149,9 +149,9 @@ function openTeamMenu(anchor) {
 /* ---------- вкладка реестра «Участники» ---------- */
 function regTeam(st, list, qq) {
   const items = P.members.filter(m => !qq || (m.name + ' ' + m.contact + ' ' + m.notes + ' ' + m.roles.map(roleLabel).join(' ')).toLowerCase().includes(qq));
-  if (typeof aclTeamCard === 'function') list.append(aclTeamCard());
   list.append(h('div', { class: 'team-top' },
     h('div', { class: 'hint' }, t('team.intro')),
+    h('button', { class: 'btn', id: 'team-rights', onclick: () => openSettingsWindow('team') }, icon('lock', 16), t('team.rights')),
     h('button', { class: 'btn', onclick: () => openCredits() }, icon('list', 16), t('team.credits'))));
   if (!items.length) list.append(h('div', { class: 'empty' }, t('team.none')));
   items.forEach(m => {
@@ -253,9 +253,9 @@ function openCredits() {
    и на других устройствах программа узнаёт его сама. Всё, что он создаёт или правит, подписывается его именем. */
 Object.assign(D, {
   'me.h': ['Кто я в этом проекте', 'Who I am in this project'],
-  'me.is': ['Я — {0} (сменить)', 'I am {0} (change)'], 'me.pick': ['Выбрать, кто я…', 'Choose who I am…'],
+  'me.is': ['Я — {0} (сменить в настройках)', 'I am {0} (change in settings)'], 'me.pick': ['Выбрать, кто я…', 'Choose who I am…'],
   'me.mine': ['Показать мои блоки', 'Show my blocks'], 'me.mine.off': ['Показать все блоки', 'Show all blocks'],
-  'me.title': ['Кто я в этом проекте', 'Who I am in this project'],
+  'me.title': ['Кто я в этом проекте', 'Who I am in this project'], 'team.rights': ['Права доступа и «Кто я»…', 'Access rights and “Who I am”…'],
   'me.intro': ['Выберите себя из участников. Блоки и главы, которые вы создаёте и правите, будут подписаны вашим именем, а на карте можно показать только свои. Выбор хранится на этом устройстве.', 'Pick yourself from the members. Blocks and chapters you create and edit will be signed with your name, and the map can show only yours. The choice is stored on this device.'],
   'me.ids': ['Ваши входы: {0}. Они запомнятся у участника, и на другом устройстве программа узнает вас сама.', 'Your sign-ins: {0}. They are saved for the member, and the app will recognise you on another device.'],
   'me.noids': ['Войдите в GitHub или в совместную комнату, чтобы программа могла узнавать вас на других устройствах.', 'Sign in to GitHub or a shared room so the app can recognise you on other devices.'],
@@ -303,25 +303,21 @@ function authStamp() {
   }
   AUTH_SIG = next;
 }
-function openMeDialog() {
-  closePopover();
-  openModal({
-    cls: 'dlg me-dlg', build: m => {
-      const box = h('div', { class: 'dlg-body' });
-      const paint = () => {
-        const me = meId(), ids = meIdentities();
-        box.replaceChildren(h('h3', t('me.title')), h('p', { class: 'hint' }, t('me.intro')),
-          h('div', { class: 'me-list' }, P.members.map(x => h('button', { class: 'me-row' + (x.id === me ? ' on' : ''), onclick: () => { if (meSet(x.id) === false) return; toast(t('me.done', x.name), 2600); m.close(); if (REG && !REG.m.closed) renderReg(); if (typeof updateStatus === 'function') updateStatus(); } },
-            memberAv(x, 26), h('span', { class: 'me-n' }, x.name, x.roles.length ? h('span', { class: 'mi-sub' }, ' · ' + x.roles.map(roleLabel).slice(0, 2).join(', ')) : null), x.id === me ? icon('check', 16) : null))),
-          h('div', { class: 'hint' }, ids.length ? t('me.ids', ids.join(', ')) : t('me.noids')),
-          h('div', { class: 'row-actions' },
-            h('button', { class: 'btn', onclick: () => { m.close(); newMemberDialog(x => { meSet(x.id); toast(t('me.done', x.name), 2600); }); } }, icon('plus', 15), t('me.add')),
-            me ? h('button', { class: 'btn', onclick: () => { meSet(''); paint(); } }, t('me.none')) : null,
-            h('div', { class: 'grow' }), h('button', { class: 'btn', onclick: () => m.close() }, t('c.close'))));
-      };
-      paint(); return box;
-    }
-  });
+/** «Кто я» теперь живёт в «Настройки → Команда»; старый вход (палитра, подсказки) ведёт туда же. */
+function openMeDialog() { openSettingsWindow('team'); }
+/** Карточка «Кто я в этом проекте» во вкладке настроек «Команда»: список участников, «меня нет в списке», сброс. */
+function meCard(after) {
+  const me = meId(), ids = meIdentities(), box = h('div', { class: 'nt-card me-card', id: 'set-me' });
+  const done = () => { if (typeof updateStatus === 'function') updateStatus(); after && after(); };
+  box.append(h('div', { class: 'nt-ch' }, icon('user', 15), t('me.title')), h('div', { class: 'hint' }, t('me.intro')));
+  if (P.members.length) box.append(h('div', { class: 'me-list' }, P.members.map(x => h('button', { class: 'me-row' + (x.id === me ? ' on' : ''), type: 'button', onclick: () => { if (meSet(x.id) === false) return; toast(t('me.done', x.name), 2600); done(); } },
+    memberAv(x, 26), h('span', { class: 'me-n' }, x.name, x.roles.length ? h('span', { class: 'mi-sub' }, ' · ' + x.roles.map(roleLabel).slice(0, 2).join(', ')) : null), x.id === me ? icon('check', 16) : null))));
+  else box.append(h('div', { class: 'hint' }, t('team.none')));
+  box.append(h('div', { class: 'hint' }, ids.length ? t('me.ids', ids.join(', ')) : t('me.noids')),
+    h('div', { class: 'nt-btns' },
+      h('button', { class: 'btn sm', id: 'me-add', type: 'button', onclick: () => newMemberDialog(x => { meSet(x.id); toast(t('me.done', x.name), 2600); done(); }) }, icon('plus', 14), t('me.add')),
+      me ? h('button', { class: 'btn sm', id: 'me-none', type: 'button', onclick: () => { meSet(''); done(); } }, t('me.none')) : null));
+  return box;
 }
 /** Подпись «создал / правил» для окна блока и подсказок. */
 function nodeAuthorText(n) {

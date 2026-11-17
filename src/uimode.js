@@ -16,7 +16,10 @@ Object.assign(D, {
   'dev.login.need': ['Чтобы включить, войдите в GitHub как {0}: Настройки → Подключения.', 'To switch it on, sign in to GitHub as {0}: Settings → Connections.'],
   'dev.hide': ['Снова спрятать этот раздел', 'Hide this section again'],
   'ui.settings': ['Настройки', 'Settings'],
-  'ui.tab.view': ['Вид и режим', 'Look and mode'], 'ui.tab.conn': ['Подключения', 'Connections'], 'ui.tab.mods': ['Модули', 'Modules'],
+  'ui.tab.view': ['Вид и режим', 'Look and mode'], 'ui.tab.team': ['Команда', 'Team'],
+  'ui.team.p': ['Кто вы в проекте и что разрешено остальным.', 'Who you are in the project and what the others may do.'],
+  'ui.team.mem.t': ['Список людей с ролями и титры игры.', 'The list of people with roles and the game credits.'],
+  'ui.team.mem.b': ['Участники и роли…', 'Members and roles…'], 'ui.tab.conn': ['Подключения', 'Connections'], 'ui.tab.mods': ['Модули', 'Modules'],
   'ui.mode': ['Режим интерфейса', 'Interface mode'],
   'ui.mode.simple': ['Простой', 'Simple'], 'ui.mode.pro': ['Профессиональный', 'Professional'],
   'ui.mode.simple.h': ['На панели только самое нужное: Играть, Текст, Реестр, Сборка, Файл. Все остальные возможности лежат под кнопкой «Ещё», по разделам.', 'The toolbar only has what matters: Play, Text, Registry, Build, File. Every other feature is under the “More” button, by section.'],
@@ -74,7 +77,7 @@ const UI_STRIP = [
   { id: 'code', ic: 'code', items: ['ide', 'customcode', 'snippets', 'recipes', 'gui'] },
   { id: 'check', ic: 'check', items: ['checks', 'missingfiles', 'varstates', 'stats', 'branchstats', 'testlog', 'endguide', 'weight', 'resources'] },
   { id: 'play', ic: 'play', items: ['player', 'autorun', 'htmlgame', 'renpy', 'ctrlcheck'] },
-  { id: 'team', ic: 'users', items: ['team', 'whoami', 'tasks', 'whodid', 'review'] },
+  { id: 'team', ic: 'users', items: ['team', 'tasks', 'whodid', 'review'] },
 ];
 /** В каком разделе пункт «дома» ('' если ни в каком). Пункт, которого нет в видимом разделе, лежит в меню «Инструменты»: функции не пропадают, а переезжают. */
 const uiHome = id => { const g = UI_STRIP.find(x => x.items.includes(id)); return g ? g.id : ''; };
@@ -220,11 +223,12 @@ function openSettingsWindow(tab) {
       st.m = m; st.body = h('div', { class: 'set-body' });
       const render = () => {
         const tabs = [{ value: 'view', label: t('ui.tab.view') }, { value: 'conn', label: t('ui.tab.conn') }];
+        tabs.push({ value: 'team', label: t('ui.tab.team') });
         tabs.push({ value: 'bar', label: t('ui.tab.bar') });
         tabs.push({ value: 'ai', label: t('ui.tab.ai') });
         if (uiPro()) tabs.push({ value: 'mods', label: t('ui.tab.mods') });
         if (!tabs.some(x => x.value === st.tab)) st.tab = 'view';
-        st.body.replaceChildren(segmented(tabs, st.tab, v => { st.tab = v; render(); }), h('div', { class: 'set-pane' }, st.tab === 'view' ? setView(st, render) : st.tab === 'conn' ? setConn(st, render) : st.tab === 'bar' ? setBar(st, render) : st.tab === 'ai' ? setAi(st, render) : setMods(st, render)));
+        st.body.replaceChildren(segmented(tabs, st.tab, v => { st.tab = v; render(); }), h('div', { class: 'set-pane' }, st.tab === 'view' ? setView(st, render) : st.tab === 'conn' ? setConn(st, render) : st.tab === 'team' ? setTeam(st, render) : st.tab === 'bar' ? setBar(st, render) : st.tab === 'ai' ? setAi(st, render) : setMods(st, render)));
       };
       st.render = render; render();
       const ver = h('div', { class: 'set-ver', id: 'set-ver', role: 'button', tabindex: '-1' }, t('ui.ver', APP_VERSION && APP_VERSION.charAt(0) !== '/' ? APP_VERSION : APP_BUILD));
@@ -236,6 +240,17 @@ function openSettingsWindow(tab) {
       return h('div', { class: 'm-wrap' }, modalHead(t('ui.settings'), m), st.body, h('div', { class: 'set-foot' }, ver, h('button', { class: 'btn sm', id: 'set-diag', type: 'button', onclick: () => openDiag() }, icon('info', 13), t('dgn.set'))));
     },
   });
+}
+/** Вкладка «Команда»: кто я, права доступа, ссылки на список участников и титры. */
+function setTeam(st, render) {
+  const box = h('div', { class: 'nt-list' }), go = fn => () => { st.m.close(); setTimeout(fn, 0); };
+  box.append(h('div', { class: 'hint' }, t('ui.team.p')), meCard(render));
+  if (typeof aclTeamCard === 'function') box.append(aclTeamCard());
+  box.append(setCard(h('span', { class: 'nt-ch' }, icon('users', 15), t('team.manage')), h('div', { class: 'hint' }, t('ui.team.mem.t')),
+    h('div', { class: 'nt-btns' },
+      h('button', { class: 'btn sm', id: 'set-team-reg', type: 'button', onclick: go(() => openRegistry('team')) }, icon('badge', 14), t('ui.team.mem.b')),
+      h('button', { class: 'btn sm', id: 'set-team-cr', type: 'button', onclick: go(() => openCredits()) }, icon('list', 14), t('team.credits')))));
+  return box;
 }
 /** Карточка режима разработчика (видна только после семи нажатий на номер версии). */
 function devCard(render) {

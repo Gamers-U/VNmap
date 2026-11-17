@@ -1618,7 +1618,6 @@ body.game-mode{background:var(--bg)}
 .gm-body .row-actions{display:flex;gap:8px;align-items:center}
 
 /* ---- «Я — это…» ---- */
-.modal.me-dlg{width:min(480px,100%)}
 .me-list{display:flex;flex-direction:column;gap:4px;margin:8px 0;max-height:46vh;overflow:auto}
 .me-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:var(--surface2);border:1px solid transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}
 .me-row:hover{background:var(--hover)}
@@ -1746,8 +1745,7 @@ body.game-mode{background:var(--bg)}
 .acl-keep,.acl-ro .acl-keep{pointer-events:auto;opacity:1}
 .acl-note{display:flex;align-items:center;gap:8px;padding:9px 12px;margin:0 0 10px;border-radius:12px;background:color-mix(in srgb,var(--warn) 13%,transparent);color:var(--text2);font-size:12.5px;line-height:1.4}
 .acl-note svg{flex:none;color:var(--warn)}
-.acl-card{margin-bottom:12px}
-.acl-h{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.acl-card .field{margin:0}
 .acl-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:10px 0 6px}
 .acl-you{font-weight:600;color:var(--text)}
 .acl-honest{margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
