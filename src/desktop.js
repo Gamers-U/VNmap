@@ -97,6 +97,7 @@ async function deskSaveQuit() {
 /** Команды из меню оболочки и горячих клавиш (двойной вызов одной команды за долю секунды гасим). */
 function deskCommand(cmd, arg) {
   if (!DESK) return;
+  if (typeof SAT !== 'undefined' && SAT.tool) { satForwardCmd(cmd, arg); return; }          // вынесенное окно: файл и проект у главного окна
   const now = Date.now();
   if (cmd !== 'lang' && DS.last[cmd] && now - DS.last[cmd] < 350) return;
   DS.last[cmd] = now;
@@ -145,6 +146,7 @@ function deskInit() {
   if (!DESK) return;
   document.documentElement.classList.add('desktop');
   if (typeof winbarInit === 'function') winbarInit();
+  if (typeof satMainInit === 'function') satMainInit();
   DESK.onCommand(deskCommand);
   if (typeof driveInit === 'function') driveInit();
   if (typeof updAutoStart === 'function') updAutoStart();

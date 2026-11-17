@@ -2216,3 +2216,12 @@ html.has-winbar .backdrop,html.has-winbar .tour-block,html.has-winbar #dock-zone
 .winbar .wb-ctl{display:flex;gap:2px;-webkit-app-region:no-drag;padding-right:3px}
 .winbar .wb-close:hover{background:#e5484d;color:#fff}
 .winbar [data-tip]:hover::after{top:calc(100% + 4px)}
+
+/* ---- вынесенное окно (satellite.js): без карты и панелей, инструмент занимает всё окно ---- */
+html.sat-win #app>:not(#layer){display:none!important}
+html.sat-win .backdrop{padding:0;align-items:stretch;justify-content:stretch;background:var(--bg);-webkit-backdrop-filter:none;backdrop-filter:none;animation:none}
+html.sat-win .modal{width:100%!important;height:100%!important;max-width:none;max-height:none;border-radius:0;border:0;box-shadow:none;animation:none}
+html.sat-win .backdrop.peek{pointer-events:auto}
+html.sat-win #win-max,html.sat-win #win-peek,html.sat-win .win-rs{display:none!important}
+html.sat-win .modal.win-free{position:relative}
+#win-pop,#win-back{color:var(--accent)}

@@ -4,11 +4,12 @@
 const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
 const call = (ch, ...a) => ipcRenderer.invoke(ch, ...a);
-const listeners = { cmd: new Set(), open: new Set(), rp: new Set(), su: new Set(), win: new Set() };
+const listeners = { cmd: new Set(), open: new Set(), rp: new Set(), su: new Set(), win: new Set(), sat: new Set() };
 ipcRenderer.on('desk:cmd', (e, cmd, arg) => listeners.cmd.forEach(fn => { try { fn(cmd, arg); } catch (x) { console.error(x); } }));
 ipcRenderer.on('desk:open', (e, file) => listeners.open.forEach(fn => { try { fn(file); } catch (x) { console.error(x); } }));
 ipcRenderer.on('rp:evt', (e, ev) => listeners.rp.forEach(fn => { try { fn(ev); } catch (x) { console.error(x); } }));
 ipcRenderer.on('desk:winState', (e, st) => listeners.win.forEach(fn => { try { fn(st); } catch (x) { console.error(x); } }));
+ipcRenderer.on('desk:sat:msg', (e, m) => listeners.sat.forEach(fn => { try { fn(m); } catch (x) { console.error(x); } }));
 ipcRenderer.on('su:evt', (e, ev) => listeners.su.forEach(fn => { try { fn(ev); } catch (x) { console.error(x); } }));
 const sub = (set, fn) => { set.add(fn); return () => set.delete(fn); };
 
@@ -21,6 +22,14 @@ contextBridge.exposeInMainWorld('vnDesktop', {
     action: a => ipcRenderer.send('desk:win', String(a)),
     chrome: c => ipcRenderer.send('desk:chrome', { color: String((c && c.color) || ''), symbolColor: String((c && c.symbolColor) || '') }),
     onState: fn => sub(listeners.win, fn),
+  },
+  sat: {                       // отдельные окна: имя своего окна, открыть инструмент в новом окне, обмен сообщениями с другими окнами
+    me: () => call('desk:sat:me'),
+    open: (tool, init) => call('desk:sat:open', String(tool || ''), init || null),
+    send: msg => ipcRenderer.send('desk:sat:msg', msg),
+    focusMain: () => ipcRenderer.send('desk:sat:focusMain'),
+    onMsg: fn => sub(listeners.sat, fn),
+    tool: ((process.argv.find(a => a.startsWith('--vn-sat=')) || '').slice(9)) || '',
   },
   ready: () => call('desk:ready'),
   setLang: l => call('desk:setLang', l),

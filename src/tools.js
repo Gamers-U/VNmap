@@ -149,6 +149,7 @@ function setProject(p) {
   if (typeof CL !== 'undefined' && CL.on) { collabDisable(); toast(t('col.off.replaced'), 6000); }
   if (typeof deskUnbind === 'function') deskUnbind();
   P = p; reindex(); UI.sel.clear(); UI.edge = null; resetHistory(); saveNow();
+  if (typeof satProjectReplaced === 'function') satProjectReplaced();
   onProjectReplaced();
   if (typeof driveProjectChanged === 'function') driveProjectChanged();
   if (typeof ghProjectChanged === 'function') ghProjectChanged();

@@ -20,6 +20,10 @@ const winClamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
 function winControl(m, head, key) {
   const card = m.card;
+  if (typeof satIsWin === 'function' && satIsWin()) {               // вынесенное окно: инструмент занимает всё окно, тянуть и менять размер не нужно; есть «вернуть в главное окно»
+    satHeadBtn(m, head, key);
+    return { reset() { }, toggleMax() { }, get free() { return false; } };
+  }
   const saved = (S.win && S.win[key]) || null;
   let g = saved && typeof saved === 'object' ? { x: +saved.x || 0, y: +saved.y || 0, w: +saved.w || 0, h: +saved.h || 0, max: !!saved.max, rest: saved.rest || null } : null;
   if (g && (!g.w || !g.h)) g = null;
@@ -72,6 +76,7 @@ function winControl(m, head, key) {
   back.addEventListener('pointerdown', ev => { if (ev.target === back && !m.peek && canPeek()) setPeek(true, true); });
   card.addEventListener('pointerdown', ev => { if (m.peek && !ev.target.closest('.m-head,.win-rs')) setPeek(false); }, true);
   const close = head.lastElementChild; head.insertBefore(btn, close); head.insertBefore(peekBtn, btn);
+  if (typeof satHeadBtn === 'function') { satHeadBtn(m, head, key); const pop = head.querySelector('#win-pop'); if (pop) head.insertBefore(pop, peekBtn); }      // «Вынести в отдельное окно» (настольная версия)
   head.classList.add('win-grip');
   head.addEventListener('dblclick', ev => { if (ev.target.closest('button,input,select,a,.inp')) return; toggleMax(); });
   head.addEventListener('contextmenu', ev => { if (g && !ev.target.closest('input,.inp')) { ev.preventDefault(); reset(); toast(t('win.reset'), 2200); } });

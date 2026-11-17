@@ -162,6 +162,7 @@ function clApplyMap(M, cf) {
     const marked = (cf || []).filter(c => c.marked).length;
     if (marked) toast(t('col.conflict', marked), 9000);
     collabMarks();
+    if (typeof satTouch === 'function') satTouch();
   } finally { CL.applying = false; }
 }
 

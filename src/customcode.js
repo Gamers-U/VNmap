@@ -216,7 +216,7 @@ function openCustomCode(selId) {
   const st = { sel: selId || ((ccList()[0] || {}).id) || null };
   let pend = null;
   const flush = () => { if (pend) { clearTimeout(pend); pend = null; commit(true); } };
-  openModal({
+  return openModal({
     cls: 'cu-m', onClose: () => { flush(); CCW = null; },
     build: m => {
       const body = h('div', { class: 'cu-body' });
@@ -303,7 +303,8 @@ function openCustomCode(selId) {
           h('div', { class: 'cu-main' }, listHost, paintEdit()));
       };
       paint();
-      return h('div', { class: 'm-wrap' }, modalHead(t('cu.title'), m), body);
+      const mh = modalHead(t('cu.title'), m); if (typeof satHeadBtn === 'function') satHeadBtn(m, mh, 'code');
+      return h('div', { class: 'm-wrap' }, mh, body);
     }
   });
 }

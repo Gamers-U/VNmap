@@ -37,7 +37,8 @@ function winbarSync() { if (!WB) return; try { DESK.win.chrome(winbarColors()); 
 function winbarTitle() {
   if (!WB || !P) return;
   const dot = typeof DS !== 'undefined' && DS.dirty && DS.path ? '● ' : '';
-  WB.title.textContent = (dot + (P.name || '')).trim() + ' — ' + t('wb.app');
+  const tool = typeof SAT !== 'undefined' && SAT.tool ? t('sat.t.' + SAT.tool) + ' · ' : '';
+  WB.title.textContent = tool + (dot + (P.name || '')).trim() + ' — ' + t('wb.app');
 }
 
 function winbarMenu(anchor) {
@@ -88,7 +89,7 @@ function winbarInit() {
   const title = h('span', { class: 'wb-title', id: 'wb-title' });
   const menuB = h('button', { class: 'wb-btn wb-menu', id: 'wb-menu', 'data-tip': t('wb.menu'), 'aria-label': t('wb.menu'), onclick: e => winbarMenu(e.currentTarget) }, icon('fork', 14, 2));
   const ctl = h('div', { class: 'wb-ctl', id: 'wb-ctl' });
-  const bar = h('div', { class: 'winbar', id: 'winbar' }, menuB, title, h('div', { class: 'grow' }), ctl);
+  const bar = h('div', { class: 'winbar', id: 'winbar' }, typeof SAT !== 'undefined' && SAT.tool ? null : menuB, title, h('div', { class: 'grow' }), ctl);
   document.body.insertBefore(bar, document.body.firstChild);
   WB = { bar, title, ctl, st: { max: false, full: false } };
   DESK.win.onState(st => { WB.st = st || WB.st; winbarPaint(); });

@@ -2,7 +2,7 @@
 /* Карта новеллы — десктопная оболочка (Electron).
    Всё приложение — это тот же index.html. Оболочка добавляет то, чего нет у страницы в браузере:
    настоящие файлы проекта, диалоги ОС, запись собранной игры прямо в папку, меню, ассоциацию .vnmap. */
-const { app, BrowserWindow, Menu, dialog, ipcMain, protocol, shell, nativeTheme, net, safeStorage } = require('electron');
+const { app, BrowserWindow, Menu, dialog, ipcMain, protocol, shell, nativeTheme, net, safeStorage , screen } = require('electron');
 const { GDrive } = require('./gdrive');
 const { Updater, stage: stageUpdate, compareBuild, sha256 } = require('./updater');
 const { MANIFEST, cleanRel, exists, pruneEmptyDirs, writeBuildFiles } = require('./buildwrite');
@@ -26,12 +26,13 @@ const DEV = process.argv.includes('--dev');
 const FRAMELESS = process.platform !== 'darwin' && !process.env.VN_NATIVE_FRAME;
 const WINBAR_H = 26;
 const CHROME_DEF = { dark: { color: '#343439', symbolColor: '#a4a4ac' }, light: { color: '#f0f0f5', symbolColor: '#6a6a72' } };
-const BRIDGE = 7;                      // версия «моста» оболочки: страница может потребовать не меньше (data-needs в её отметке сборки)
+const BRIDGE = 8;                      // версия «моста» оболочки: страница может потребовать не меньше (data-needs в её отметке сборки)
 const RECENT_MAX = 12;
 
 protocol.registerSchemesAsPrivileged([{ scheme: SCHEME, privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true } }]);
 app.setName('VNMap');
 app.setPath('userData', path.join(app.getPath('appData'), 'VNMap'));
+const createSat = require('./sat.js');
 const updater = new Updater({ bundledDir: APP_DIR, userData: app.getPath('userData'), bridge: BRIDGE });
 let overrideDir = null;                 // папка с установленным обновлением страницы (или null — работает встроенная)
 let bootNotice = null;                // что рассказать странице после запуска: откат, обновление
@@ -133,6 +134,11 @@ function saveWinSettings() {
 /* ---------- безопасность ---------- */
 const isOwnUrl = url => { try { const u = new URL(url); return u.protocol === SCHEME + ':' && u.host === HOST; } catch (x) { return false; } };
 const trusted = e => !!(e && e.senderFrame && isOwnUrl(e.senderFrame.url));
+const sat = createSat({
+  app, BrowserWindow, ipcMain, screen, trusted: e => trusted(e), getMain: () => win, frameOpts: tool => frameOpts(tool), frameExtras: (w, o) => frameExtras(w, o),
+  pageUrl: hash => `${SCHEME}://${HOST}/index.html${hash || ''}`, backgroundColor: () => (nativeTheme.shouldUseDarkColors ? '#1c1c1e' : '#f2f2f7'),
+  iconPath: path.join(__dirname, 'build', 'icon.png'), title: () => T().appName,
+});
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.woff2': 'font/woff2', '.png': 'image/png', '.svg': 'image/svg+xml', '.txt': 'text/plain; charset=utf-8' };
 const CSP = "default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob: data:; font-src 'self' data:; connect-src 'self' blob: data:; worker-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'";
 
@@ -379,6 +385,7 @@ function getRp() {
 }
 
 function registerIpc() {
+  sat.registerIpc();
   const handle = (ch, fn) => ipcMain.handle(ch, async (e, ...a) => { if (!trusted(e)) throw new Error('untrusted'); return fn(e, ...a); });
 
   handle('desk:ready', async () => {
@@ -616,19 +623,19 @@ function registerIpc() {
 
   /* полоска сверху: действия с окном и цвет системных кнопок (цвет берётся у полоски страницы, чтобы они сливались с темой) */
   ipcMain.on('desk:win', (e, a) => {
-    if (!trusted(e) || !win || win.isDestroyed()) return;
-    if (a === 'minimize') win.minimize();
-    else if (a === 'maximize') { if (win.isMaximized()) win.unmaximize(); else win.maximize(); }
-    else if (a === 'fullscreen') win.setFullScreen(!win.isFullScreen());
-    else if (a === 'close') win.close();
-    else if (a === 'zoomin' || a === 'zoomout' || a === 'zoomreset') { const wc = win.webContents; wc.setZoomLevel(a === 'zoomreset' ? 0 : Math.max(-3, Math.min(5, wc.getZoomLevel() + (a === 'zoomin' ? 0.5 : -0.5)))); }
+    const w = trusted(e) ? winOf(e) : null; if (!w) return;
+    if (a === 'minimize') w.minimize();
+    else if (a === 'maximize') { if (w.isMaximized()) w.unmaximize(); else w.maximize(); }
+    else if (a === 'fullscreen') w.setFullScreen(!w.isFullScreen());
+    else if (a === 'close') w.close();
+    else if (a === 'zoomin' || a === 'zoomout' || a === 'zoomreset') { const wc = w.webContents; wc.setZoomLevel(a === 'zoomreset' ? 0 : Math.max(-3, Math.min(5, wc.getZoomLevel() + (a === 'zoomin' ? 0.5 : -0.5)))); }
   });
   ipcMain.on('desk:chrome', (e, c) => {
-    if (!trusted(e) || !win || win.isDestroyed() || !FRAMELESS || !c) return;
+    const w = trusted(e) ? winOf(e) : null; if (!w || !FRAMELESS || !c) return;
     const hex = v => typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v);
-    if (hex(c.color) && hex(c.symbolColor)) { try { win.setTitleBarOverlay({ color: c.color, symbolColor: c.symbolColor, height: WINBAR_H }); } catch (x) { /* платформа без поддержки */ } }
+    if (hex(c.color) && hex(c.symbolColor)) { try { w.setTitleBarOverlay({ color: c.color, symbolColor: c.symbolColor, height: WINBAR_H }); } catch (x) { /* платформа без поддержки */ } }
   });
-  ipcMain.handle('desk:winInfo', e => { if (!trusted(e)) throw new Error('untrusted'); return { frameless: FRAMELESS, max: !!(win && win.isMaximized()), full: !!(win && win.isFullScreen()), h: WINBAR_H, menu: !!Menu.getApplicationMenu() }; });
+  ipcMain.handle('desk:winInfo', e => { if (!trusted(e)) throw new Error('untrusted'); const w = winOf(e); return { frameless: FRAMELESS, max: !!(w && w.isMaximized()), full: !!(w && w.isFullScreen()), h: WINBAR_H, menu: !!Menu.getApplicationMenu() }; });
   ipcMain.on('desk:closeNow', e => { if (!trusted(e)) return; forceClose = true; closing = false; if (win && !win.isDestroyed()) win.close(); });
 }
 
@@ -681,6 +688,41 @@ function showAbout() {
   dialog.showMessageBox(win, { type: 'info', title: T().about, message: T().appName, detail: T().aboutText(app.getVersion()), buttons: ['OK'], icon: path.join(__dirname, 'build', 'icon.png') });
 }
 
+/** Параметры окна без системной рамки (общие для главного окна и окон-спутников). tool — имя спутника или '' для главного. */
+function frameOpts(tool) {
+  return {
+    ...(FRAMELESS ? { titleBarStyle: 'hidden', titleBarOverlay: { ...CHROME_DEF[nativeTheme.shouldUseDarkColors ? 'dark' : 'light'], height: WINBAR_H }, autoHideMenuBar: true } : {}),
+    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true, spellcheck: false, devTools: DEV, additionalArguments: [...(FRAMELESS ? ['--vn-frameless=1'] : []), ...(tool ? ['--vn-sat=' + tool] : [])] },
+  };
+}
+/** Общее для всех окон: состояние окна для полоски, горячие клавиши вместо системного меню, защита от переходов. */
+function frameExtras(w, { launcher }) {
+  w.webContents.setWindowOpenHandler(({ url }) => { try { const u = new URL(url); if (u.protocol === 'https:' || u.protocol === 'http:') shell.openExternal(u.href); } catch (e) { /* нет */ } return { action: 'deny' }; });
+  w.webContents.on('will-navigate', (e, url) => { if (!isOwnUrl(url)) e.preventDefault(); });
+  w.webContents.on('will-attach-webview', e => e.preventDefault());
+  w.webContents.session.setPermissionRequestHandler((wc, perm, cb) => cb(perm === 'clipboard-sanitized-write'));
+  w.webContents.session.setPermissionCheckHandler((wc, perm) => perm === 'clipboard-sanitized-write');
+  if (FRAMELESS) {
+    w.setMenuBarVisibility(false);
+    const state = () => { if (w && !w.isDestroyed()) w.webContents.send('desk:winState', { max: w.isMaximized(), full: w.isFullScreen() }); };
+    for (const ev of ['maximize', 'unmaximize', 'enter-full-screen', 'leave-full-screen']) w.on(ev, state);
+    /* без меню горячие клавиши меню перехватываем сами: во весь экран, начальный экран, масштаб страницы, для разработчика перезагрузка */
+    w.webContents.on('before-input-event', (e, input) => {
+      if (input.type !== 'keyDown') return;
+      const mod = input.control || input.meta, k = String(input.key || '');
+      const zoom = d => { const wc = w.webContents; wc.setZoomLevel(d === 0 ? 0 : Math.max(-3, Math.min(5, wc.getZoomLevel() + d))); };
+      if (k === 'F11') { e.preventDefault(); w.setFullScreen(!w.isFullScreen()); }
+      else if (mod && input.shift && /^h$/i.test(k)) { e.preventDefault(); if (launcher) send('launcher'); else if (win && !win.isDestroyed()) { win.focus(); send('launcher'); } }
+      else if (mod && (k === '=' || k === '+')) { e.preventDefault(); zoom(0.5); }
+      else if (mod && k === '-') { e.preventDefault(); zoom(-0.5); }
+      else if (mod && k === '0') { e.preventDefault(); zoom(0); }
+      else if (DEV && (k === 'F12' || (mod && input.shift && /^i$/i.test(k)))) { e.preventDefault(); w.webContents.toggleDevTools(); }
+      else if (DEV && mod && /^r$/i.test(k)) { e.preventDefault(); w.webContents.reload(); }
+    });
+  }
+}
+const winOf = e => { try { const w = BrowserWindow.fromWebContents(e.sender); return w && !w.isDestroyed() ? w : null; } catch (x) { return null; } };
+
 function createWindow() {
   const s = loadWinSettings();
   if (s.lang === 'ru' || s.lang === 'en') lang = s.lang;
@@ -692,34 +734,11 @@ function createWindow() {
     ...b, minWidth: 900, minHeight: 600, show: false, title: T().appName,
     backgroundColor: nativeTheme.shouldUseDarkColors ? '#1c1c1e' : '#f2f2f7',
     icon: path.join(__dirname, 'build', 'icon.png'),
-    ...(FRAMELESS ? { titleBarStyle: 'hidden', titleBarOverlay: { ...CHROME_DEF[nativeTheme.shouldUseDarkColors ? 'dark' : 'light'], height: WINBAR_H }, autoHideMenuBar: true } : {}),
-    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true, spellcheck: false, devTools: DEV, additionalArguments: FRAMELESS ? ['--vn-frameless=1'] : [] },
+    ...frameOpts(''),
   });
-  if (FRAMELESS) {
-    win.setMenuBarVisibility(false);
-    const state = () => { if (win && !win.isDestroyed()) win.webContents.send('desk:winState', { max: win.isMaximized(), full: win.isFullScreen() }); };
-    for (const ev of ['maximize', 'unmaximize', 'enter-full-screen', 'leave-full-screen']) win.on(ev, state);
-    /* без меню горячие клавиши меню перехватываем сами: во весь экран, начальный экран, масштаб страницы, для разработчика перезагрузка */
-    win.webContents.on('before-input-event', (e, input) => {
-      if (input.type !== 'keyDown') return;
-      const mod = input.control || input.meta, k = String(input.key || '');
-      const zoom = d => { const wc = win.webContents; wc.setZoomLevel(d === 0 ? 0 : Math.max(-3, Math.min(5, wc.getZoomLevel() + d))); };
-      if (k === 'F11') { e.preventDefault(); win.setFullScreen(!win.isFullScreen()); }
-      else if (mod && input.shift && /^h$/i.test(k)) { e.preventDefault(); send('launcher'); }
-      else if (mod && (k === '=' || k === '+')) { e.preventDefault(); zoom(0.5); }
-      else if (mod && k === '-') { e.preventDefault(); zoom(-0.5); }
-      else if (mod && k === '0') { e.preventDefault(); zoom(0); }
-      else if (DEV && (k === 'F12' || (mod && input.shift && /^i$/i.test(k)))) { e.preventDefault(); win.webContents.toggleDevTools(); }
-      else if (DEV && mod && /^r$/i.test(k)) { e.preventDefault(); win.webContents.reload(); }
-    });
-  }
+  frameExtras(win, { launcher: true });
   if (s.max) win.maximize();
   win.once('ready-to-show', () => win.show());
-  win.webContents.setWindowOpenHandler(({ url }) => { try { const u = new URL(url); if (u.protocol === 'https:' || u.protocol === 'http:') shell.openExternal(u.href); } catch (e) { /* нет */ } return { action: 'deny' }; });
-  win.webContents.on('will-navigate', (e, url) => { if (!isOwnUrl(url)) e.preventDefault(); });
-  win.webContents.on('will-attach-webview', e => e.preventDefault());
-  win.webContents.session.setPermissionRequestHandler((wc, perm, cb) => cb(perm === 'clipboard-sanitized-write'));
-  win.webContents.session.setPermissionCheckHandler((wc, perm) => perm === 'clipboard-sanitized-write');
   win.on('resize', () => { clearTimeout(win._sv); win._sv = setTimeout(saveWinSettings, 600); });
   win.on('move', () => { clearTimeout(win._sv); win._sv = setTimeout(saveWinSettings, 600); });
   win.on('close', async e => {
@@ -736,7 +755,7 @@ function createWindow() {
     } else if (r.response === 1) { forceClose = true; closing = false; win.close(); }
     else closing = false;
   });
-  win.on('closed', () => { win = null; rendererReady = false; if (nt) nt.sendFarewell(); });             // «проект закрыт»: уходит из оболочки, страница уже не нужна
+  win.on('closed', () => { win = null; rendererReady = false; sat.closeAll(); if (nt) nt.sendFarewell(); });             // «проект закрыт»: уходит из оболочки, страница уже не нужна
   win.loadURL(`${SCHEME}://${HOST}/index.html`);
 }
 

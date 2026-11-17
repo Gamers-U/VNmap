@@ -151,7 +151,7 @@ function onKey(e) {
     return;
   }
   if (typeof LCH !== 'undefined' && LCH && !MODALS.length && !(mod && key.length === 1 && 'son'.includes(key))) return;    // пока открыт стартовый экран, карта под ним не реагирует на клавиши
-  if (mod && key === 'k') { e.preventDefault(); openSearch(); return; }
+  if (mod && key === 'k') { e.preventDefault(); if (!(typeof SAT !== 'undefined' && SAT.tool)) openSearch(); return; }
   if (mod && key === 's') { e.preventDefault(); if (DESK) deskCommand(e.shiftKey ? 'saveas' : 'save'); else exportJSON(); return; }
   if (DESK && mod && key === 'o') { e.preventDefault(); deskCommand('open'); return; }
   if (mod && key === 'b') { e.preventDefault(); if (DESK) deskCommand('build'); else openBuild(); return; }
@@ -180,6 +180,7 @@ function onKey(e) {
 /* ---------- запуск ---------- */
 function boot() {
   if (typeof GAME !== 'undefined' && GAME) { gameBoot(); return; }
+  if (typeof satIsWin === 'function' && satIsWin()) { satBoot(); return; }          // вынесенное окно (satellite.js)
   loadSettings();
   applyTheme();
   let p = loadProject(), first = false;

@@ -427,6 +427,7 @@ function commit(now) {
   clearTimeout(HIST.timer);
   if (now) histPush(); else HIST.timer = setTimeout(histPush, 500);
   if (typeof collabTouch === 'function') collabTouch();
+  if (typeof satTouch === 'function') satTouch();
 }
 function resetHistory() { AUTH_SIG = null; HIST.stack = [snapJSON()]; HIST.i = 0; clearTimeout(HIST.timer); HIST.timer = null; updateUndoButtons(); }
 function restoreSnap(j) {
@@ -438,6 +439,7 @@ function restoreSnap(j) {
   updateUndoButtons(); scheduleSave(); setSaveState('dirty');
   onProjectReplaced();
   if (typeof collabTouch === 'function') collabTouch();
+  if (typeof satTouch === 'function') satTouch();
 }
 function undo() { flushHistory(); if (HIST.i > 0) { HIST.i--; restoreSnap(HIST.stack[HIST.i]); } }
 function redo() { flushHistory(); if (HIST.i < HIST.stack.length - 1) { HIST.i++; restoreSnap(HIST.stack[HIST.i]); } }
@@ -445,11 +447,12 @@ const canUndo = () => HIST.i > 0 || !!HIST.timer;
 const canRedo = () => HIST.i < HIST.stack.length - 1;
 
 let _saveTimer = null;
-function scheduleSave() { clearTimeout(_saveTimer); _saveTimer = setTimeout(saveNow, 700); if (typeof deskDirty === 'function') deskDirty(); if (typeof ghDirty === 'function') ghDirty(); }
+function scheduleSave() { if (typeof SAT !== 'undefined' && SAT.tool) return; clearTimeout(_saveTimer); _saveTimer = setTimeout(saveNow, 700); if (typeof deskDirty === 'function') deskDirty(); if (typeof ghDirty === 'function') ghDirty(); }
 /** Только положение и масштаб карты изменились: копия в браузере обновится, но проект не считается изменённым (без плашки «есть изменения», автосохранения в файл, GitHub и Диска). */
-function scheduleViewSave() { clearTimeout(_saveTimer); _saveTimer = setTimeout(saveNow, 700); }
+function scheduleViewSave() { if (typeof SAT !== 'undefined' && SAT.tool) return; clearTimeout(_saveTimer); _saveTimer = setTimeout(saveNow, 700); }
 function saveNow() {
   clearTimeout(_saveTimer);
+  if (typeof SAT !== 'undefined' && SAT.tool) return;                 // окно-спутник ничего не пишет: проект сохраняет главное окно
   if (typeof GAME !== 'undefined' && GAME) return;                 // в HTML-игре для тестеров проект не сохраняется
   const ok = lsSet(LS_P, JSON.stringify(P));
   setSaveState(ok ? 'saved' : 'error');

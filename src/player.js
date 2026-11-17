@@ -192,13 +192,14 @@ function plBuild(st, m) {
     tb('refresh', t('pl.restart'), () => plRestart(st), 'pl-restart'),
     isGame() && !GAME.debug ? null : tb('list', t('pl.panel'), () => plPanel(st), 'pl-panelbtn'));
   st.where = h('div', { class: 'pl-where' });
-  st.openBtn = h('button', { class: 'btn icon', 'data-tip': t('pl.open'), id: 'pl-openblock', hidden: true, onclick: () => { if (st.cur) openNodeModal(st.cur.nid, st.cur.fid); } }, icon('open', 16));
+  st.openBtn = h('button', { class: 'btn icon', 'data-tip': t('pl.open'), id: 'pl-openblock', hidden: true, onclick: () => { if (!st.cur) return; if (typeof satIsWin === 'function' && satIsWin()) satSend({ to: 'main', k: 'cmd', name: 'show', id: st.cur.nid, fid: st.cur.fid, open: true }); else openNodeModal(st.cur.nid, st.cur.fid); } }, icon('open', 16));
   const fromBtn = h('button', { class: 'btn', id: 'pl-from', 'data-tip': t('pl.from.tip'), onclick: ev => plFromMenu(st, ev.currentTarget) }, icon('target', 15), h('span', t('pl.from')));
   const G = isGame();
   const gameBtns = G ? [h('button', { class: 'btn', id: 'pl-note', 'data-tip': t('gm.note.tip'), onclick: () => gmNote(st) }, icon('note', 15), h('span', t('gm.note'))),
     h('button', { class: 'btn', id: 'pl-savelog', 'data-tip': t('gm.save.tip'), onclick: () => gmSaveLog(st) }, icon('save', 15), h('span', t('gm.save')))] : [];
   const head = h('div', { class: 'm-head pl-head' }, h('div', { class: 'm-title' }, icon('play', 16), G ? (GAME.title || t('pl.title')) : t('pl.title')), G ? null : st.where, G ? null : st.openBtn, h('div', { class: 'grow' }), ...gameBtns, G ? null : fromBtn, G ? null : plRenpyBtn(st),
     h('button', { class: 'btn icon', 'data-tip': t('c.close') + ' (Esc)', onclick: () => m.close() }, icon('x', 18)));
+  if (!G && typeof satHeadBtn === 'function') satHeadBtn(m, head, 'player');
   st.body = h('div', { class: 'pl busy' }, head, h('div', { class: 'pl-main' }, h('div', { class: 'pl-center-col' }, h('div', { class: 'pl-stagewrap' }, st.stage), bar), st.side));
   st.body.prepend(h('div', { class: 'pl-busy' }, h('span', { class: 'spin' }), t('pl.building')));
   plTabs(st);
