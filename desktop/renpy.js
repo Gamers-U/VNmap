@@ -135,6 +135,8 @@ class RenpyHost {
     return { ok: true, project: p };
   }
   clearProject(key) { delete this.cfg.dirs[safeKey(key)]; this._save(); return true; }
+  /** Папка проекта Ren'Py, выбранная для этого проекта (или ''): общий корень для запуска и для окна «Редактор кода». */
+  projectDir(key) { return this.cfg.dirs[safeKey(key)] || ''; }
 
   /** Записать игру в папку проекта Ren'Py (только game/…) */
   async write(key, entries) {

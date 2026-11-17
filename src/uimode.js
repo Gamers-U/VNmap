@@ -71,7 +71,7 @@ const UI_MODS = ['analysis', 'text', 'team', 'collab', 'translate'];
 const UI_STRIP = [
   { id: 'map', ic: 'fit', items: ['layout', 'mappdf', 'notes'] },
   { id: 'text', ic: 'type', items: ['texted', 'docimport', 'digest', 'replicas', 'rename', 'charpage', 'resources', 'voicesheet', 'translate'] },
-  { id: 'code', ic: 'code', items: ['customcode', 'snippets', 'recipes', 'gui'] },
+  { id: 'code', ic: 'code', items: ['ide', 'customcode', 'snippets', 'recipes', 'gui'] },
   { id: 'check', ic: 'check', items: ['checks', 'missingfiles', 'varstates', 'stats', 'branchstats', 'endguide', 'weight'] },
   { id: 'play', ic: 'play', items: ['player', 'autorun', 'testlog', 'htmlgame', 'renpy', 'ctrlcheck'] },
   { id: 'team', ic: 'users', items: ['team', 'whoami', 'tasks', 'whodid', 'review'] },
@@ -124,7 +124,7 @@ function uiStrip() {
    Идентификаторы совпадают с пунктами меню «Инструменты» (TOOL_ITEMS) и с кнопками верхней панели. Незнакомое видно всегда. */
 const UI_LVL = {
   layout: ['s'], mappdf: ['s'], notes: ['s'], texted: ['s'], docimport: ['s'], digest: ['s'], checks: ['s'], missingfiles: ['s'], htmlgame: ['s'], renpy: ['s'], player: ['s'], stats: ['s'],
-  replicas: ['p', 'text'], rename: ['p', 'text'], charpage: ['p', 'text'], resources: ['p', 'text'], weight: ['s'], snippets: ['s'], endguide: ['p', 'analysis'], voicesheet: ['p', 'text'], recipes: ['s'], customcode: ['p'], rpyimport: ['p', 'text'],
+  replicas: ['p', 'text'], rename: ['p', 'text'], charpage: ['p', 'text'], resources: ['p', 'text'], weight: ['s'], snippets: ['s'], endguide: ['p', 'analysis'], voicesheet: ['p', 'text'], recipes: ['s'], customcode: ['p'], ide: ['p'], rpyimport: ['p', 'text'],
   varstates: ['p', 'analysis'], branchstats: ['p', 'analysis'], autorun: ['p', 'analysis'], testlog: ['p', 'analysis'],
   whoami: ['p', 'team'], tasks: ['p', 'team'], whodid: ['p', 'team'], notify: ['x'], review: ['p', 'collab'], team: ['p', 'team'], translate: ['p', 'translate'], collab: ['x'], gui: ['s'],
   ghopen: ['x'], snapshots: ['s'],

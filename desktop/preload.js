@@ -111,6 +111,18 @@ contextBridge.exposeInMainWorld('vnDesktop', {
     stop: id => call('rp:stop', id),
     onEvent: fn => sub(listeners.rp, fn),
   },
+  pf: {                        // файлы внутри папки проекта Ren'Py (окно «Редактор кода»)
+    info: key => call('pf:info', key),
+    list: (key, rel) => call('pf:list', key, rel),
+    files: key => call('pf:files', key),
+    read: (key, rel) => call('pf:read', key, rel),
+    write: (key, rel, o) => call('pf:write', key, rel, o),
+    create: (key, rel, kind) => call('pf:create', key, rel, kind),
+    rename: (key, from, to) => call('pf:rename', key, from, to),
+    remove: (key, rel) => call('pf:remove', key, rel),
+    stat: (key, rels) => call('pf:stat', key, rels),
+    reveal: (key, rel) => call('pf:reveal', key, rel),
+  },
   onCommand: fn => sub(listeners.cmd, fn),
   onOpenFile: fn => sub(listeners.open, fn),
 });

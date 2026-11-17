@@ -14,10 +14,10 @@ Object.assign(D, {
   'sat.back': ['Вернуть в главное окно', 'Move back to the main window'],
   'sat.err': ['Не удалось открыть отдельное окно.', 'Could not open a separate window.'],
   'sat.lost': ['Главное окно не отвечает. Закройте это окно и вынесите инструмент заново.', 'The main window is not responding. Close this window and open the tool again.'],
-  'sat.t.texted': ['Редактор текста', 'Text editor'], 'sat.t.code': ['Свой код', 'Custom code'], 'sat.t.player': ['Плеер', 'Player'],
+  'sat.t.texted': ['Редактор текста', 'Text editor'], 'sat.t.code': ['Свой код', 'Custom code'], 'sat.t.ide': ['Редактор кода', 'Code editor'], 'sat.t.player': ['Плеер', 'Player'],
 });
 
-const SAT_ORDER = ['main', 'texted', 'code', 'player'];
+const SAT_ORDER = ['main', 'texted', 'code', 'ide', 'player'];
 const satApi = () => !!DESK && !!DESK.sat && ['me', 'open', 'send', 'onMsg', 'focusMain'].every(k => typeof DESK.sat[k] === 'function');      // старая оболочка этого не умеет
 const SAT = { tool: (satApi() && typeof DESK.sat.tool === 'string' && DESK.sat.tool) || '', key: 'main', peers: new Set(), last: null, timer: 0, applying: false, init: null, ready: false };
 const satIsWin = () => !!SAT.tool;
@@ -26,6 +26,7 @@ const satRank = k => { const i = SAT_ORDER.indexOf(k); return i < 0 ? 99 : i; };
 const SAT_TOOLS = {
   texted: { open: o => openDocEditor(o || {}) },
   code: { open: o => openCustomCode(o && o.sel) },
+  ide: { open: o => openIde(o || {}) },
   player: { open: async o => { await openPlayer(o || {}); return PLAY && PLAY.m; }, grab: () => (PLAY && PLAY.cur ? { fromNode: PLAY.cur.nid } : {}) },
 };
 /** Кнопка в заголовке окна инструмента: в главном окне «Вынести в отдельное окно», во вынесенном «Вернуть в главное окно». */

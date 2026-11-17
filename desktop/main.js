@@ -26,13 +26,14 @@ const DEV = process.argv.includes('--dev');
 const FRAMELESS = process.platform !== 'darwin' && !process.env.VN_NATIVE_FRAME;
 const WINBAR_H = 26;
 const CHROME_DEF = { dark: { color: '#343439', symbolColor: '#a4a4ac' }, light: { color: '#f0f0f5', symbolColor: '#6a6a72' } };
-const BRIDGE = 8;                      // версия «моста» оболочки: страница может потребовать не меньше (data-needs в её отметке сборки)
+const BRIDGE = 9;                      // версия «моста» оболочки: страница может потребовать не меньше (data-needs в её отметке сборки)
 const RECENT_MAX = 12;
 
 protocol.registerSchemesAsPrivileged([{ scheme: SCHEME, privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true } }]);
 app.setName('VNMap');
 app.setPath('userData', path.join(app.getPath('appData'), 'VNMap'));
 const createSat = require('./sat.js');
+const { ProjFs } = require('./projfs.js');
 const updater = new Updater({ bundledDir: APP_DIR, userData: app.getPath('userData'), bridge: BRIDGE });
 let overrideDir = null;                 // папка с установленным обновлением страницы (или null — работает встроенная)
 let bootNotice = null;                // что рассказать странице после запуска: откат, обновление
@@ -598,6 +599,19 @@ function registerIpc() {
     return getRp().setProject(key, r.filePaths[0]);
   });
   handle('rp:clearProject', async (e, key) => getRp().clearProject(key));
+
+  /* окно «Редактор кода»: файлы только внутри выбранной папки проекта Ren'Py (проверки путей в projfs.js) */
+  const pfs = new ProjFs({ getRoot: key => getRp().projectDir(key), trash: p => shell.trashItem(p), reveal: p => shell.showItemInFolder(p) });
+  handle('pf:info', async (e, key) => pfs.info(key));
+  handle('pf:list', async (e, key, rel) => pfs.list(key, rel));
+  handle('pf:files', async (e, key) => pfs.files(key));
+  handle('pf:read', async (e, key, rel) => pfs.read(key, rel));
+  handle('pf:write', async (e, key, rel, o) => pfs.write(key, rel, o));
+  handle('pf:create', async (e, key, rel, kind) => pfs.create(key, rel, kind === 'dir' ? 'dir' : 'file'));
+  handle('pf:rename', async (e, key, from, to) => pfs.rename(key, from, to));
+  handle('pf:remove', async (e, key, rel) => pfs.remove(key, rel));
+  handle('pf:stat', async (e, key, rels) => pfs.stat(key, rels));
+  handle('pf:reveal', async (e, key, rel) => pfs.showInFolder(key, rel));
   handle('rp:write', async (e, key, entries) => getRp().write(key, entries));
   handle('rp:start', async (e, key, kind, opts) => getRp().start(key, kind, opts && typeof opts === 'object' ? opts : {}));
   handle('rp:stop', async (e, id) => getRp().stop(id));

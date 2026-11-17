@@ -105,6 +105,7 @@ const ICONS = {
   layers: '<path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5M3 17.5l9 5 9-5" opacity=".6"/>',
   up: '<path d="M12 19V5M5 12l7-7 7 7"/>',
   down: '<path d="M12 5v14M5 12l7 7 7-7"/>',
+  chev: '<path d="M9 6l6 6-6 6"/>',
   reverse: '<path d="M7 7h12M16 3l4 4-4 4M17 17H5M8 13l-4 4 4 4"/>',
   dash: '<path d="M3 12h4M10 12h4M17 12h4"/>',
   target: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>',

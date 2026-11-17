@@ -6,7 +6,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const TOOLS = ['texted', 'code', 'player'];
+const TOOLS = ['texted', 'code', 'ide', 'player'];
 const MAX_MSG = 96 * 1024 * 1024;      // сообщение тяжелее не пересылаем (проект такого размера обменивается файлом, не окнами)
 
 module.exports = function createSat(env) {
