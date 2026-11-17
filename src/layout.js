@@ -12,6 +12,9 @@ Object.assign(D, {
   'ly.hint': ['Ручные изломы стрелок между расставленными узлами сбросятся. Результат можно отменить (Ctrl+Z).', 'Manual bends of arrows between arranged nodes are reset. You can undo (Ctrl+Z).'],
   'ly.go': ['Расставить', 'Arrange'], 'ly.done': ['Расставлено узлов: {0}. Отменить: Ctrl+Z', 'Arranged {0} nodes. Undo: Ctrl+Z'],
   'ly.few': ['Нужно хотя бы два блока со стрелками', 'At least two connected blocks are needed'],
+  'ly.style': ['Вид', 'Style'], 'ly.st.layers': ['По слоям', 'By layers'], 'ly.st.snake': ['Компактно (змейкой)', 'Compact (snake)'],
+  'ly.per': ['Блоков в ряду', 'Blocks per row'], 'ly.per.auto': ['Авто', 'Auto'],
+  'ly.snake.hint': ['Длинная цепочка сворачивается рядами: первый ряд слева направо, второй справа налево и так далее. «Авто» подбирает ширину под размер окна.', 'A long chain folds into rows: the first row runs left to right, the next right to left, and so on. Auto fits the width to the window.'],
 });
 
 const LY_GAPS = { tight: { main: 70, cross: 20, comp: 80 }, normal: { main: 120, cross: 40, comp: 120 }, wide: { main: 200, cross: 80, comp: 200 } };
@@ -138,7 +141,44 @@ function lyComponent(nodes, edgePairs, opt) {
   return { items, layers, base, mainSpan: mainAt - gapMain, cMin, cMax, chains, lr, V };
 }
 
-/** Расставляет узлы. opt: { ids: Set|null, dir: 'lr'|'tb', gap: 'tight'|'normal'|'wide' }. Возвращает число расставленных узлов. */
+/** «Компактно»: слои одной группы сворачиваются в ряды по k слоёв (змейка: чётные ряды вперёд, нечётные назад), так что цепочка из десятков блоков
+    ложится в экран, а не в одну длинную строку. Переписывает layer и pos у вершин и base у группы; «пустышки» длинных стрелок отбрасываются (стрелки идут по автомаршруту). */
+function lyFold(R, opt) {
+  const G = LY_GAPS[opt.gap] || LY_GAPS.normal, lr = opt.dir !== 'tb';
+  const real = R.items.filter(v => !v.dummy), L = R.layers.length;
+  const rowGap = Math.max(60, G.cross * 2), colGap = G.main;
+  const dimsFor = k => {
+    const rows = Math.ceil(L / k), colMain = Array(k).fill(0), rowSpan = [];
+    for (let r = 0; r < rows; r++) {
+      let lo = Infinity, hi = -Infinity;
+      for (let l = r * k; l < Math.min(L, (r + 1) * k); l++) for (const v of R.layers[l]) { if (v.dummy) continue; const c = (r % 2 ? k - 1 - (l - r * k) : l - r * k); colMain[c] = Math.max(colMain[c], v.main); lo = Math.min(lo, v.pos - v.cross / 2); hi = Math.max(hi, v.pos + v.cross / 2); }
+      rowSpan.push(isFinite(lo) ? hi - lo : 0);
+    }
+    const main = colMain.reduce((a, b) => a + b, 0) + colGap * (Math.min(k, L) - 1), cross = rowSpan.reduce((a, b) => a + b, 0) + rowGap * (rows - 1);
+    return lr ? { w: main, h: cross } : { w: cross, h: main };
+  };
+  let k = Math.max(0, Math.round(opt.perRow || 0));
+  if (!k) {                                                                         // авто: форма всей группы ближе всего к форме окна
+    const want = Math.log(opt.aspect > 0 ? opt.aspect : 1.6); let bestErr = Infinity;
+    for (let kk = 1; kk <= L; kk++) { const d = dimsFor(kk), err = Math.abs(Math.log(d.w / d.h) - want); if (err <= bestErr + 1e-9) { bestErr = err; k = kk; } }
+  }
+  k = Math.max(1, Math.min(L, k));
+  const rows = Math.ceil(L / k), colMain = Array(k).fill(0), rowAt = [];
+  for (let l = 0; l < L; l++) { const r = Math.floor(l / k), c = r % 2 ? k - 1 - (l - r * k) : l - r * k; for (const v of R.layers[l]) if (!v.dummy) colMain[c] = Math.max(colMain[c], v.main); }
+  let at = 0; const base = colMain.map(sz => { const b = { at, size: sz }; at += sz + colGap; return b; });
+  let crossAt = 0, cMin = Infinity, cMax = -Infinity;
+  for (let r = 0; r < rows; r++) {
+    const vs = []; for (let l = r * k; l < Math.min(L, (r + 1) * k); l++) for (const v of R.layers[l]) if (!v.dummy) vs.push(v);
+    const lo = Math.min(...vs.map(v => v.pos - v.cross / 2)), hi = Math.max(...vs.map(v => v.pos + v.cross / 2));
+    rowAt.push(crossAt);
+    for (const v of vs) { const l = v.layer; v.layer = r % 2 ? k - 1 - (l - r * k) : l - r * k; v.pos = v.pos - lo + crossAt; }
+    cMin = Math.min(cMin, crossAt); cMax = Math.max(cMax, crossAt + (hi - lo)); crossAt += (hi - lo) + rowGap;
+  }
+  R.items = real; R.base = base; R.chains = new Map(); R.cMin = cMin; R.cMax = cMax; R.perRow = k;
+  return R;
+}
+
+/** Расставляет узлы. opt: { ids: Set|null, dir: 'lr'|'tb', gap: 'tight'|'normal'|'wide', style: 'layers'|'snake', perRow: число (0 — авто), aspect: ширина/высота окна }. Возвращает число расставленных узлов. */
 function autoLayout(opt = {}) {
   const pick = opt.ids ? P.nodes.filter(n => opt.ids.has(n.id)) : P.nodes;
   const nodes = pick.filter(n => n.type !== 'note');
@@ -157,7 +197,7 @@ function autoLayout(opt = {}) {
     return (b.length > 1) - (a.length > 1) || ca - cb;
   });
   const bb0 = nodesBBox(nodes);
-  const results = comps.map(c => lyComponent(c, pairs, opt));
+  const results = comps.map(c => { const R = lyComponent(c, pairs, opt); return opt.style === 'snake' && R.layers.length > 2 ? lyFold(R, opt) : R; });
   /* укладываем группы друг под другом (или рядом при расстановке сверху вниз) */
   let crossAt = 0; const moved = new Set();
   const place = [];
@@ -196,7 +236,7 @@ function autoLayout(opt = {}) {
 
 function openLayoutDialog(anchor) {
   const sel = [...UI.sel].filter(id => { const n = nodeById(id); return n && n.type !== 'note'; });
-  const o = Object.assign({ dir: 'lr', gap: 'normal' }, S.layout || {}), st = { scope: sel.length > 1 ? 'sel' : 'all' };
+  const o = Object.assign({ dir: 'lr', gap: 'normal', style: 'layers', perRow: 0 }, S.layout || {}), st = { scope: sel.length > 1 ? 'sel' : 'all' };
   const seg = (opts, val, cb) => segmented(opts, val, cb);
   const body = h('div', { class: 'qform ly-form' });
   const render = () => {
@@ -204,11 +244,13 @@ function openLayoutDialog(anchor) {
       h('div', { class: 'lbl' }, t('ly.title')),
       sel.length > 1 ? h('div', { class: 'field' }, h('div', { class: 'lbl' }, t('ly.scope')), seg([{ value: 'all', label: t('ly.all') }, { value: 'sel', label: t('ly.sel', sel.length) }], st.scope, v => { st.scope = v; render(); })) : null,
       h('div', { class: 'field' }, h('div', { class: 'lbl' }, t('ly.dir')), seg([{ value: 'lr', label: t('ly.lr') }, { value: 'tb', label: t('ly.tb') }], o.dir, v => { o.dir = v; render(); })),
+      h('div', { class: 'field' }, h('div', { class: 'lbl' }, t('ly.style')), seg([{ value: 'layers', label: t('ly.st.layers') }, { value: 'snake', label: t('ly.st.snake') }], o.style, v => { o.style = v; render(); })),
+      o.style === 'snake' ? h('div', { class: 'field' }, h('div', { class: 'lbl' }, t('ly.per')), seg([0, 3, 4, 5, 6, 8].map(n => ({ value: n, label: n ? String(n) : t('ly.per.auto') })), o.perRow, v => { o.perRow = v; render(); }), h('div', { class: 'hint' }, t('ly.snake.hint'))) : null,
       h('div', { class: 'field' }, h('div', { class: 'lbl' }, t('ly.gap')), seg([{ value: 'tight', label: t('ly.tight') }, { value: 'normal', label: t('ly.normal') }, { value: 'wide', label: t('ly.wide') }], o.gap, v => { o.gap = v; render(); })),
       h('div', { class: 'hint' }, t('ly.hint')),
       h('button', { class: 'btn primary wide', id: 'ly-go', onclick: () => {
-        S.layout = { dir: o.dir, gap: o.gap }; saveSettings(); closePopover();
-        const n = autoLayout({ ids: st.scope === 'sel' ? new Set(sel) : null, dir: o.dir, gap: o.gap });
+        S.layout = { dir: o.dir, gap: o.gap, style: o.style, perRow: o.perRow }; saveSettings(); closePopover();
+        const rc = stage.getBoundingClientRect(), n = autoLayout({ ids: st.scope === 'sel' ? new Set(sel) : null, dir: o.dir, gap: o.gap, style: o.style, perRow: o.perRow, aspect: Math.max(0.3, (rc.width - 120) / Math.max(200, rc.height - 220)) });
         if (!n) { toast(t('ly.few')); return; }
         commit(true); renderAll(); if (st.scope !== 'sel') fitAll(); toast(t('ly.done', n), 4200);
       } }, icon('wand', 16), t('ly.go')));

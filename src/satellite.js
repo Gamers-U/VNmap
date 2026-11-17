@@ -14,10 +14,10 @@ Object.assign(D, {
   'sat.back': ['Вернуть в главное окно', 'Move back to the main window'],
   'sat.err': ['Не удалось открыть отдельное окно.', 'Could not open a separate window.'],
   'sat.lost': ['Главное окно не отвечает. Закройте это окно и вынесите инструмент заново.', 'The main window is not responding. Close this window and open the tool again.'],
-  'sat.t.texted': ['Редактор текста', 'Text editor'], 'sat.t.code': ['Свой код', 'Custom code'], 'sat.t.ide': ['Редактор кода', 'Code editor'], 'sat.t.player': ['Плеер', 'Player'],
+  'sat.t.texted': ['Редактор текста', 'Text editor'], 'sat.t.code': ['Свой код', 'Custom code'], 'sat.t.ide': ['Редактор кода', 'Code editor'], 'sat.t.player': ['Плеер', 'Player'], 'sat.t.node': ['Окно блока', 'Block window'],
 });
 
-const SAT_ORDER = ['main', 'texted', 'code', 'ide', 'player'];
+const SAT_ORDER = ['main', 'texted', 'code', 'ide', 'player', 'node'];
 const satApi = () => !!DESK && !!DESK.sat && ['me', 'open', 'send', 'onMsg', 'focusMain'].every(k => typeof DESK.sat[k] === 'function');      // старая оболочка этого не умеет
 const SAT = { tool: (satApi() && typeof DESK.sat.tool === 'string' && DESK.sat.tool) || '', key: 'main', peers: new Set(), last: null, timer: 0, applying: false, init: null, ready: false };
 const satIsWin = () => !!SAT.tool;
@@ -28,7 +28,10 @@ const SAT_TOOLS = {
   code: { open: o => openCustomCode(o && o.sel) },
   ide: { open: o => openIde(o || {}) },
   player: { open: async o => { await openPlayer(o || {}); return PLAY && PLAY.m; }, grab: () => (PLAY && PLAY.cur ? { fromNode: PLAY.cur.nid } : {}) },
+  node: { open: o => { if (!o || !nodeById(o.nid)) return null; openNodeModal(o.nid, o.fid || undefined); return NMODAL && NMODAL.m; }, grab: () => (NMODAL && !NMODAL.m.closed ? { nid: NMODAL.nid, fid: NMODAL.sel === 'node' ? null : NMODAL.sel } : {}) },
 };
+/** Старая оболочка знает только четыре первых инструмента; новая сообщает свой список в DESK.sat.tools. */
+const satHas = tool => (Array.isArray(DESK.sat.tools) ? DESK.sat.tools : ['texted', 'code', 'ide', 'player']).includes(tool);
 /** Кнопка в заголовке окна инструмента: в главном окне «Вынести в отдельное окно», во вынесенном «Вернуть в главное окно». */
 function satHeadBtn(m, head, tool) {
   if (!SAT_TOOLS[tool]) return;
@@ -36,7 +39,7 @@ function satHeadBtn(m, head, tool) {
   if (SAT.tool) head.insertBefore(h('button', { class: 'btn icon', id: 'win-back', 'data-tip': t('sat.back'), onclick: ev => { ev.stopPropagation(); satBack(m); } }, icon('open', 17)), close);
   else if (satCan(tool)) head.insertBefore(h('button', { class: 'btn icon', id: 'win-pop', 'data-tip': t('sat.pop'), onclick: ev => { ev.stopPropagation(); satPop(tool, m); } }, icon('open', 17)), close);
 }
-const satCan = tool => satApi() && !!SAT_TOOLS[tool] && !SAT.tool;
+const satCan = tool => satApi() && !!SAT_TOOLS[tool] && !SAT.tool && satHas(tool);
 /** Сравнение сущностей «по смыслу»: пустое значение (нет поля, null, '', false, [], {}) считается равным отсутствию. Нужно, потому что
     загрузка проекта (normalize) дописывает пустые поля по умолчанию, а в окне, где блок только что создали, их ещё нет. */
 function satCanon(v) {

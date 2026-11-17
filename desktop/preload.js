@@ -31,6 +31,7 @@ contextBridge.exposeInMainWorld('vnDesktop', {
     focusMain: () => ipcRenderer.send('desk:sat:focusMain'),
     onMsg: fn => sub(listeners.sat, fn),
     tool: ((process.argv.find(a => a.startsWith('--vn-sat=')) || '').slice(9)) || '',
+    tools: ['texted', 'code', 'ide', 'player', 'node'],      // какие инструменты оболочка умеет выносить (страница по этому списку решает, показывать ли кнопку)
   },
   ready: () => call('desk:ready'),
   setLang: l => call('desk:setLang', l),

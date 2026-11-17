@@ -4,12 +4,14 @@
    сверху, снизу, слева или справа, в начало, середину или конец края. У левого и правого края панель сама становится вертикальной,
    подписи прячутся (остаются значки и подсказки). Панели живут только в этих двенадцати местах, поэтому в середине холста ничего
    не плавает. Настраивается в «Настройки → Панель → Изменить расположение»: панели перетаскиваются на подсвеченные места,
-   «Готово» сохраняет, «Отмена» возвращает как было. Плашка проекта (значок, название, «Сохранено») всегда стоит в начале верхнего края. */
+   «Готово» сохраняет, «Отмена» возвращает как было. Плашку проекта (значок, название, «Сохранено») тоже можно переносить, но только к верхнему или
+   нижнему краю. Во время правки подсвеченные места видны только пока панель тащат; панель следует за курсором и чуть покачивается. */
 
 Object.assign(D, {
   'dock.h': ['Расположение панелей', 'Panel positions'],
   'dock.p': ['Перенесите панели к любому краю экрана: у левого и правого края они становятся вертикальными. Режим правки открывается кнопкой ниже, а настройки закрываются на это время.', 'Move the panels to any edge of the screen: at the left and right edges they turn vertical. The edit mode opens with the button below and the settings close for the time being.'],
   'dock.edit': ['Изменить расположение', 'Change positions'],
+  'dock.ident': ['Название проекта', 'Project name'],
   'dock.core': ['Блок, Поиск, Инструменты', 'Block, Search, Tools'],
   'dock.strip': ['Разделы (Карта, Тексты…)', 'Sections (Map, Texts…)'],
   'dock.main': ['Играть, Текст, Реестр…', 'Play, Text, Registry…'],
@@ -18,14 +20,14 @@ Object.assign(D, {
   'dock.top': ['Сверху', 'Top'], 'dock.bottom': ['Снизу', 'Bottom'], 'dock.left': ['Слева', 'Left'], 'dock.right': ['Справа', 'Right'],
   'dock.start': ['в начале', 'at the start'], 'dock.center': ['по центру', 'in the middle'], 'dock.end': ['в конце', 'at the end'],
   'dock.bar.t': ['Перетащите панель на подсвеченное место', 'Drag a panel to a highlighted spot'],
-  'dock.bar.h': ['Панель «Состояние проекта» остаётся только сверху или снизу: в ней много текста.', 'The "Project status" panel stays at the top or the bottom only: it holds a lot of text.'],
+  'dock.bar.h': ['Панели «Название проекта» и «Состояние проекта» стоят только сверху или снизу: в них много текста.', 'The "Project name" and "Project status" panels stay at the top or the bottom only: they hold a lot of text.'],
   'dock.done': ['Готово', 'Done'], 'dock.cancel': ['Отмена', 'Cancel'], 'dock.reset': ['Как было', 'Defaults'],
   'dock.small': ['На узком экране (телефон) панели стоят как обычно, расположение не применяется.', 'On a narrow screen (a phone) the panels stay as usual and the positions are not applied.'],
 });
 
-const DOCK_IDS = ['core', 'strip', 'main', 'zoom', 'status'];
-const DOCK_DEF = { core: ['top', 'start'], strip: ['top', 'start'], main: ['top', 'end'], zoom: ['bottom', 'start'], status: ['bottom', 'end'] };
-const DOCK_H_ONLY = ['status'];                                   // эти панели не бывают вертикальными
+const DOCK_IDS = ['ident', 'core', 'strip', 'main', 'zoom', 'status'];
+const DOCK_DEF = { ident: ['top', 'start'], core: ['top', 'start'], strip: ['top', 'start'], main: ['top', 'end'], zoom: ['bottom', 'start'], status: ['bottom', 'end'] };
+const DOCK_H_ONLY = ['status', 'ident'];                                   // эти панели не бывают вертикальными
 const DOCK_EDGES = ['top', 'bottom', 'left', 'right'], DOCK_POS = ['start', 'center', 'end'];
 const dockNarrow = () => window.innerWidth < 760;
 const dockVert = e => e === 'left' || e === 'right';
@@ -61,10 +63,10 @@ const dockSlot = (e, p) => (e === 'top' ? $('#topbar') : $('#dock-' + e)).queryS
 /** Расставляет панели по местам. panels — элементы по id (null — панели сейчас нет), identity — плашка проекта. */
 function dockLayout(panels, identity) {
   dockInit();
+  if (identity) panels = Object.assign({ ident: identity }, panels);
   const top = $('#topbar');
   top.replaceChildren(...DOCK_POS.map(p => h('div', { class: 'slot s-' + p, 'data-slot': 'top-' + p })));
   for (const e of ['bottom', 'left', 'right']) for (const s of document.querySelectorAll('#dock-' + e + ' .slot')) s.replaceChildren();
-  top.querySelector('.s-start').append(identity);
   for (const id of DOCK_IDS) {
     const el = panels[id]; if (!el) continue;
     const [e, p] = dockOf(id);
@@ -72,6 +74,23 @@ function dockLayout(panels, identity) {
     dockSlot(e, p).append(el);
   }
   for (const e of ['top', 'bottom', 'left', 'right']) document.body.classList.toggle('dock-has-' + e, !!document.querySelector((e === 'top' ? '#topbar' : '#dock-' + e) + ' [data-dock]'));
+  dockMeasure(); dockWatch();
+}
+
+/** Боковые края начинаются под верхними панелями и кончаются над нижними, какой бы высоты те ни были (в два ряда и т. п.): боковые панели не налезают на верхние и нижние. */
+function dockMeasure() {
+  const app = $('#app'), top = $('#topbar'), bot = $('#dock-bottom'); if (!app || !top) return;
+  const ar = app.getBoundingClientRect(), tr = top.getBoundingClientRect(), br = bot ? bot.getBoundingClientRect() : null;
+  const hasT = !!top.querySelector('[data-dock]'), hasB = !!(bot && bot.querySelector('[data-dock]'));
+  const topPx = hasT ? Math.ceil(tr.bottom - ar.top) + 8 : 12, botPx = hasB && br ? Math.ceil(ar.bottom - br.top) + 8 : 12;
+  const st = document.documentElement.style;
+  if (st.getPropertyValue('--dock-top') !== topPx + 'px') st.setProperty('--dock-top', topPx + 'px');
+  if (st.getPropertyValue('--dock-bot') !== botPx + 'px') st.setProperty('--dock-bot', botPx + 'px');
+}
+let DOCK_RO = null;
+function dockWatch() {
+  if (DOCK_RO || typeof ResizeObserver === 'undefined') return;
+  try { DOCK_RO = new ResizeObserver(() => dockMeasure()); DOCK_RO.observe($('#topbar')); if ($('#dock-bottom')) DOCK_RO.observe($('#dock-bottom')); window.addEventListener('resize', dockMeasure); } catch (e) { DOCK_RO = null; }
 }
 
 /* ---------- режим правки ---------- */
@@ -106,7 +125,9 @@ function dockEditEnd(save) {
   document.removeEventListener('pointermove', ed.onMove, true);
   document.removeEventListener('pointerup', ed.onUp, true);
   document.removeEventListener('keydown', ed.onKey, true);
+  if (ed.drag && ed.drag.raf) cancelAnimationFrame(ed.drag.raf);
   ed.zones.remove(); ed.bar.remove(); if (ed.ghost) ed.ghost.remove();
+  document.querySelectorAll('.dock-target').forEach(x => x.classList.remove('dock-target'));
   document.body.classList.remove('dock-edit');
   if (!save) { try { uiCfg().dock = JSON.parse(ed.snap); } catch (e) { delete uiCfg().dock; } }
   saveSettings(); buildChrome();
@@ -123,32 +144,55 @@ function dockNearest(id, x, y) {
   }
   return best;
 }
+const dockCalm = () => { try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } };
+/** Занято ли место другой панелью (тащимую не считаем). У занятого места подсветка рисуется рамкой вокруг стоящей там панели, а не плашкой поверх неё. */
+const dockSlotPanels = (zone, except) => { const [edge, pos] = zone.split('-'); const sl = dockSlot(edge, pos); return sl ? [...sl.querySelectorAll('[data-dock]')].filter(x => x !== except) : []; };
 function dockDown(e) {
   const ed = DOCK_ED; if (!ed || e.button > 0) return;
   const el = e.target.closest && e.target.closest('[data-dock]'); if (!el) return;
   e.preventDefault(); e.stopPropagation();
-  const id = el.dataset.dock;
-  ed.drag = { id, el };
+  const id = el.dataset.dock, r = el.getBoundingClientRect();
+  const d = ed.drag = { id, el, ox: e.clientX - r.left, oy: e.clientY - r.top, x: r.left, y: r.top, tx: r.left, ty: r.top, tilt: 0, raf: 0 };
   el.classList.add('dock-lifted');
-  ed.ghost = h('div', { class: 'dock-ghost' }, t('dock.' + id));
+  /* живая копия панели: идёт за курсором с лёгкой пружинкой и покачивается, как твёрдый предмет */
+  const copy = el.cloneNode(true); copy.removeAttribute('data-dock'); copy.removeAttribute('id'); copy.classList.remove('dock-lifted');
+  copy.querySelectorAll('[id]').forEach(x => x.removeAttribute('id'));
+  ed.ghost = h('div', { class: 'dock-ghost live' + (el.classList.contains('vert') ? ' vert' : ''), style: { width: r.width + 'px', height: r.height + 'px', transformOrigin: d.ox + 'px ' + d.oy + 'px' } }, copy);
   document.body.append(ed.ghost);
-  for (const z of ed.zones.children) z.classList.toggle('no', !dockAllowed(id, z.dataset.zone));
-  dockMove(e);
+  const calm = dockCalm();
+  const tick = () => {
+    if (ed.drag !== d) return;
+    const px = d.x; d.x += (d.tx - d.x) * (calm ? 1 : 0.3); d.y += (d.ty - d.y) * (calm ? 1 : 0.3);
+    d.tilt += (Math.max(-8, Math.min(8, (d.x - px) * 0.8)) - d.tilt) * 0.18;                // качание от скорости: отстаёт и возвращается
+    ed.ghost.style.transform = 'translate3d(' + d.x.toFixed(1) + 'px,' + d.y.toFixed(1) + 'px,0) rotate(' + (calm ? 0 : d.tilt.toFixed(2)) + 'deg) scale(1.03)';
+    d.raf = requestAnimationFrame(tick);
+  };
+  ed.zones.classList.add('on');                                     // подсвеченные места видны, только пока панель тащат
+  for (const z of ed.zones.children) { z.classList.toggle('no', !dockAllowed(id, z.dataset.zone)); z.classList.toggle('occ', dockSlotPanels(z.dataset.zone, el).length > 0); }
+  dockMove(e); tick();
 }
 function dockMove(e) {
   const ed = DOCK_ED; if (!ed || !ed.drag) return;
   e.preventDefault();
-  ed.ghost.style.left = (e.clientX + 14) + 'px'; ed.ghost.style.top = (e.clientY + 14) + 'px';
-  ed.zone = dockNearest(ed.drag.id, e.clientX, e.clientY);
-  for (const z of ed.zones.children) z.classList.toggle('hot', z.dataset.zone === ed.zone);
+  const d = ed.drag; d.tx = e.clientX - d.ox; d.ty = e.clientY - d.oy;
+  const zone = dockNearest(d.id, e.clientX, e.clientY);
+  if (zone !== ed.zone || !ed.zoneSeen) {
+    ed.zone = zone; ed.zoneSeen = true;
+    for (const z of ed.zones.children) z.classList.toggle('hot', z.dataset.zone === zone);
+    document.querySelectorAll('.dock-target').forEach(x => x.classList.remove('dock-target'));
+    if (zone) for (const x of dockSlotPanels(zone, d.el)) x.classList.add('dock-target');
+  }
 }
 function dockUp(e) {
   const ed = DOCK_ED; if (!ed || !ed.drag) return;
   e.preventDefault(); e.stopPropagation();
   const { id, el } = ed.drag, zone = ed.zone;
-  ed.drag = null; ed.zone = ''; el.classList.remove('dock-lifted');
+  if (ed.drag.raf) cancelAnimationFrame(ed.drag.raf);
+  ed.drag = null; ed.zone = ''; ed.zoneSeen = false; el.classList.remove('dock-lifted');
   if (ed.ghost) { ed.ghost.remove(); ed.ghost = null; }
-  for (const z of ed.zones.children) z.classList.remove('hot', 'no');
+  ed.zones.classList.remove('on');
+  document.querySelectorAll('.dock-target').forEach(x => x.classList.remove('dock-target'));
+  for (const z of ed.zones.children) z.classList.remove('hot', 'no', 'occ');
   if (zone) { const [edge, pos] = zone.split('-'); if (dockSet(id, edge, pos)) { saveSettings(); buildChrome(); } }
 }
 

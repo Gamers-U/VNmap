@@ -8,6 +8,10 @@ function openNodeModal(nid, fid) {
   closePopover();
   if (NMODAL && !NMODAL.m.closed) {
     if (NMODAL.nid === nid) { selectInModal(NMODAL, fid && n.files.some(f => f.id === fid) ? fid : 'node'); return; }
+    if (typeof satIsWin === 'function' && satIsWin()) {               // в отдельном окне закрытие окна блока закрыло бы и само окно: переключаем блок на месте
+      NMODAL.nid = nid; NMODAL.sel = fid && n.files.some(f => f.id === fid) ? fid : 'node'; flushHistory();
+      renderHead(NMODAL); renderSide(NMODAL); renderMain(NMODAL); return;
+    }
     NMODAL.m.close();
   }
   const st = { nid, sel: fid && n.files.some(f => f.id === fid) ? fid : 'node', dragIdx: null };
@@ -15,12 +19,13 @@ function openNodeModal(nid, fid) {
   st.m = openModal({
     cls: 'node-m',
     onClose: () => { if (NMODAL === st) NMODAL = null; flushHistory(); refreshNode(nid); },
-    build: () => {
+    build: mm => {
       st.head = h('div', { class: 'm-head' });
       st.side = h('div', { class: 'm-side' });
       st.main = h('div', { class: 'm-main' });
       renderHead(st); renderSide(st); renderMain(st);
       if (typeof aclWatch === 'function') { aclWatch(st.head, () => 'map'); aclWatch(st.main, () => (st.sel === 'node' ? 'map' : 'text')); }
+      st.wc = typeof winControl === 'function' ? winControl(mm, st.head, 'node') : null;        // как у редактора текста: окно двигается, растягивается, разворачивается, «посмотреть карту» убирает размытие, «вынести в отдельное окно»
       return h('div', { class: 'm-wrap' }, st.head, h('div', { class: 'm-body' }, st.side, st.main));
     }
   });
@@ -47,8 +52,9 @@ function renderHead(st) {
   title.id = 'node-title';
   const typeSeg = segmented(NODE_TYPES.map(tp => ({ value: tp, icon: TYPE_ICON[tp], tip: t('type.' + tp) })), n.type, v => { setNodesType([n.id], v); refreshNodeModal(); });
   head.append(sw, title, typeSeg, h('div', { class: 'grow' }), n.type !== 'note' ? cmHeadBtn(st) : null,
-    h('button', { class: 'btn icon', 'data-tip': t('nm.show'), onclick: () => { st.m.close(); focusNode(n.id); } }, icon('target', 18)),
+    h('button', { class: 'btn icon', id: 'nm-show', 'data-tip': t('nm.show'), onclick: () => { if (typeof satIsWin === 'function' && satIsWin()) { satSend({ to: 'main', k: 'cmd', name: 'show', id: n.id }); return; } st.m.close(); focusNode(n.id); } }, icon('target', 18)),
     h('button', { class: 'btn icon', 'data-tip': t('c.close') + ' (Esc)', onclick: () => st.m.close() }, icon('x', 18)));
+  if (st.wc) st.wc.mount();
 }
 
 /* ---------- боковая панель ---------- */

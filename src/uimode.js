@@ -72,7 +72,7 @@ const UI_MODS = ['analysis', 'text', 'team', 'translate'];      // «Совме�
 /** Профессиональный режим: строка разделов под верхней панелью (инструменты на виду). Пункты берутся из TOOL_ITEMS по id и фильтруются uiShow. */
 const UI_STRIP = [
   { id: 'map', ic: 'fit', items: ['layout', 'mappdf', 'notes'] },
-  { id: 'text', ic: 'type', items: ['docimport', 'digest', 'replicas', 'rename', 'voicesheet', 'translate'] },
+  { id: 'text', ic: 'docLines', items: ['docimport', 'digest', 'replicas', 'rename', 'voicesheet', 'translate'] },
   { id: 'code', ic: 'code', items: ['ide', 'customcode', 'snippets', 'recipes', 'gui'] },
   { id: 'check', ic: 'check', items: ['checks', 'missingfiles', 'varstates', 'stats', 'branchstats', 'testlog', 'endguide', 'weight', 'resources'] },
   { id: 'play', ic: 'play', items: ['player', 'autorun', 'htmlgame', 'renpy', 'ctrlcheck'] },
@@ -342,7 +342,7 @@ function setDriveCard(st, render, go, dp) {
   return h('div', { class: 'nt-card', id: 'set-drive' }, head(state, on), ...kids);
 }
 const BAR_META = {
-  play: ['play', 'pl.btn'], text: ['type', 'te.top'], registry: ['layers', 'top.registry'], stats: ['chart', 'sh.btn'], team: ['badge', 'team.btn'],
+  play: ['play', 'pl.btn'], text: ['pen', 'te.top'], registry: ['layers', 'top.registry'], stats: ['chart', 'sh.btn'], team: ['badge', 'team.btn'],
   translate: ['globe', 'tl.btn'], collab: ['users', 'col.btn'], export: ['download', 'top.export'], build: ['box', 'ui.build'], file: ['save', 'ui.file'],
 };
 /** Вкладка «Панель»: галочки (везде) и перетаскивание порядка (мышью; на сенсорных экранах только галочки). */

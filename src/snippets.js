@@ -229,7 +229,7 @@ function openSnippets() {
           const ps = spParams(s.code);
           return h('div', { class: 'sp-row', 'data-id': s.id },
             h('div', { class: 'sp-main' }, h('b', s.name), s.note ? h('div', { class: 'hint' }, s.note) : null,
-              h('pre', { class: 'sp-pre' }, s.code.split('\n').slice(0, 4).join('\n') + (s.code.split('\n').length > 4 ? '\n…' : '')),
+              h('pre', { class: 'sp-pre' }, h('span', { class: 'sp-prel' }, s.code.split('\n').slice(0, 5).join('\n') + (s.code.split('\n').length > 5 ? '\n…' : ''))),
               ps.length ? h('div', { class: 'hint' }, t('sp.f.params', ps.map(p => p.name).join(', '))) : null),
             h('div', { class: 'sp-acts' },
               ta ? h('button', { class: 'btn sm primary sp-ins', onclick: async () => { if (await spInsert(s, ta)) m.close(); } }, icon('plus', 14), t('sp.insert')) : null,

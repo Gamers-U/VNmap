@@ -18,13 +18,14 @@ Object.assign(D, {
   'vs.sets.b': [['в {0} блоке', 'в {0} блоках', 'в {0} блоках'], ['in {0} block', 'in {0} blocks']],
   'vs.sets.e': [['на {0} стрелке', 'на {0} стрелках', 'на {0} стрелках'], ['on {0} arrow', 'on {0} arrows']],
   'vs.sets.and': [' и ', ' and '],
-  'vs.f.all': ['Все блоки', 'All blocks'], 'vs.f.chg': ['Где меняется', 'Where it changes'], 'vs.f.amb': ['Где значение неоднозначно', 'Where it is ambiguous'],
+  'vs.f.key': ['Главное', 'Key points'], 'vs.f.all': ['Все блоки', 'All blocks'], 'vs.f.chg': ['Где меняется', 'Where it changes'], 'vs.f.amb': ['Где значение неоднозначно', 'Where it is ambiguous'],
   'vs.col.b': ['Блок', 'Block'], 'vs.col.in': ['При входе', 'On entry'], 'vs.col.out': ['После блока', 'After the block'],
   'vs.same': ['так же', 'same'],
   'vs.nolog': ['сюда не дойти', 'cannot be reached'],
   'vs.nolog.cond': ['условия на стрелках не пускают сюда', 'arrow conditions do not allow getting here'],
   'vs.nolog.t': ['Сюда ведут стрелки, но ни одно их условие не может выполниться при значениях переменных до этого места.', 'Arrows lead here, but none of their conditions can hold given the variable values up to this point.'],
   'vs.empty.f': ['В этом фильтре пусто.', 'Nothing matches this filter.'],
+  'vs.empty.key': ['Здесь всё однозначно: значение нигде не меняется и нигде не бывает «то так, то эдак». Полный список блоков: «Все блоки».', 'Everything is clear here: the value never changes and never differs between routes. The full list of blocks: “All blocks”.'],
   'vs.more': ['Показать ещё', 'Show more'],
   'vs.show': ['Показать на карте', 'Show on the map'], 'vs.open': ['Открыть блок', 'Open the block'],
   'vs.foot': ['Значения считаются по карте: от начала игры по стрелкам, с учётом присвоений в скриптах и на стрелках и условий на стрелках. «Да или нет», «от … до …» означают, что по разным путям у игрока может быть по-разному. Переменные, которых нет в реестре, не отслеживаются.', 'Values are worked out from the map: from the start along the arrows, with assignments in scripts and on arrows and arrow conditions. “yes or no” and “from … to …” mean the player may have different values along different routes. Variables missing from the registry are not tracked.'],
@@ -48,7 +49,7 @@ Object.assign(D, {
   'vs.nm.all': ['Все переменные…', 'All variables…'],
 });
 
-const VS_ST = { tab: 'var', varId: '', filter: 'all', cond: '', more: 80 };
+const VS_ST = { tab: 'var', varId: '', filter: 'key', cond: '', more: 80 };       // по умолчанию только то, что важно: где значение меняется и где оно неоднозначно
 const VS_VARICON = { flag: 'flag', choice: 'fork', number: 'hash' };
 
 const vsTitle = n => n.title || t('node.new.' + n.type);
@@ -128,7 +129,7 @@ function vsValEl(d, cls) { return h('span', { class: 'vs-val' + (vsAmb(d) ? ' am
 
 function openVarStates(opts) {
   opts = opts || {}; closePopover();
-  if (opts.varId) { VS_ST.varId = opts.varId; VS_ST.tab = 'var'; VS_ST.filter = 'all'; VS_ST.more = 80; }
+  if (opts.varId) { VS_ST.varId = opts.varId; VS_ST.tab = 'var'; VS_ST.filter = 'key'; VS_ST.more = 80; }
   if (opts.tab) VS_ST.tab = opts.tab;
   let seenVer = DATA_VER, timer = 0;
   openModal({
@@ -148,7 +149,7 @@ function openVarStates(opts) {
         if (!tracked.some(v => v.id === VS_ST.varId)) VS_ST.varId = tracked[0].id;
         const v = tracked.find(x => x.id === VS_ST.varId);
         const sel = h('select', { class: 'inp', id: 'vs-var', 'aria-label': t('vs.pick') }, ...tracked.map(x => h('option', { value: x.id }, x.name + ' · ' + t('vs.type.' + x.type))));
-        sel.value = v.id; sel.addEventListener('change', () => { VS_ST.varId = sel.value; VS_ST.filter = 'all'; VS_ST.more = 80; paintBody(); });
+        sel.value = v.id; sel.addEventListener('change', () => { VS_ST.varId = sel.value; VS_ST.filter = 'key'; VS_ST.more = 80; paintBody(); });
         root.append(h('div', { class: 'vs-pick' }, h('span', { class: 'lab' }, t('vs.pick')), sel));
         const ini = anInit(v), st = vsSetters(v);
         const parts = []; if (st.blocks.length) parts.push(t('vs.sets.b', st.blocks.length)); if (st.edges.length) parts.push(t('vs.sets.e', st.edges.length));
@@ -158,12 +159,13 @@ function openVarStates(opts) {
           h('div', { class: 'bs-sub' }, parts.length ? t('vs.sets', parts.join(t('vs.sets.and'))) : t('vs.sets.none'))));
         const all = X.rows.map(r => ({ r, en: r.en && r.en[v.name], af: r.af && r.af[v.name] }));
         const chg = x => x.en && x.af && !anEqD(x.en, x.af);
-        const cnt = { all: all.length, chg: all.filter(chg).length, amb: all.filter(x => vsAmb(x.en)).length };
-        root.append(h('div', { class: 'pal-chips bs-chips' }, ...[['all', 'vs.f.all'], ['chg', 'vs.f.chg'], ['amb', 'vs.f.amb']].map(([k, key]) =>
+        const isKey = x => chg(x) || vsAmb(x.en);
+        const cnt = { key: all.filter(isKey).length, all: all.length, chg: all.filter(chg).length, amb: all.filter(x => vsAmb(x.en)).length };
+        root.append(h('div', { class: 'pal-chips bs-chips' }, ...[['key', 'vs.f.key'], ['chg', 'vs.f.chg'], ['amb', 'vs.f.amb'], ['all', 'vs.f.all']].map(([k, key]) =>
           h('button', { class: 'pal-chip' + (VS_ST.filter === k ? ' on' : ''), onclick: () => { VS_ST.filter = k; VS_ST.more = 80; paintBody(); } }, t(key), h('span', { class: 'cnt' }, ' ' + cnt[k])))));
-        const list = all.filter(x => VS_ST.filter === 'all' || (VS_ST.filter === 'chg' ? chg(x) : vsAmb(x.en)));
+        const list = all.filter(x => VS_ST.filter === 'all' || (VS_ST.filter === 'key' ? isKey(x) : VS_ST.filter === 'chg' ? chg(x) : vsAmb(x.en)));
         const box = h('div', { class: 'bs-rows' });
-        if (!list.length) box.append(h('div', { class: 'empty' }, t('vs.empty.f')));
+        if (!list.length) box.append(h('div', { class: 'empty' }, t(VS_ST.filter === 'key' ? 'vs.empty.key' : 'vs.empty.f')));
         else {
           box.append(h('div', { class: 'bs-r vs-r bs-th' }, h('div', {}, t('vs.col.b')), h('div', {}, t('vs.col.in')), h('div', {}, t('vs.col.out')), h('div', {})));
           for (const x of list.slice(0, VS_ST.more)) {

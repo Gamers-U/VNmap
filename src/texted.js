@@ -640,4 +640,4 @@ function openChapterEditor(opts = {}) {
   });
   return m;
 }
-TOOL_ITEMS.push({ id: 'texted', group: 'story', menu: false, ic: 'type', key: 'te.btn', kw: 'text editor write prose manuscript chapter google docs fork текст редактор писать глава рукопись проза развилка', run: () => openTextEditor() });
+TOOL_ITEMS.push({ id: 'texted', group: 'story', menu: false, ic: 'pen', key: 'te.btn', kw: 'text editor write prose manuscript chapter google docs fork текст редактор писать глава рукопись проза развилка', run: () => openTextEditor() });

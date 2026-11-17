@@ -13,7 +13,7 @@ function barBuilders() {
     { label: t('desk.copy'), icon: 'copy', onClick: exportJSON }] : [{ label: t('exp.json'), icon: 'save', kbd: 'Ctrl+S', onClick: exportJSON }])];
   return {
     play: () => tbtn('play', t('pl.btn'), t('pl.tip'), () => openPlayer(), 'pl-top-btn'),
-    text: () => tbtn('type', t('te.top'), t('te.top.tip'), () => { const id = [...UI.sel][0], n = id && nodeById(id); openTextEditor(n && n.type !== 'note' ? { nodeId: n.id } : {}); }, 'te-top-btn'),
+    text: () => tbtn('pen', t('te.top'), t('te.top.tip'), () => { const id = [...UI.sel][0], n = id && nodeById(id); openTextEditor(n && n.type !== 'note' ? { nodeId: n.id } : {}); }, 'te-top-btn'),
     registry: () => tbtn('layers', t('top.registry'), t('top.registry.tip'), () => openRegistry()),
     export: () => (uiPro() ? tbtn('download', t('top.export'), t('top.export.tip'), b => menuAt(b, [
       { label: t('exp.build'), icon: 'box', kbd: DESK ? 'Ctrl+B' : undefined, onClick: () => openBuild() },
