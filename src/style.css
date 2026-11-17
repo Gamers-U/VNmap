@@ -2441,3 +2441,24 @@ html.sat-win .modal.win-free{position:relative}
 .aic-dl.add{background:color-mix(in srgb,var(--ok) 16%,transparent)}.aic-dl.del{background:var(--danger-soft)}
 .aic-ctxpre{max-height:420px;white-space:pre-wrap}
 @media (max-width:760px){.ide-ai{position:absolute;z-index:7;top:0;bottom:0;right:0;left:0;max-width:none;width:auto!important;border-left:0}.ide-aisplit{display:none}}
+
+/* диагностика */
+.set-foot{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;padding:0 16px 10px}
+.set-foot .set-ver{padding:6px 0}
+.diag-m{width:min(760px,96vw);max-height:92vh;display:flex;flex-direction:column}
+.diag-m .m-wrap{display:flex;flex-direction:column;min-height:0;flex:1}
+.diag-body{padding:4px 18px 16px;overflow:auto;display:flex;flex-direction:column;gap:12px;min-height:0}
+.diag-sum{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:var(--panel2,var(--panel))}
+.diag-sum.ok{border-color:var(--ok,#3fb27f);color:var(--ok,#3fb27f)}
+.diag-sum.warn{border-color:var(--warn,#d9a441);color:var(--warn,#d9a441)}
+.diag-sum.bad{border-color:var(--bad,#e5534b);color:var(--bad,#e5534b)}
+.diag-sec{border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.diag-h{padding:7px 12px;font-weight:600;font-size:12px;letter-spacing:.02em;background:var(--panel2,var(--panel));border-bottom:1px solid var(--line)}
+.diag-row{display:grid;grid-template-columns:18px minmax(120px,200px) 1fr;gap:8px;padding:6px 12px;align-items:start;font-size:13px;border-bottom:1px solid var(--line2,var(--line))}
+.diag-row:last-child{border-bottom:0}
+.diag-ic{display:inline-flex;margin-top:1px}
+.diag-row.ok .diag-ic{color:var(--ok,#3fb27f)} .diag-row.warn .diag-ic{color:var(--warn,#d9a441)} .diag-row.bad .diag-ic{color:var(--bad,#e5534b)} .diag-row.info .diag-ic{color:var(--text3,var(--text2))}
+.diag-n{color:var(--text2)} .diag-v{overflow-wrap:anywhere}
+.diag-acts{flex-wrap:wrap}
+.diag-text{width:100%;font-size:12px;resize:vertical}
+@media(max-width:600px){.diag-row{grid-template-columns:18px 1fr}.diag-row .diag-v{grid-column:2}}

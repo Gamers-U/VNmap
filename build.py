@@ -8,7 +8,7 @@ DIST = os.path.join(ROOT, 'dist')
 os.makedirs(DIST, exist_ok=True)
 
 JS_ORDER = ['util.js', 'merge.js', 'i18n.js', 'model.js', 'geom.js', 'canvas.js', 'modal.js', 'nodemodal.js',
-            'script.js', 'text.js', 'effects.js', 'flags.js', 'jumps.js', 'condbuilder.js', 'members.js', 'files.js', 'registry.js', 'compiler.js', 'extras.js', 'guireg.js', 'translate.js', 'tlui.js', 'build.js', 'tools.js', 'toolsmenu.js', 'playeng.js', 'player.js', 'autorun.js', 'endguide.js','voicesheet.js', 'testlog.js', 'gamemode.js', 'analysis.js', 'layout.js', 'mappdf.js', 'notes.js', 'palette.js','palintent.js','replicas.js','rename.js','checks.js','branchstats.js','varstate.js','charpage.js','resources.js', 'weight.js', 'assetprod.js', 'recipes.js', 'snippets.js', 'customcode.js', 'codeedit.js', 'codelang.js', 'codehint.js', 'ide.js', 'digest.js', 'prose.js','branches.js','brlink.js','texted.js','docimport.js','winctl.js','docedit.js','pull.js','lazyfiles.js','ghopen.js', 'helptools.js', 'desktop.js', 'rpsdk.js','rpyimport.js', 'launcher.js', 'shellupd.js', 'drive.js', 'collab.js', 'sharefile.js', 'github.js', 'review.js', 'acl.js', 'tasks.js', 'whodid.js', 'notify.js', 'aicore.js', 'aiset.js', 'aichat.js', 'metrics.js', 'minilint.js', 'filenames.js', 'fitbox.js', 'ctrlproj.js', 'statshub.js', 'syncchip.js', 'uimode.js', 'dock.js', 'winbar.js', 'satellite.js', 'uipresets.js', 'lessons.js', 'tour.js', 'walks.js', 'snapshots.js', 'app.js']
+            'script.js', 'text.js', 'effects.js', 'flags.js', 'jumps.js', 'condbuilder.js', 'members.js', 'files.js', 'registry.js', 'compiler.js', 'extras.js', 'guireg.js', 'translate.js', 'tlui.js', 'build.js', 'tools.js', 'toolsmenu.js', 'playeng.js', 'player.js', 'autorun.js', 'endguide.js','voicesheet.js', 'testlog.js', 'gamemode.js', 'analysis.js', 'layout.js', 'mappdf.js', 'notes.js', 'palette.js','palintent.js','replicas.js','rename.js','checks.js','branchstats.js','varstate.js','charpage.js','resources.js', 'weight.js', 'assetprod.js', 'recipes.js', 'snippets.js', 'customcode.js', 'codeedit.js', 'codelang.js', 'codehint.js', 'ide.js', 'digest.js', 'prose.js','branches.js','brlink.js','texted.js','docimport.js','winctl.js','docedit.js','pull.js','lazyfiles.js','ghopen.js', 'helptools.js', 'desktop.js', 'rpsdk.js','rpyimport.js', 'launcher.js', 'shellupd.js', 'drive.js', 'collab.js', 'sharefile.js', 'github.js', 'review.js', 'acl.js', 'tasks.js', 'whodid.js', 'notify.js', 'aicore.js', 'aiset.js', 'aichat.js', 'diag.js', 'metrics.js', 'minilint.js', 'filenames.js', 'fitbox.js', 'ctrlproj.js', 'statshub.js', 'syncchip.js', 'uimode.js', 'dock.js', 'winbar.js', 'satellite.js', 'uipresets.js', 'lessons.js', 'tour.js', 'walks.js', 'snapshots.js', 'app.js']
 
 def kebab(s):
     return re.sub(r'([A-Z])', lambda m: '-' + m.group(1).lower(), s)
@@ -39,9 +39,38 @@ js_parts = []
 for f in JS_ORDER:
     p = os.path.join(SRC, f)
     if not os.path.exists(p):
-        print('missing', f, file=sys.stderr)
-        continue
+        print('ОШИБКА: в JS_ORDER указан файл, которого нет:', f, file=sys.stderr)
+        sys.exit(1)
     js_parts.append(f'/* ==== {f} ==== */\n' + open(p, encoding='utf-8').read())
+# Страховки сборки (после случая с ai.js, который не попал в установщик, и чтобы то же не вышло со страницей):
+# 1) файл из src/ без записи в JS_ORDER молча не попал бы в программу; 2) повтор имени функции молча затёр бы первую (все файлы в одной области видимости)
+_unlisted = sorted(x for x in os.listdir(SRC) if x.endswith('.js') and x not in JS_ORDER)
+if _unlisted:
+    print('ОШИБКА: файлы из src/ не подключены в JS_ORDER (в программу они не попадут):', ', '.join(_unlisted), file=sys.stderr)
+    sys.exit(1)
+_fn_at, _dups = {}, []
+for f in JS_ORDER:
+    _tpl = False                                  # внутри многострочной строки с обратными кавычками (например, текст скрипта оболочки) объявления не считаем
+    for _ln in open(os.path.join(SRC, f), encoding='utf-8').read().split('\n'):
+        if not _tpl:
+            _m = re.match(r'(?:async\s+)?function\*?\s+([A-Za-z_$][\w$]*)', _ln)
+            if _m:
+                if _m.group(1) in _fn_at and _fn_at[_m.group(1)] != f: _dups.append(f'{_m.group(1)} ({_fn_at[_m.group(1)]} и {f})')
+                _fn_at.setdefault(_m.group(1), f)
+        if len(re.findall(r'(?<!\\)`', _ln)) % 2: _tpl = not _tpl
+if _dups:
+    print('ОШИБКА: одно имя функции объявлено в двух файлах:', '; '.join(_dups), file=sys.stderr)
+    sys.exit(1)
+# 3) один и тот же ключ перевода в двух местах: поздний молча затирает ранний (так «Диагностика» могла подменить заголовок «Выжимки для вычитки»)
+_k_at, _kdups = {}, []
+for f in JS_ORDER:
+    for _blk in re.finditer(r"Object\.assign\(D,\s*\{(.*?)\n\}\);", open(os.path.join(SRC, f), encoding='utf-8').read(), re.S):
+        for _k in re.findall(r"(?:^\s*|[{,]\s*)'([A-Za-z0-9_.\-]+)'\s*:\s*\[", _blk.group(1), re.M):
+            if _k in _k_at: _kdups.append(f'{_k} ({_k_at[_k]} и {f})')
+            else: _k_at[_k] = f
+if _kdups:
+    print('ОШИБКА: ключ перевода объявлен дважды (поздний затрёт ранний):', '; '.join(_kdups[:20]), file=sys.stderr)
+    sys.exit(1)
 js = '\n'.join(js_parts)
 js = js.replace('/*THEMES*/null', json.dumps(themes, ensure_ascii=False))
 

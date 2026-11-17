@@ -48,7 +48,7 @@ Object.assign(D, {
   'sn.d.other': ['Остальное', 'Everything else'],
   'sn.d.words': ['слов: {0}', 'words: {0}'],
   'sn.d.f.add': ['добавлена глава «{0}»', 'chapter “{0}” added'], 'sn.d.f.rem': ['пропала глава «{0}»', 'chapter “{0}” gone'],
-  'sn.d.f.edit': ['глава «{0}» изменена{1}', 'chapter “{0}” changed{1}'], 'sn.d.title': ['Что изменилось с этого снимка', 'What has changed since this snapshot'],
+  'sn.d.f.edit': ['глава «{0}» изменена{1}', 'chapter “{0}” changed{1}'],
   'sn.d.ttl': ['название: «{0}» → «{1}»', 'title: “{0}” → “{1}”'], 'sn.d.typ': ['тип: {0} → {1}', 'type: {0} → {1}'], 'sn.d.desc': ['описание изменено', 'description changed'], 'sn.d.pos': ['блок передвинут', 'block moved'],
   'sn.d.edges': ['Стрелки: добавлено {0}, пропало {1}', 'Arrows: {0} added, {1} gone'],
   'sn.d.cnt': ['{0}: было {1}, стало {2}', '{0}: was {1}, now {2}'],
