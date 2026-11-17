@@ -16,10 +16,6 @@ function barBuilders() {
     play: () => tbtn('play', t('pl.btn'), t('pl.tip'), () => openPlayer(), 'pl-top-btn'),
     text: () => tbtn('type', t('te.top'), t('te.top.tip'), () => { const id = [...UI.sel][0], n = id && nodeById(id); openTextEditor(n && n.type !== 'note' ? { nodeId: n.id } : {}); }, 'te-top-btn'),
     registry: () => tbtn('layers', t('top.registry'), t('top.registry.tip'), () => openRegistry()),
-    stats: () => (uiShow('bar.stats') ? tbtn('chart', t('sh.btn'), t('sh.tip'), () => openStatsHub()) : null),
-    team: () => (uiShow('bar.team') ? (BTN.team = tbtn('badge', t('team.btn'), t('team.btn.tip'), b => openTeamMenu(b))) : null),
-    translate: () => (uiShow('bar.translate') ? tbtn('globe', t('tl.btn'), t('tl.btn.tip'), () => openTranslate()) : null),
-    collab: () => (uiShow('bar.collab') ? (BTN.collab = tbtn('users', t('col.btn'), t('col.btn.tip'), () => openCollabPanel(), 'collab-btn')) : null),
     export: () => (uiPro() ? tbtn('download', t('top.export'), t('top.export.tip'), b => menuAt(b, [
       { label: t('exp.build'), icon: 'box', kbd: DESK ? 'Ctrl+B' : undefined, onClick: () => openBuild() },
       { sep: true },
@@ -50,7 +46,6 @@ function topRight(langSeg) {
   return out;
 }
 function buildChrome() {
-  const top = $('#topbar'); top.replaceChildren();
   BTN.team = BTN.collab = null;
   const nameI = h('input', { class: 'proj-name', id: 'proj-name', type: 'text', spellcheck: 'false', 'aria-label': t('top.name'), 'data-tip': t('top.name') });
   nameI.value = P.name;
@@ -61,15 +56,13 @@ function buildChrome() {
   BTN.redo = tbtn('redo', '', t('c.redo') + ' (Ctrl+Shift+Z)', () => redo());
   BTN.theme = tbtn(S.theme === 'dark' ? 'sun' : 'moon', '', t('top.theme'), () => toggleTheme());
   const langSeg = segmented([{ value: 'ru', label: 'RU' }, { value: 'en', label: 'EN' }], S.lang, v => setLang(v), 'mini');
-  top.append(
-    h('div', { class: 'bar' }, h('div', { class: 'logo' }, icon('fork', 18, 2)), nameI, badge),
-    h('div', { class: 'bar' }, BTN.undo, BTN.redo, h('div', { class: 'tsep' }),
-      tbtn('plus', t('top.add'), t('top.add.tip'), b => menuAt(b, NODE_TYPES.map(tp => ({ label: t('type.' + tp), icon: TYPE_ICON[tp], onClick: () => addNodeAtCenter(tp) })))),
-      tbtn('search', t('top.search'), t('top.search') + ' (Ctrl+K)', () => openSearch()),
-      uiPro() ? tbtn('wand', t('tools.btn'), t('tools.tip'), b => toolsMenu(b), 'tools-btn') : tbtn('grid', t('ui.more'), t('ui.more.tip'), b => uiMoreMenu(b), 'more-btn')),
-    uiStrip(),
-    h('div', { class: 'grow' }),
-    h('div', { class: 'bar' }, ...topRight(langSeg)));
+  const identity = h('div', { class: 'bar', id: 'bar-id' }, h('div', { class: 'logo' }, icon('fork', 18, 2)), nameI, badge);
+  const core = h('div', { class: 'bar', id: 'bar-core' }, BTN.undo, BTN.redo, h('div', { class: 'tsep' }),
+    tbtn('plus', t('top.add'), t('top.add.tip'), b => menuAt(b, NODE_TYPES.map(tp => ({ label: t('type.' + tp), icon: TYPE_ICON[tp], onClick: () => addNodeAtCenter(tp) })))),
+    tbtn('search', t('top.search'), t('top.search') + ' (Ctrl+K)', () => openSearch()),
+    uiPro() ? tbtn('wand', t('tools.btn'), t('tools.tip'), b => toolsMenu(b), 'tools-btn') : tbtn('grid', t('ui.more'), t('ui.more.tip'), b => uiMoreMenu(b), 'more-btn'));
+  const strip = uiStrip();
+  const mainBar = h('div', { class: 'bar', id: 'bar-main' }, ...topRight(langSeg));
   document.body.classList.toggle('ui-pro', uiPro());
   const zb = $('#zoombar'); zb.replaceChildren(h('div', { class: 'bar' },
     tbtn('minus', '', t('zoom.out'), () => zoomCenter(1 / 1.25)),
@@ -81,6 +74,7 @@ function buildChrome() {
     (BTN.echo = tbtn('flag', '', t('tb.echo'), b => { S.echo = !S.echo; saveSettings(); b.classList.toggle('on', S.echo); renderEchoes(); }, S.echo ? 'on' : '')),
     (BTN.jumps = tbtn('link', '', t('tb.jumps'), b => { S.jumps = !S.jumps; saveSettings(); b.classList.toggle('on', S.jumps); renderJumps(); }, S.jumps ? 'on' : ''))] : [])));
   BTN.echo = uiPlain('bar.layers') ? BTN.echo : null; BTN.jumps = uiPlain('bar.layers') ? BTN.jumps : null;
+  dockLayout({ core, strip, main: mainBar, zoom: zb, status: $('#statusbar') }, identity);
   updateUndoButtons(); updateSaveBadge(); updateZoomLabel(); updateStatus();
   if (typeof collabRefreshUI === 'function') collabRefreshUI(); if (BTN.collab) BTN.collab.hidden = !(typeof collabAvail === 'function' && collabAvail());
 }

@@ -184,7 +184,7 @@ function bldGuideView(st) {
     step(5, t('gd.s5.t'), [t('gd.s5.p', startNode ? startNode.title : '—'), t('gd.s5.p2')])));
   if (DESK) root.append(h('div', { class: 'card-sec how guide-link', id: 'gd-rp-link', onclick: () => { st.tab = 'renpy'; renderBuild(st); } }, icon('zap', 18),
     h('div', { class: 'gl-t' }, h('b', t('rp.guide.h')), h('div', { class: 'hint' }, t('rp.guide.p'))), h('button', { class: 'btn sm' }, t('rp.tab'), icon('chevR', 14))));
-  root.append(h('div', { class: 'card-sec how guide-link', id: 'gd-cc-link', onclick: () => { st.m.close(); setTimeout(openCtrlCheck, 0); } }, icon('check', 18),
+  if (typeof devOn === 'function' && devOn()) root.append(h('div', { class: 'card-sec how guide-link', id: 'gd-cc-link', onclick: () => { st.m.close(); setTimeout(openCtrlCheck, 0); } }, icon('check', 18),
     h('div', { class: 'gl-t' }, h('b', t('cc.guide.h')), h('div', { class: 'hint' }, t('cc.guide.p'))), h('button', { class: 'btn sm' }, t('cc.btn'), icon('chevR', 14))));
   if (can) {
     const pre = h('div', { class: 'codepre gd-tree' });

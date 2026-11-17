@@ -240,6 +240,7 @@ function rpFillOut() {
 function rpRender() {
   const v = RP.view;
   if (!v || !v.root.isConnected) return;
+  if (v.mini) { v.stat.textContent = RP.status || ''; v.stop.disabled = !RP.jobs.size; return; }                     // панель под плеером: только состояние и «Остановить»
   const keep = v.ctl.scrollTop;
   v.ctl.replaceChildren(...rpControls());
   v.ctl.scrollTop = keep;

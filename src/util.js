@@ -295,11 +295,13 @@ function placeEl(el, anchor, at, side) {
   let x, y;
   if (anchor) {
     const a = anchor.getBoundingClientRect();
+    if (!side && anchor.closest) side = anchor.closest('#dock-left') ? 'right' : anchor.closest('#dock-right') ? 'left' : side;      // у вертикальной панели меню открывается сбоку
     x = a.left; y = a.bottom + 8;
     if (side === 'top') y = a.top - r.height - 8;
     if (side === 'right') { x = a.right + 8; y = a.top; }
-    if (y + r.height > vh - 8 && side !== 'right') y = Math.max(8, a.top - r.height - 8);
-    if (x + r.width > vw - 8) x = Math.max(8, a.right - r.width);
+    if (side === 'left') { x = a.left - r.width - 8; y = a.top; }
+    if (y + r.height > vh - 8 && side !== 'right' && side !== 'left') y = Math.max(8, a.top - r.height - 8);
+    if (x + r.width > vw - 8 && side !== 'left') x = Math.max(8, a.right - r.width);
   } else { x = at.x; y = at.y; }
   x = clamp(x, 8, Math.max(8, vw - r.width - 8));
   y = clamp(y, 8, Math.max(8, vh - r.height - 8));

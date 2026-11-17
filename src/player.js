@@ -11,6 +11,10 @@ Object.assign(D, {
   'pl.building': ['Собираю игру…', 'Building the game…'],
   'pl.empty': ['В проекте нет блоков, которые можно проиграть. Добавьте блок и текст сцены.', 'There is nothing to play yet. Add a block and some scene text.'],
   'pl.err': ['Не удалось запустить: {0}', 'Could not start: {0}'],
+  'pl.rp': ['В Ren\'Py', 'To Ren\'Py'],
+  'pl.rp.tip': ['Запустить игру в настоящем Ren\'Py (с выбранного блока, если вы начали с него): вывод движка появится под плеером', 'Run the game in real Ren\'Py (from the chosen block, if you started there): the engine output shows up under the player'],
+  'pl.rp.setup': ['Сначала укажите папку Ren\'Py SDK и папку проекта: открываю нужную вкладку.', 'First choose the Ren\'Py SDK folder and the project folder: opening the right tab.'],
+  'pl.rp.hide': ['Скрыть вывод', 'Hide the output'],
   'pl.back': ['Назад: откатить на реплику (←)', 'Roll back one step (←)'],
   'pl.auto': ['Авто: само листает реплики (A)', 'Auto: advance on its own (A)'],
   'pl.skip': ['Пропуск: быстро листает реплики, останавливается на выборах (S)', 'Skip: fast-forward, stops at choices (S)'],
@@ -79,6 +83,7 @@ async function openPlayer(opts) {
 
 function plCleanup(st) {
   st.dead = true;
+  if (st.cons && typeof RP !== 'undefined' && RP.view === st.cons) RP.view = null;
   if (st.unkey) st.unkey();
   plClearTimers(st);
   if (st.mus) { try { st.mus.pause(); } catch (e) { /* нечего останавливать */ } st.mus = null; }
@@ -117,16 +122,48 @@ function plFatal(st, text) {
   st.body.classList.remove('busy');
   st.stage.replaceChildren(h('div', { class: 'pl-fatal' }, icon('alert', 22), h('div', text)));
 }
-function plRestart(st) { lgBegin(st); plClearTimers(st); st.read = 0; st.layerSig = ''; st.layerEls.clear(); st.scene.replaceChildren(st.fade); st.prevVars = {}; plShow(st, st.g.begin('start')); }
+function plRestart(st) { st.startNid = ''; lgBegin(st); plClearTimers(st); st.read = 0; st.layerSig = ''; st.layerEls.clear(); st.scene.replaceChildren(st.fade); st.prevVars = {}; plShow(st, st.g.begin('start')); }
 function plStartNode(st, nid) {
   const b = (st.R.blockLabels || []).find(x => x.id === nid);
   if (!b) { toast(t('pl.nodef', (nodeById(nid) || {}).title || '?'), 4200); return; }
+  st.startNid = nid;
   plStartLabel(st, b.label, b.title);
 }
 function plStartLabel(st, label, title) {
   lgBegin(st); plClearTimers(st); st.read = 0; st.layerSig = ''; st.layerEls.clear(); st.scene.replaceChildren(st.fade); st.prevVars = {};
   if (title) toast(t('pl.start.at', title), 2200);
   plShow(st, st.g.begin(label));
+}
+
+/* ---------- «В Ren'Py»: настоящий движок, его вывод идёт в консоль под плеером (только программа для компьютера) ---------- */
+function plRenpyBtn(st) {
+  if (typeof rpApi !== 'function' || !rpApi()) return null;
+  return h('button', { class: 'btn', id: 'pl-renpy', 'data-tip': t('pl.rp.tip'), onclick: () => plToRenpy(st) }, icon('zap', 15), h('span', t('pl.rp')), icon('chevR', 14));
+}
+async function plToRenpy(st) {
+  rpWire(); await rpRefresh(false);
+  if (!rpReady()) { toast(t('pl.rp.setup'), 5200); st.m.close(); setTimeout(() => openBuild('renpy'), 80); return; }
+  RP.from = st.startNid || '';
+  plConsole(st);
+  rpAction('run');
+}
+/** Панель вывода Ren'Py под плеером: те же строки, что на вкладке «Запуск в Ren'Py», со ссылками на блоки. */
+function plConsole(st) {
+  if (!st.cons) {
+    const stat = h('span', { class: 'rp-stat hint' }, RP.status || '');
+    const out = h('div', { class: 'codepre rp-out' });
+    const stop = h('button', { class: 'btn sm', id: 'pl-cons-stop', onclick: () => rpStop() }, icon('stop', 14), t('rp.stop'));
+    const root = h('div', { class: 'pl-cons', id: 'pl-cons' },
+      h('div', { class: 'sec-head' }, icon('zap', 15), h('b', t('rp.out')), stat, h('div', { class: 'grow' }), stop,
+        h('button', { class: 'btn sm', onclick: () => copyText(RP.out.map(l => l.text).join('\n')).then(() => toast(t('rp.copied'))) }, icon('copy', 14), t('rp.copy')),
+        h('button', { class: 'btn sm', onclick: () => { RP.out = []; for (const k in RP.part) RP.part[k] = ''; rpFillOut(); } }, icon('trash', 14), t('rp.clear')),
+        h('button', { class: 'btn icon sm', id: 'pl-cons-hide', 'data-tip': t('pl.rp.hide'), onclick: () => { root.hidden = true; st.body.classList.remove('with-cons'); } }, icon('x', 15))),
+      out);
+    st.cons = { root, out, stat, stop, mini: true, empty: null, ctl: h('div') };
+    st.body.append(root);
+  }
+  st.cons.root.hidden = false; st.body.classList.add('with-cons');
+  RP.view = st.cons; rpFillOut();
 }
 
 /* ---------- окно ---------- */
@@ -160,7 +197,7 @@ function plBuild(st, m) {
   const G = isGame();
   const gameBtns = G ? [h('button', { class: 'btn', id: 'pl-note', 'data-tip': t('gm.note.tip'), onclick: () => gmNote(st) }, icon('note', 15), h('span', t('gm.note'))),
     h('button', { class: 'btn', id: 'pl-savelog', 'data-tip': t('gm.save.tip'), onclick: () => gmSaveLog(st) }, icon('save', 15), h('span', t('gm.save')))] : [];
-  const head = h('div', { class: 'm-head pl-head' }, h('div', { class: 'm-title' }, icon('play', 16), G ? (GAME.title || t('pl.title')) : t('pl.title')), G ? null : st.where, G ? null : st.openBtn, h('div', { class: 'grow' }), ...gameBtns, G ? null : fromBtn,
+  const head = h('div', { class: 'm-head pl-head' }, h('div', { class: 'm-title' }, icon('play', 16), G ? (GAME.title || t('pl.title')) : t('pl.title')), G ? null : st.where, G ? null : st.openBtn, h('div', { class: 'grow' }), ...gameBtns, G ? null : fromBtn, G ? null : plRenpyBtn(st),
     h('button', { class: 'btn icon', 'data-tip': t('c.close') + ' (Esc)', onclick: () => m.close() }, icon('x', 18)));
   st.body = h('div', { class: 'pl busy' }, head, h('div', { class: 'pl-main' }, h('div', { class: 'pl-center-col' }, h('div', { class: 'pl-stagewrap' }, st.stage), bar), st.side));
   st.body.prepend(h('div', { class: 'pl-busy' }, h('span', { class: 'spin' }), t('pl.building')));

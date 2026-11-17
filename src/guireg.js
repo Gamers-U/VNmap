@@ -15,6 +15,16 @@ Object.assign(D, {
   'gui.prev.name': ['Алиса', 'Alice'], 'gui.prev.text': ['Привет! Это пример реплики в вашей игре.', 'Hi! This is a sample line in your game.'],
   'gui.prev.n1': ['Начать', 'Start'], 'gui.prev.n2': ['Загрузить', 'Load'], 'gui.prev.n3': ['Настройки', 'Preferences'],
   'gui.prev.c1': ['Согласиться', 'Agree'], 'gui.prev.c2': ['Отказаться', 'Decline'],
+  'gui.edit.none': ['Нажмите на любую часть образца: имя, текст, окно, варианты выбора, меню или фон. Здесь появятся её цвета, размеры и шрифт, а образец сразу изменится.', 'Click any part of the preview: the name, the text, the window, the choices, the menu or the background. Its colours, sizes and font appear here and the preview changes at once.'],
+  'gui.edit.hint': ['Нажмите на часть образца, чтобы изменить её', 'Click a part of the preview to change it'],
+  'gui.part.name': ['Имя говорящего', 'Speaker name'], 'gui.part.name.h': ['Цвет имени задаёт «Акцент». Положение отсчитывается от окна с текстом.', 'The name colour is the "Accent". The position is counted from the text window.'],
+  'gui.part.text': ['Текст реплики', 'Dialogue text'], 'gui.part.text.h': ['Размер, шрифт и цвет текста, и где он стоит внутри окна.', 'The size, font and colour of the text, and where it sits inside the window.'],
+  'gui.part.box': ['Окно с текстом', 'Text window'], 'gui.part.box.h': ['Высота окна. Свою картинку окна и плашки имени можно задать ниже, в разделе «Картинки».', 'The window height. You can set your own window and name plate pictures below, in the "Pictures" section.'],
+  'gui.part.choice': ['Варианты выбора', 'Choices'], 'gui.part.choice.h': ['Размер и шрифт совпадают с текстом реплики. Картинки кнопок: «Картинки» ниже.', 'The size and font follow the dialogue text. Button pictures: "Pictures" below.'],
+  'gui.part.nav': ['Меню (Начать, Загрузить…)', 'Menu (Start, Load…)'], 'gui.part.nav.h': ['Пункты главного меню и кнопки: обычный, под курсором и выбранный.', 'Main menu items and buttons: normal, hovered and selected.'],
+  'gui.part.bg': ['Фон меню', 'Menu background'], 'gui.part.bg.h': ['Здесь только картинка: загрузите её ниже, в разделе «Картинки». Без неё останется фон шаблона.', 'Only a picture here: upload it below, in the "Pictures" section. Without it the template background stays.'],
+  'gui.part.imgs': ['Перейти к картинкам', 'Go to the pictures'],
+  'gui.part.close': ['Снять выделение', 'Clear selection'],
   'gui.g.colors': ['Цвета', 'Colours'], 'gui.g.colors.h': ['Пусто — как в шаблоне Ren\'Py (серым показано стандартное значение).', 'Empty means the Ren\'Py template value (shown in grey).'],
   'gui.g.sizes': ['Размеры текста', 'Text sizes'], 'gui.g.sizes.h': ['В пикселях при размере экрана игры (по умолчанию 1920×1080).', 'In pixels at the game screen size (1920×1080 by default).'],
   'gui.g.box': ['Окно с текстом и плашка имени', 'Text window and name plate'], 'gui.g.box.h': ['Высота окна и положение текста внутри него. Пригодится, если вы заменили картинку окна.', 'The window height and where the text sits inside it. Useful when you replaced the window picture.'],
@@ -104,10 +114,32 @@ async function guiToPng(file) {
 const guiEnsure = k => guiAsset(k) || createAsset('gui', k);
 const guiGet = k => (P.gui && P.gui[k] !== undefined && P.gui[k] !== '' ? P.gui[k] : undefined);
 function guiCount() { return P.assets.filter(a => a.kind === 'gui' && assetFileCount(a)).length + Object.keys(guiClean(P.gui)).length; }
-function guiTidy() { P.gui = guiClean(P.gui); }
+/** Убирает из P.gui лишнее. Объект остаётся тем же: поля цвета держат на него ссылку, и новый объект сделал бы их правки потерянными. */
+function guiTidy() { const c = guiClean(P.gui); if (!P.gui || typeof P.gui !== 'object') P.gui = {}; for (const k of Object.keys(P.gui)) delete P.gui[k]; Object.assign(P.gui, c); }
+
+/** Части образца, на которые можно нажать: что в них меняется и какие картинки к ним относятся. */
+const GUI_PARTS = {
+  name: { keys: ['accent_color', 'name_text_size', 'name_text_font', 'name_xpos', 'name_ypos'], slot: 'namebox' },
+  text: { keys: ['text_color', 'text_size', 'text_font', 'dialogue_xpos', 'dialogue_ypos', 'dialogue_width'] },
+  box: { keys: ['textbox_height'], slot: 'textbox' },
+  choice: { keys: ['text_size', 'text_font'], slot: 'choice_idle' },
+  nav: { keys: ['interface_text_size', 'interface_text_font', 'idle_color', 'hover_color', 'selected_color'] },
+  bg: { keys: [], slot: 'main_menu' },
+};
+let GUI_PART = '';
+/** Поле значения (цвет, размер или шрифт) для одного пункта GUI_KEYS; onChange вызывается после каждого изменения. */
+function guiCtl(d, onChange) {
+  if (d.t === 'color') { if (!P.gui) P.gui = {}; return hexField(P.gui, d.k, d.d, onChange); }
+  if (d.t === 'size') {
+    const i = h('input', { class: 'inp', type: 'number', step: '1', min: String(d.min), max: '4000', placeholder: String(d.d), value: guiGet(d.k) !== undefined ? String(guiGet(d.k)) : '' });
+    i.addEventListener('input', () => { if (!P.gui) P.gui = {}; if (i.value === '') delete P.gui[d.k]; else P.gui[d.k] = i.value; onChange(); });
+    return i;
+  }
+  return fontSelect(guiGet(d.k) || '', val => { if (!P.gui) P.gui = {}; if (val) P.gui[d.k] = val; else delete P.gui[d.k]; onChange(); }, { empty: t('gui.font.std') });
+}
 
 /* ---------- образец окна игры ---------- */
-function guiPreview() {
+function guiPreview(onPick) {
   const box = h('div', { class: 'gui-prev' }), cv = h('div', { class: 'gui-scr' });
   box.append(cv);
   const v = (k, dflt) => { const x = guiGet(k); return x !== undefined ? x : dflt; };
@@ -126,7 +158,13 @@ function guiPreview() {
   const nv = (label, st) => h('div', { class: 'gui-nv', style: { fontSize: px(v('interface_text_size', dd('interface_text_size'))), fontFamily: fontCssOf(v('interface_text_font', '')),
     color: st === 'hover' ? v('hover_color', dd('hover_color')) : st === 'sel' ? v('selected_color', dd('selected_color')) : v('idle_color', dd('idle_color')) } }, label);
   const nav = h('div', { class: 'gui-nav' }, nv(t('gui.prev.n1'), 'sel'), nv(t('gui.prev.n2'), 'hover'), nv(t('gui.prev.n3'), 'idle'));
-  cv.append(bg, nav, h('div', { class: 'gui-choices' }, ch(t('gui.prev.c1'), false), ch(t('gui.prev.c2'), true)), tb);
+  const chs = h('div', { class: 'gui-choices' }, ch(t('gui.prev.c1'), false), ch(t('gui.prev.c2'), true));
+  cv.append(bg, nav, chs, tb);
+  if (onPick) {                                                         // части образца кликаются: нажали и правите здесь же
+    const mark = (part, el) => { el.classList.add('gui-part'); el.dataset.part = part; if (GUI_PART === part) el.classList.add('sel'); el.addEventListener('click', e => { e.stopPropagation(); onPick(GUI_PART === part ? '' : part); }); };
+    mark('bg', bg); mark('nav', nav); mark('choice', chs); mark('box', tb); mark('text', txt); mark('name', nb);
+    cv.addEventListener('click', () => onPick(''));
+  }
   return box;
 }
 /** CSS-семейство шрифта из реестра по ссылке (для образца); пусто — шрифт страницы. */
@@ -138,51 +176,60 @@ function fontCssOf(ref) {
 /* ---------- вкладка ---------- */
 function regGui(st, list, qq) {
   list.append(mfBanner());
-  const lead = h('div', { class: 'hint gui-lead' }, t('gui.lead'));
-  list.append(lead);
-  const prevHost = h('div', { class: 'reg-card gui-sec' }, h('div', { class: 'reg-body' }, h('div', { class: 'gui-h' }, icon('eye', 14), h('b', t('gui.prev.h'))), h('div', { class: 'hint' }, t('gui.prev.t'))));
-  let prev = guiPreview(); prevHost.firstChild.append(prev);
-  const repaint = () => { const n = guiPreview(); prev.replaceWith(n); prev = n; };
-  list.append(prevHost);
+  list.append(h('div', { class: 'hint gui-lead' }, t('gui.lead')));
+  /* сверху образец и рядом панель правки выбранной части (они остаются на виду, пока листаете настройки ниже) */
+  const host = h('div', { class: 'gui-host' });
+  const prevCard = h('div', { class: 'reg-card gui-sec gui-prevcard' }, h('div', { class: 'reg-body' }, h('div', { class: 'gui-h' }, icon('eye', 14), h('b', t('gui.prev.h')), h('span', { class: 'hint', 'data-tip': t('gui.prev.t') }, t('gui.edit.hint')))));
+  const edit = h('div', { class: 'reg-card gui-sec gui-edit', id: 'gui-edit' });
+  let prev = null;
+  const secBox = h('div', { class: 'gui-secs' });
+  const pick = part => { GUI_PART = part; repaint(); renderEdit(); };
+  const repaint = () => { const n = guiPreview(pick); if (prev) prev.replaceWith(n); else prevCard.firstChild.append(n); prev = n; };
+  const fromPanel = () => { guiTidy(); commit(true); repaint(); renderSecs(); };          // правка в панели: образец и разделы ниже обновляются
+  const renderEdit = () => {
+    edit.replaceChildren();
+    const part = GUI_PARTS[GUI_PART];
+    if (!part) { edit.append(h('div', { class: 'reg-body' }, h('div', { class: 'hint gui-edit-none' }, t('gui.edit.none')))); return; }
+    const grid = h('div', { class: 'gui-grid' });
+    for (const k of part.keys) { const d = GUI_KEYS.find(x => x.k === k); grid.append(field(t('gui.k.' + d.k), guiCtl(d, fromPanel))); }
+    edit.append(h('div', { class: 'reg-body' },
+      h('div', { class: 'gui-h' }, h('b', t('gui.part.' + GUI_PART)), h('div', { class: 'grow' }), h('button', { class: 'btn icon sm', id: 'gui-edit-x', 'data-tip': t('gui.part.close'), onclick: () => pick('') }, icon('x', 14))),
+      h('div', { class: 'hint', style: { marginBottom: '8px' } }, t('gui.part.' + GUI_PART + '.h')),
+      part.keys.length ? grid : null,
+      part.slot ? h('button', { class: 'btn sm', id: 'gui-edit-imgs', onclick: () => { const el = list.querySelector('.gui-slot[data-slot="' + part.slot + '"]'); if (el) { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 1400); } } }, icon('image', 14), t('gui.part.imgs')) : null));
+  };
+  host.append(prevCard, edit);
+  list.append(host, secBox);
+  repaint(); renderEdit();
   const match = s => !qq || s.toLowerCase().includes(qq);
-  const changed = () => { guiTidy(); commit(true); repaint(); };
-  const sections = [['colors', 'color'], ['sizes', 'size'], ['box', 'size'], ['fonts', 'font']];
-  for (const [g, ty] of sections) {
-    const keys = GUI_KEYS.filter(d => d.g === g && match(t('gui.k.' + d.k) + ' ' + d.k));
-    if (!keys.length) continue;
-    const grid = h('div', { class: ty === 'color' ? 'gui-grid c' : 'gui-grid' });
-    for (const d of keys) {
-      let ctl;
-      if (d.t === 'color') {
-        if (!P.gui) P.gui = {};
-        ctl = hexField(P.gui, d.k, d.d, changed);
-      } else if (d.t === 'size') {
-        const i = h('input', { class: 'inp', type: 'number', step: '1', min: String(d.min), max: '4000', placeholder: String(d.d), value: guiGet(d.k) !== undefined ? String(guiGet(d.k)) : '' });
-        i.addEventListener('input', () => { if (!P.gui) P.gui = {}; if (i.value === '') delete P.gui[d.k]; else P.gui[d.k] = i.value; changed(); });
-        ctl = i;
-      } else {
-        ctl = fontSelect(guiGet(d.k) || '', val => { if (!P.gui) P.gui = {}; if (val) P.gui[d.k] = val; else delete P.gui[d.k]; changed(); }, { empty: t('gui.font.std') });
-      }
-      grid.append(field(t('gui.k.' + d.k), ctl));
+  const changed = () => { guiTidy(); commit(true); repaint(); renderEdit(); };
+  const renderSecs = () => {
+    secBox.replaceChildren();
+    const sections = [['colors', 'color'], ['sizes', 'size'], ['box', 'size'], ['fonts', 'font']];
+    for (const [g, ty] of sections) {
+      const keys = GUI_KEYS.filter(d => d.g === g && match(t('gui.k.' + d.k) + ' ' + d.k));
+      if (!keys.length) continue;
+      const grid = h('div', { class: ty === 'color' ? 'gui-grid c' : 'gui-grid' });
+      for (const d of keys) grid.append(field(t('gui.k.' + d.k), guiCtl(d, changed)));
+      secBox.append(h('div', { class: 'reg-card gui-sec', 'data-gsec': g }, h('div', { class: 'reg-body' },
+        h('div', { class: 'gui-h' }, h('b', t('gui.g.' + g)), h('div', { class: 'grow' }),
+          g === 'colors' ? h('span', { class: 'hint', id: 'gui-setn' }, t('gui.set', Object.keys(guiClean(P.gui)).length)) : null),
+        h('div', { class: 'hint', style: { marginBottom: '8px' } }, t('gui.g.' + g + '.h')), grid)));
     }
-    list.append(h('div', { class: 'reg-card gui-sec', 'data-gsec': g }, h('div', { class: 'reg-body' },
-      h('div', { class: 'gui-h' }, h('b', t('gui.g.' + g)), h('div', { class: 'grow' }),
-        g === 'colors' ? h('span', { class: 'hint', id: 'gui-setn' }, t('gui.set', Object.keys(guiClean(P.gui)).length)) : null),
-      h('div', { class: 'hint', style: { marginBottom: '8px' } }, t('gui.g.' + g + '.h')), grid)));
-  }
-  if (Object.keys(guiClean(P.gui)).length && !qq) list.append(h('div', { class: 'row-actions left' }, h('button', { class: 'btn sm', id: 'gui-reset', onclick: async () => {
-    if (!(await confirmDlg({ title: t('gui.reset.q'), text: t('gui.reset.t'), ok: t('gui.reset'), danger: true }))) return;
-    P.gui = {}; commit(true); renderReg();
-  } }, icon('undo', 14), t('gui.reset'))));
-
-  /* картинки */
-  const slots = GUI_SLOTS.filter(s => match(t('gui.s.' + s.k) + ' ' + s.k + ' ' + s.path));
-  if (slots.length) {
-    const box = h('div', { class: 'gui-slots' });
-    for (const s of slots) box.append(guiSlotRow(s, repaint));
-    list.append(h('div', { class: 'reg-card gui-sec', 'data-gsec': 'imgs' }, h('div', { class: 'reg-body' },
-      h('div', { class: 'gui-h' }, h('b', t('gui.g.imgs'))), h('div', { class: 'hint', style: { marginBottom: '8px' } }, t('gui.g.imgs.h')), box)));
-  }
+    if (Object.keys(guiClean(P.gui)).length && !qq) secBox.append(h('div', { class: 'row-actions left' }, h('button', { class: 'btn sm', id: 'gui-reset', onclick: async () => {
+      if (!(await confirmDlg({ title: t('gui.reset.q'), text: t('gui.reset.t'), ok: t('gui.reset'), danger: true }))) return;
+      P.gui = {}; commit(true); renderReg();
+    } }, icon('undo', 14), t('gui.reset'))));
+    /* картинки */
+    const slots = GUI_SLOTS.filter(s => match(t('gui.s.' + s.k) + ' ' + s.k + ' ' + s.path));
+    if (slots.length) {
+      const box = h('div', { class: 'gui-slots' });
+      for (const s of slots) box.append(guiSlotRow(s, repaint));
+      secBox.append(h('div', { class: 'reg-card gui-sec', 'data-gsec': 'imgs' }, h('div', { class: 'reg-body' },
+        h('div', { class: 'gui-h' }, h('b', t('gui.g.imgs'))), h('div', { class: 'hint', style: { marginBottom: '8px' } }, t('gui.g.imgs.h')), box)));
+    }
+  };
+  renderSecs();
 }
 function guiSlotRow(s, repaint) {
   const a = guiAsset(s.k), m = a && assetMeta(a, '');

@@ -175,6 +175,22 @@ function helpRich(text, q) {
   const marks = str => (re ? str.split(re).map((x, i) => (i % 2 ? h('mark', x) : x)) : [str]);
   return String(text).split('`').map((seg, i) => (i % 2 ? h('code', marks(seg)) : marks(seg)));
 }
+/** Шаги «1) … 2) … 3) …» внутри абзаца идут с новой строки, чтобы их было видно. */
+function helpSteps(text, q) {
+  const parts = String(text).split(/\s+(?=\d{1,2}\)\s)/);
+  if (parts.length < 3) return helpRich(text, q);
+  return parts.map((x, i) => [i ? h('br') : null, helpRich(x, q)]);
+}
+/** Делит абзац справки на заголовок и текст: «Быстрый старт. 1) …», «Заметки: стикер на блоке …», «Рецепты (1.6.8): …».
+    Заголовок короткий и без кода; если такого нет, абзац остаётся как есть. */
+function helpSplit(text) {
+  const s = String(text);
+  let m = s.match(/^([^.:\n`«»]{2,56}?)(?:\s*\((\d+\.\d+(?:\.\d+)?)\))?:\s+(\S[\s\S]*)$/);
+  if (m) return { title: m[1].trim(), ver: m[2] || '', sep: ':', rest: m[3] };
+  m = s.match(/^([^.:\n`]{3,52}(?:\([^)\n]{1,40}\))?)\.\s+(\S[\s\S]*)$/);
+  if (m) return { title: m[1].trim(), ver: '', sep: '.', rest: m[2] };
+  return { title: '', ver: '', sep: '', rest: s };
+}
 function openHelp(focus) {
   closePopover();
   const secs = tx('help.sections'), keys = tx('help.keys'), L = S.lang === 'en' ? 1 : 0;
@@ -204,13 +220,24 @@ function openHelp(focus) {
       nav.append(h('div', { class: 'help-g' }, g.title));
       ids.forEach(id => { const x = byId.get(id); nav.append(h('button', { class: 'help-tab' + (id === st.cur ? ' on' : ''), onclick: () => go(id) }, icon(x.ic, 16), h('span', x.h))); });
     });
+    nav.append(h('div', { class: 'help-g' }, t('help.learn')), h('button', { class: 'help-learn', id: 'help-tour', 'data-tip': t('tour.btn.tip'), onclick: () => { st.m.close(); setTimeout(() => openTour(), 0); } }, icon('sparkles', 16), h('span', t('tour.btn'))));
     cnt.textContent = st.q ? t('help.found', vis.size) : '';
     view.replaceChildren();
     if (!vis.size) { view.append(h('div', { class: 'empty' }, t('help.none'))); return; }
     const x = byId.get(st.cur), order = [...vis], at = order.indexOf(st.cur);
     view.append(h('div', { class: 'help-card' }, h('div', { class: 'help-h' }, h('span', { class: 'help-ic' }, icon(x.ic, 20)), h('h2', helpRich(x.h, st.q)))));
     const card = view.firstChild;
-    if (x.items) card.append(...x.items.map(it => h('p', { class: 'help-p' }, helpRich(it, st.q))));
+    if (x.items) {
+      const parts = x.items.map(helpSplit);
+      const ps = parts.map((pt, i) => h('p', { class: 'help-p', id: 'help-p-' + i },
+        pt.title ? [h('b', { class: 'help-lead' }, helpRich(pt.title, st.q), pt.sep), pt.ver ? h('span', { class: 'help-ver' }, 'v' + pt.ver) : null, ' '] : null, helpSteps(pt.rest, st.q)));
+      const heads = parts.map((pt, i) => ({ i, title: pt.title })).filter(z => z.title);
+      if (parts.length >= 6 && heads.length >= 4) {                                    // длинный раздел: оглавление, чтобы не листать всё подряд
+        card.append(h('div', { class: 'help-toc' }, h('div', { class: 'help-toc-h' }, t('help.toc')),
+          h('div', { class: 'help-toc-l' }, heads.map(z => h('button', { class: 'help-toc-b', type: 'button', onclick: () => { const el = view.querySelector('#help-p-' + z.i); if (el) { el.scrollIntoView({ block: 'start', behavior: 'smooth' }); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 1500); } } }, z.title)))));
+      }
+      card.append(...ps);
+    }
     else card.append(h('div', { class: 'keys' }, x.keys.map(([k, d]) => h('div', { class: 'key-row' }, h('span', k.split('+').map((z, i) => [i ? '+' : '', h('kbd', z)])), h('span', { class: 'key-d' }, helpRich(d, st.q))))));
     view.append(h('div', { class: 'help-pn' },
       at > 0 ? h('button', { class: 'btn', onclick: () => go(order[at - 1]) }, icon('chevL', 15), byId.get(order[at - 1]).h) : h('span'),
@@ -221,9 +248,9 @@ function openHelp(focus) {
   search.addEventListener('keydown', e => { if (e.key === 'Enter') { const v = visibleIds(); if (v.length && !v.includes(st.cur)) go(v[0]); } });
   openModal({
     cls: 'help-m', build: m => {
-      paint();
+      st.m = m; paint();
       setTimeout(() => { if (window.matchMedia && matchMedia('(pointer:fine)').matches) search.focus(); }, 60);
-      return h('div', { class: 'm-wrap' }, modalHead(t('help.title'), m, h('div', { class: 'help-sw' }, icon('search', 15), search, cnt, h('button', { class: 'btn sm', id: 'help-tour', 'data-tip': t('tour.btn.tip'), onclick: () => { m.close(); setTimeout(() => openTour(), 0); } }, icon('sparkles', 15), t('tour.btn')))), h('div', { class: 'help-body' }, nav, view));
+      return h('div', { class: 'm-wrap' }, modalHead(t('help.title'), m, h('div', { class: 'help-sw' }, icon('search', 15), search, cnt)), h('div', { class: 'help-body' }, nav, view));
     }
   });
 }

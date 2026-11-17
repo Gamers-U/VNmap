@@ -18,6 +18,10 @@ Object.assign(D, {
   'tour.hero.p': ['Две минуты по главным кнопкам: карта, поиск, где лежат остальные функции, плеер, сборка, настройки. Ничего в проекте он не меняет. Листайте кнопками или клавишами ← →, Esc закрывает тур.',
     'Two minutes along the main buttons: the map, the search, where the other functions live, the player, the build, the settings. It changes nothing in your project. Page through with the buttons or the ← → keys, Esc closes the tour.'],
   'tour.hero.go': ['Начать тур', 'Start the tour'],
+  'tour.task.ok': ['Получилось! Нажмите «Далее».', 'Done! Press Next.'],
+  'tour.walk': ['Попробовать на практике', 'Try it hands-on'],
+  'tour.walk.tip': ['Программа сама откроет функцию и по шагам попросит что-нибудь сделать, подсвечивая нужные кнопки', 'The app opens the function itself and asks you to do something step by step, highlighting the right buttons'],
+  'tour.walk.mark': ['есть практика', 'hands-on available'],
   'tour.hero.ok': ['Тур уже пройден, его можно повторить.', 'You have already taken the tour, you can repeat it.'],
   'tour.hero.l': ['Уроки по функциям', 'A lesson for every function'],
   'tour.hero.lp': ['Выберите урок слева. В каждом сказано, для чего функция, как ею пользоваться и где она лежит, а кнопка открывает её сразу. Просмотрено уроков: {0} из {1}.',
@@ -28,8 +32,6 @@ Object.assign(D, {
   'tour.w.more': ['Ещё → {0} → {1}', 'More → {0} → {1}'],
   'tour.w.strip': ['{0} → {1}', '{0} → {1}'],
   'tour.w.tools': ['Инструменты → {0}', 'Tools → {0}'],
-  'tour.w.hub': ['{0} → карточка «{1}»', '{0} → the “{1}” card'],
-  'tour.w.team': ['{0} → {1}', '{0} → {1}'],
   'tour.w.off': ['Выключено в «Настройки → Модули». Включите модуль, чтобы пользоваться этой функцией.', 'Switched off in Settings → Modules. Switch the module on to use this feature.'],
   'tour.w.k': ['Быстрее всего: Ctrl+K и начните вводить «{0}».', 'The fastest way: Ctrl+K and start typing “{0}”.'],
 
@@ -46,11 +48,10 @@ Object.assign(D, {
   'tour.s.search': ['Поиск (Ctrl+K)', 'Search (Ctrl+K)'],
   'tour.s.search.p': ['Находит блоки, реплики, персонажей и любую команду программы. Пишите обычными словами: «хочу собрать игру», «как найти тупики».', 'Finds blocks, lines, characters and every command of the app. Write in plain words: "I want to build the game", "how do I find dead ends".'],
   'tour.s.more': ['Ещё', 'More'],
-  'tour.s.more.p': ['Все остальные возможности лежат здесь по разделам: Карта, Тексты, Проверки, Игра, Работа команды. Не знаете, где что? В «Обучении» есть урок по каждой функции.', 'All the other features are here, by section: Map, Texts, Checks, Play, Teamwork. Not sure where something is? The Tutorial has a lesson for every function.'],
+  'tour.s.more.p': ['Все остальные возможности лежат здесь по разделам: Карта, Тексты, Код, Проверки, Игра, Работа команды (разделы, которые вы выключили, не показываются). Не знаете, где что? В «Обучении» есть урок по каждой функции.', 'All the other features are here, by section: Map, Texts, Code, Checks, Play, Teamwork (sections you switched off are not shown). Not sure where something is? The Tutorial has a lesson for every function.'],
   'tour.s.tools': ['Инструменты', 'Tools'],
-  'tour.s.tools.p': ['Полный список возможностей. Те же пункты разложены по разделам в строке под панелью.', 'The full list of features. The same items are laid out by section in the strip under the bar.'],
-  'tour.s.strip': ['Разделы', 'Sections'],
-  'tour.s.strip.p': ['Карта, Тексты, Проверки, Игра, Работа команды: каждый раздел открывает своё меню с инструментами.', 'Map, Texts, Checks, Play, Teamwork: every section opens its own menu of tools.'],
+  'tour.s.tools.p': ['Полный список возможностей, а также всё, что не вошло ни в один раздел. Те же пункты разложены по разделам рядом: пройдём по ним по порядку.', 'The full list of features, plus everything that is not in any section. The same items are laid out by section next to it: we will go through them in order.'],
+  
   'tour.s.play': ['Играть', 'Play'],
   'tour.s.play.p': ['Встроенный плеер проходит новеллу без Ren\'Py: выборы, переменные, история. Можно начать с любого блока.', 'The built-in player runs the novel without Ren\'Py: choices, variables, history. You can start from any block.'],
   'tour.s.text': ['Текст', 'Text'],
@@ -61,8 +62,22 @@ Object.assign(D, {
   'tour.s.build.p': ['Превращает карту в проект Ren\'Py. Перед записью покажет отчёт: ошибки, предупреждения и мини-Lint.', 'Turns the map into a Ren\'Py project. Before writing it shows a report: errors, warnings and the mini-Lint.'],
   'tour.s.export': ['Экспорт', 'Export'],
   'tour.s.export.p': ['Здесь «Сборка» (карта превращается в проект Ren\'Py), картинка карты, PDF, выжимка для вычитки и сохранение проекта.', 'Here are the Build (the map turns into a Ren\'Py project), the map image, the PDF, the proofreading digest and saving the project.'],
-  'tour.s.status': ['Строка состояния', 'Status bar'],
-  'tour.s.status.p': ['Сколько блоков и файлов, какая часть готова. Нажмите на цифры: откроется «Статистика» с концовками, временем чтения и автопрогоном.', 'How many blocks and files there are and how much is ready. Click the figures to open Statistics with the endings, the reading time and the autorun.'],
+  'tour.s.status': ['Состояние проекта и «Статистика»', 'Project status and Statistics'],
+  'tour.s.status.p': ['Внизу видно, сколько блоков и файлов, какая часть готова и когда была копия.\nНажмите на эти цифры: откроется «Статистика» с концовками, временем чтения, ветками и автопрогоном. Она же лежит в разделе «Проверки».', 'The bottom bar shows how many blocks and files there are, how much is ready and when the last backup was.\nClick the figures to open Statistics with the endings, the reading time, the branches and the autorun. It also lives in the Checks section.'],
+  'tour.s.stats.open': ['Открыть «Статистику»', 'Open Statistics'],
+  'tour.s.g.in': ['В разделе: {0}.', 'In this section: {0}.'],
+  'tour.s.g.map': ['Раздел «Карта»', 'The Map section'],
+  'tour.s.g.map.p': ['Всё, что делает карту удобной: расставить блоки по порядку, сохранить карту в PDF, заметки на карте.', 'Everything that makes the map handy: arrange the blocks, save the map as a PDF, notes on the map.'],
+  'tour.s.g.text': ['Раздел «Тексты»', 'The Texts section'],
+  'tour.s.g.text.p': ['Всё о тексте новеллы: редактор, импорт из Word, выжимка для вычитки, реплики, переименование, страницы персонажей, озвучка и перевод.', 'Everything about the text of the novel: the editor, import from Word, the proofreading digest, lines, renaming, character pages, voicing and translation.'],
+  'tour.s.g.code': ['Раздел «Код»', 'The Code section'],
+  'tour.s.g.code.p': ['Всё про код Ren\'Py: свой код проекта, готовые сниппеты и рецепты, интерфейс игры (цвета, шрифты, окна).', 'Everything about Ren\'Py code: the project\'s own code, ready snippets and recipes, the game interface (colours, fonts, windows).'],
+  'tour.s.g.check': ['Раздел «Проверки»', 'The Checks section'],
+  'tour.s.g.check.p': ['Находит ошибки раньше, чем игрок: сценарий, недостающие файлы, переменные, ветки и концовки, «Статистика».', 'Finds the errors before the player does: the script, missing files, variables, branches and endings, Statistics.'],
+  'tour.s.g.play': ['Раздел «Игра»', 'The Play section'],
+  'tour.s.g.play.p': ['Проверка игры целиком: плеер, автопрогон, журнал тестов, HTML-версия и запуск в настоящем Ren\'Py.', 'Testing the whole game: the player, the autorun, the test log, the HTML version and a launch in the real Ren\'Py.'],
+  'tour.s.g.team': ['Раздел «Работа команды»', 'The Teamwork section'],
+  'tour.s.g.team.p': ['Если над новеллой работают несколько человек: команда, «кто я», задачи, кто что делал, проверка правок автора.', 'If several people work on the novel: the team, "who am I", tasks, who did what, checking the author\'s changes.'],
   'tour.s.settings': ['Настройки', 'Settings'],
   'tour.s.settings.p': ['Вид и режим (там наборы), панель, модули и подключения: GitHub и Google Диск.', 'Look and mode (the presets are there), the toolbar, the modules and the connections: GitHub and Google Drive.'],
   'tour.s.help': ['Справка и обучение', 'Help and tutorial'],
@@ -88,7 +103,7 @@ function tourActive() { return !!TOUR; }
 function tourStart(steps, opts) {
   tourStop('restart');
   closePopover();
-  const list = steps.filter(s => s && (!s.target || tourEl(s.target)));
+  const list = steps.filter(s => s && (!s.target || s.late || tourEl(s.target)));
   if (!list.length) return false;
   const blocker = h('div', { class: 'tour-block' }), dim = h('div', { class: 'tour-dim', hidden: true }), card = h('div', { class: 'tour-card', role: 'dialog', 'aria-label': t('tour.title') });
   document.body.append(blocker, dim, card);
@@ -96,9 +111,12 @@ function tourStart(steps, opts) {
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   blocker.addEventListener('mousedown', e => { e.preventDefault(); if (T.next) T.next.focus({ preventScroll: true }); });
   T.onKey = e => {
-    if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); tourStop('skip'); return; }
+    const live = !!(T.list[T.i] && T.list[T.i].live), typing = live && !T.card.contains(e.target) && e.target.closest && !!e.target.closest('input, textarea, [contenteditable="true"], [contenteditable=""]');
+    if (e.key === 'Escape') { if (live && document.querySelector('.pop')) return; e.preventDefault(); e.stopImmediatePropagation(); tourStop('skip'); return; }   // Esc сначала закрывает открытое меню
+    if (typing) return;                                                                 // на «живом» шаге печатать можно: клавиши идут в поле
     if (e.key === 'ArrowRight') { e.preventDefault(); e.stopImmediatePropagation(); tourGo(1); return; }
     if (e.key === 'ArrowLeft') { e.preventDefault(); e.stopImmediatePropagation(); tourGo(-1); return; }
+    if (live) return;
     if (e.key === 'Tab' || (T.card.contains(e.target) && /^(Enter| )$/.test(e.key))) return;
     e.preventDefault(); e.stopImmediatePropagation();                                   // остальные клавиши не доходят до карты
   };
@@ -113,12 +131,32 @@ function tourGo(d) {
   const k = T.i + d;
   if (k < 0) return;
   if (k >= T.list.length) { tourStop('done'); return; }
-  tourShow(k);
+  tourShow(k, d);
 }
-function tourShow(i) {
+/** Показать шаг. У шага с практикой (setup) сначала готовится экран (например, открывается окно), потом ждём, пока появится цель: до 1,5 с. */
+function tourShow(i, dir) {
+  const T = TOUR; if (!T) return;
+  T.i = i; if (dir) T.dir = dir;
+  clearInterval(T.poll); T.poll = 0;
+  const s = T.list[i];
+  if (s.setup) { try { s.setup(); } catch (e) { /* подготовка не удалась: шаг покажется без неё */ } }
+  if (s.target && s.late && !tourEl(s.target)) {
+    let n = 0;
+    const wait = () => {
+      if (TOUR !== T || T.i !== i) return;
+      if (tourEl(s.target)) { tourPaint(i); return; }
+      if (++n < 16) { setTimeout(wait, 100); return; }
+      const k = i + (T.dir || 1);                                                       // цели нет: шаг пропускается
+      if (k < 0) tourPaint(i); else if (k >= T.list.length) tourStop('done'); else tourShow(k, T.dir);
+    };
+    setTimeout(wait, 100); return;
+  }
+  tourPaint(i);
+}
+function tourPaint(i) {
   const T = TOUR; if (!T) return;
   T.i = i;
-  const s = T.list[i], el = s.target ? tourEl(s.target) : null, one = T.list.length === 1, last = i === T.list.length - 1;
+  const s = T.list[i], el = s.target ? tourEl(s.target) : null, one = T.list.length === 1, last = i === T.list.length - 1, live = !!(s.live && el);
   const { dim, blocker, card } = T;
   if (el) {
     const r = el.getBoundingClientRect(), pad = 6;
@@ -126,6 +164,7 @@ function tourShow(i) {
     Object.assign(dim.style, { left: x + 'px', top: y + 'px', width: Math.min(innerWidth - x - 2, r.width + pad * 2) + 'px', height: Math.min(innerHeight - y - 2, r.height + pad * 2) + 'px' });
     dim.hidden = false; blocker.classList.remove('full');
   } else { dim.hidden = true; blocker.classList.add('full'); }
+  blocker.classList.toggle('live', live); dim.classList.toggle('live', live);          // «живой» шаг: цель можно нажимать и печатать в ней
   const back = i > 0 ? h('button', { class: 'btn', id: 'tour-back', onclick: () => tourGo(-1) }, icon('chevL', 15), t('tour.back')) : null;
   const next = T.next = h('button', { class: 'btn primary', id: 'tour-next', onclick: () => tourGo(1) }, last ? (one ? t('tour.got') : t('tour.done')) : t('tour.next'), last ? null : icon('chevR', 15));
   card.replaceChildren(
@@ -133,18 +172,29 @@ function tourShow(i) {
       h('button', { class: 'btn icon sm', id: 'tour-x', 'data-tip': t('c.close') + ' (Esc)', onclick: () => tourStop('skip') }, icon('x', 16))),
     h('h3', { class: 'tour-h' }, s.h),
     ...String(s.p || '').split('\n').filter(Boolean).map(p => h('p', { class: 'tour-p' }, helpRich(p))),
+    s.task ? h('div', { class: 'tour-task', id: 'tour-task' }, icon('target', 15), h('span', helpRich(s.task))) : null,
     s.actions && s.actions.length ? h('div', { class: 'tour-acts' }, s.actions.map(a => h('button', { class: 'btn sm', onclick: () => { const run = a.run; tourStop('action'); if (run) run(); } }, a.label))) : null,
     one ? null : h('div', { class: 'tour-bar' }, h('i', { style: { width: Math.round((i + 1) / T.list.length * 100) + '%' } })),
     h('div', { class: 'tour-nav' }, back, h('div', { class: 'grow' }), (!one && !last) ? h('button', { class: 'btn sm ghost', id: 'tour-skip', onclick: () => tourStop('skip') }, t('tour.skip')) : null, next));
-  tourPlace(el ? el.getBoundingClientRect() : null);
-  next.focus({ preventScroll: true });
+  tourPlace(el ? el.getBoundingClientRect() : null, s.cardAt ? tourEl(s.cardAt) : null);
+  if (!live) next.focus({ preventScroll: true });                                         // на «живом» шаге фокус не трогаем: курсор может стоять в поле ввода
+  if (s.until) {                                                                         // ждём, пока человек сделает задание, и отмечаем это галочкой
+    T.poll = setInterval(() => {
+      if (TOUR !== T || T.i !== i) return;
+      let d = false; try { d = !!s.until(); } catch (e) { d = false; }
+      if (!d) return;
+      clearInterval(T.poll); T.poll = 0;
+      const tk = card.querySelector('.tour-task'); if (tk) { tk.classList.add('ok'); tk.replaceChildren(icon('check', 15), h('span', t('tour.task.ok'))); }
+    }, 250);
+  }
 }
 /** Карточка рядом с целью: снизу, сверху, справа, слева; если цель огромная (карта), то у края экрана. */
-function tourPlace(r) {
+function tourPlace(r, at) {
   const T = TOUR; if (!T) return;
   const card = T.card, vw = innerWidth, vh = innerHeight, cw = card.offsetWidth, ch = card.offsetHeight, m = 12, gap = 14;
   let x, y;
   if (!r) { x = (vw - cw) / 2; y = (vh - ch) / 2; }
+  else if (at) { const a = at.getBoundingClientRect(); x = a.right - cw - 14; y = a.top + 14; }   // шаг сам просит, возле чего встать карточке: так она не закрывает меню и поле ввода
   else {
     const cx = clamp(r.left + r.width / 2 - cw / 2, m, vw - cw - m), cy = clamp(r.top + r.height / 2 - ch / 2, m, vh - ch - m);
     const tries = [[cx, r.bottom + gap, r.bottom + gap + ch + m <= vh], [cx, r.top - gap - ch, r.top - gap - ch >= m],
@@ -160,7 +210,7 @@ function tourPlace(r) {
 }
 function tourStop(why) {
   const T = TOUR; if (!T) return;
-  TOUR = null;
+  TOUR = null; clearInterval(T.poll); T.poll = 0;
   document.removeEventListener('keydown', T.onKey, true);
   window.removeEventListener('resize', T.onResize);
   T.blocker.remove(); T.dim.remove(); T.card.remove();
@@ -172,6 +222,13 @@ function tourStop(why) {
 function tourGeneralSteps() {
   const pro = uiPro();
   const S1 = (target, key, extra) => Object.assign({ target, h: t('tour.s.' + key), p: t('tour.s.' + key + '.p') }, extra || {});
+  /** Шаг про раздел: текст про раздел и список того, что в нём сейчас видно (названия берутся из самих пунктов). */
+  const sec = id => {
+    const g = UI_STRIP.find(x => x.id === id); if (!g || !tourEl('#toolstrip .strip-' + id)) return null;
+    const names = g.items.map(x => tlToolItem(x)).filter(it => it && uiShow(it.id)).map(it => String(t(it.key)).replace(/…$/, ''));
+    return { target: '#toolstrip .strip-' + id, h: t('tour.s.g.' + id), p: t('tour.s.g.' + id + '.p') + (names.length ? '\n' + t('tour.s.g.in', names.join(', ')) : '') };
+  };
+  /* порядок такой же, как на экране: название, Блок, Поиск, Инструменты, разделы, Играть, Текст, Реестр, Сборка, Настройки, Справка, строка состояния */
   return [
     S1(null, 'welcome'),
     S1('#stage', 'map'),
@@ -179,14 +236,14 @@ function tourGeneralSteps() {
     S1(() => tourBtn(t('top.add.tip')), 'add'),
     S1(() => tourBtn(t('top.search') + ' (Ctrl+K)'), 'search'),
     pro ? S1('.tools-btn', 'tools') : S1('.more-btn', 'more'),
-    pro ? S1('#toolstrip', 'strip') : null,
+    ...(pro ? UI_STRIP.map(g => sec(g.id)) : []),
     S1('.pl-top-btn', 'play'),
     S1('.te-top-btn', 'text'),
     S1(() => tourBtn(t('top.registry.tip')), 'reg'),
     S1('.build-btn', pro ? 'export' : 'build'),
-    S1('#statusbar .stat', 'status'),
     S1(() => tourBtn(t('top.settings')), 'settings'),
     S1(() => tourBtn(t('top.help') + ' (?)'), 'help'),
+    S1('#statusbar .stat', 'status', { actions: [{ label: t('tour.s.stats.open'), run: () => setTimeout(() => openStatsHub(), 0) }] }),
     S1(null, 'end', { actions: [{ label: t('tour.openlessons'), run: () => setTimeout(() => openTour(), 0) }] }),
   ].filter(Boolean);
 }
@@ -210,13 +267,11 @@ function tlLocate(l) {
   const lvl = typeof UI_LVL !== 'undefined' ? UI_LVL[l.tool] : null;
   if (lvl && lvl[0] === 'x') return { text: kk, target: search };
   if (typeof uiShow === 'function' && !uiShow(l.tool)) return { text: t('tour.w.off'), target: () => tourBtn(t('top.settings')), off: true };
-  const HUB = { branchstats: 'sh.time', autorun: 'sh.auto', testlog: 'sh.log', whodid: 'sh.team' };
-  if (HUB[l.tool]) return { text: t('tour.w.hub', t('sh.btn'), t(HUB[l.tool])) + '\n' + kk, target: () => tourEl('#statusbar .stat') || search() };
-  if (l.tool === 'whoami') return { text: (BTN.team ? t('tour.w.team', t('team.btn'), name) + '\n' : '') + kk, target: () => BTN.team || search() };
   const g = UI_STRIP.find(x => x.items.includes(l.tool));
-  if (!g) return { text: (pro ? t('tour.w.tools', name) + '\n' : '') + kk, target: pro ? '.tools-btn' : search };
+  if (!g) return pro ? { text: t('tour.w.tools', name) + '\n' + kk, target: '.tools-btn' } : { text: t('tour.w.more', t('ui.more.other'), name) + '\n' + kk, target: '.more-btn' };
   const gl = t('ui.g.' + g.id);
-  if (pro) return { text: t('tour.w.strip', gl, name) + '\n' + kk, target: () => tourEl('#toolstrip .strip-' + g.id) || tourEl('.tools-btn') };
+  if (pro) return uiInStrip(l.tool) ? { text: t('tour.w.strip', gl, name) + '\n' + kk, target: () => tourEl('#toolstrip .strip-' + g.id) || tourEl('.tools-btn') }
+    : { text: t('tour.w.tools', name) + '\n' + kk, target: '.tools-btn' };                   // раздел скрыт на вкладке «Панель»: пункт переехал в «Инструменты»
   return { text: t('tour.w.more', gl, name) + '\n' + kk, target: '.more-btn' };
 }
 function tlPath(loc) { return String(loc.text || '').split('\n')[0]; }
@@ -259,7 +314,7 @@ function openTour(focus) {
     for (const [gid, gl] of TL_GROUPS) {
       const items = shown.filter(x => x.g === gid); if (!items.length) continue;
       nav.append(h('div', { class: 'help-g' }, gl[L]));
-      items.forEach(x => nav.append(h('button', { class: 'help-tab' + (x.id === st.cur ? ' on' : ''), 'data-lesson': x.id, onclick: () => go(x.id) }, icon(tlIcon(x), 16), h('span', tlTitle(x)), tlSeen(x.id) ? h('span', { class: 'tl-ok', 'data-tip': t('tour.seen') }, icon('check', 14)) : null)));
+      items.forEach(x => nav.append(h('button', { class: 'help-tab' + (x.id === st.cur ? ' on' : ''), 'data-lesson': x.id, onclick: () => go(x.id) }, icon(tlIcon(x), 16), h('span', tlTitle(x)), typeof tlWalkOf === 'function' && tlWalkOf(x) ? h('span', { class: 'tl-walk', 'data-tip': t('tour.walk.mark') }, icon('target', 13)) : null, tlSeen(x.id) ? h('span', { class: 'tl-ok', 'data-tip': t('tour.seen') }, icon('check', 14)) : null)));
     }
     cnt.textContent = st.q ? t('tour.found', shown.length) : '';
     view.replaceChildren();
@@ -294,7 +349,8 @@ function openTour(focus) {
       where.length ? h('div', { class: 'tl-where' }, h('b', t('tour.where') + ': '), where.map((x, i) => h('div', { class: i ? 'hint' : '' }, x))) : null,
       h('div', { class: 'tl-acts' },
         h('button', { class: 'btn', id: 'tl-spot', onclick: () => { modal.close(); setTimeout(() => tlSpotlight(l), 80); } }, icon('search', 15), t('tour.spot')),
-        tlCanOpen(l) && !loc.off ? h('button', { class: 'btn primary', id: 'tl-open', onclick: () => { modal.close(); tlOpen(l); } }, icon('play', 15), t('tour.open')) : null));
+        tlCanOpen(l) && !loc.off ? h('button', { class: 'btn primary', id: 'tl-open', onclick: () => { modal.close(); tlOpen(l); } }, icon('play', 15), t('tour.open')) : null,
+        typeof tlWalkOf === 'function' && tlWalkOf(l) && !loc.off ? h('button', { class: 'btn', id: 'tl-walk', 'data-tip': t('tour.walk.tip'), onclick: () => { modal.close(); setTimeout(() => tlWalkRun(l), 120); } }, icon('target', 15), t('tour.walk')) : null));
     view.append(card);
     const order = shown.map(x => x.id), at = order.indexOf(l.id);
     view.append(h('div', { class: 'help-pn' },

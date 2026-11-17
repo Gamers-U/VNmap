@@ -10,6 +10,8 @@ Object.assign(D, {
   'pal.k.char': ['Персонажи', 'Characters'], 'pal.k.var': ['Флаги', 'Flags'], 'pal.k.asset': ['Ресурсы', 'Assets'], 'pal.k.note': ['Заметки', 'Notes'],
   't.cmd': ['команда', 'command'], 't.node': ['блок', 'block'], 't.file': ['глава', 'chapter'], 't.line': ['реплика', 'line'], 't.char': ['персонаж', 'character'],
   't.var': ['флаг', 'flag'], 't.asset': ['ресурс', 'asset'], 't.note': ['заметка', 'note'], 't.edge': ['стрелка', 'arrow'], 't.label': ['метка', 'label'],
+  'pal.tips.h': ['Что можно набрать', 'What you can type'],
+  'pal.tips.p': ['Название блока, персонажа или файла; слово или фраза из реплики; название функции: «плеер», «статистика», «перевод», «сниппеты», «настройки». Вкладки сверху оставляют только один вид: команды, блоки, реплики, персонажей…', 'A block, character or file name; a word or phrase from a line; the name of a feature: "player", "statistics", "translate", "snippets", "settings". The tabs above keep only one kind: commands, blocks, lines, characters…'],
   'pal.empty': ['Ничего не найдено. Попробуйте другое слово или вкладку «Всё».', 'Nothing found. Try another word or the “All” tab.'],
   'pal.hint.kind': ['Введите слово: поиск идёт только в этой вкладке.', 'Type a word: only this tab is searched.'],
   'pal.cmds': ['Что можно сделать', 'What you can do'],
@@ -49,14 +51,14 @@ const REG_TAB_OF = { gui: 'gui', bg: 'bg', sprite: 'sprite', music: 'audio', sfx
 
 /* ---------- команды ---------- */
 function palCommands() {
-  const L = [], anchor = () => document.querySelector('.tools-btn');
+  const L = [], anchor = () => document.querySelector('.tools-btn') || document.querySelector('.more-btn') || document.querySelector('#topbar .tbn');
   const add = (title, ic, run, kw, kbd, id) => { const c = { title, ic, run, kw: (kw || '') + ' ' + title, kbd, id }; c.kw += ' ' + palIntentKw(c); L.push(c); };
   for (const x of TOOL_ITEMS) if (uiShow(x.id)) add(t(x.key), x.ic, () => x.run(anchor()), x.kw || '', x.kbd, x.id);
   for (const tp of NODE_TYPES) add(t('pal.add', t('type.' + tp)), TYPE_ICON[tp], () => addNodeAtCenter(tp), 'add new block создать добавить блок ' + t('type.' + tp));
   add(t('c.fit'), 'fit', () => fitAll(), 'fit zoom map показать всю карту масштаб', 'F');
   for (const tb of REG_TABS) add(t('pal.reg', t('reg.tab.' + tb.id)), tb.icon, () => openRegistry(tb.id), 'registry реестр ' + tb.id);
-  if (uiShow('bar.team')) add(t('team.btn'), 'badge', () => openTeamMenu(BTN.team || anchor()), 'team members команда участники роли');
-  if (uiShow('bar.translate')) add(t('tl.btn'), 'globe', () => openTranslate(), 'translate перевод язык');
+  if (typeof collabAvail === 'function' && collabAvail() && !uiCfg().off.collab) add(t('col.btn'), 'users', () => openCollabPanel(), 'collab together realtime live совместная работа вместе в реальном времени');
+  if (typeof openNotify === 'function' && !uiCfg().off.team) add(t('nt.menu'), 'chat', () => openNotify(), 'notify notifications telegram discord bot webhook reminder deadline уведомления телеграм дискорд напоминания сроки');
   add(t('exp.build'), 'box', () => openBuild(), 'build export renpy собрать игру экспорт', DESK ? 'Ctrl+B' : undefined);
   add(t('exp.svg.dark'), 'image', () => exportSVG('dark'), 'svg image картинка карта');
   add(t('exp.svg.light'), 'image', () => exportSVG('light'), 'svg image картинка карта');
@@ -210,6 +212,7 @@ function openSearch(initial) {
         const hl = (st.toks && st.toks[0]) || '';
         if (!st.q.trim() && st.kind !== 'all' && st.kind !== 'cmd') { list.append(h('div', { class: 'empty small' }, t('pal.hint.kind'))); return; }
         if (!st.items.length) { list.append(h('div', { class: 'empty small' }, t('pal.empty'))); return; }
+        if (!st.q.trim() && st.kind === 'all') list.append(h('div', { class: 'pal-tips', id: 'pal-tips' }, h('b', t('pal.tips.h')), ': ', t('pal.tips.p')));
         if (!st.toks.length) list.append(h('div', { class: 'sr-head' }, t('pal.cmds')));
         st.items.forEach((it, i) => {
           const col = it.color ? palColor(it.color) : PAL_ICON_COLOR[it.kind] ? palColor(PAL_ICON_COLOR[it.kind]) : null;

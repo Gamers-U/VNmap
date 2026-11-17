@@ -7,12 +7,20 @@
    Не путать с корпоративным режимом прав доступа: тот относится к проекту (Участники → Права доступа). */
 
 Object.assign(D, {
+  'ui.ver': ['Версия {0}', 'Version {0}'],
+  'dev.unlocked': ['Режим разработчика открыт: Настройки → Вид и режим, внизу', 'Developer mode unlocked: Settings → Look and mode, at the bottom'],
+  'dev.t': ['Режим разработчика', 'Developer mode'],
+  'dev.h': ['Отладка самой программы: контрольная новелла и проверка сборки в настоящем Ren\'Py. Автору для обычной работы это не нужно.', 'Debugging the app itself: the control novel and the real Ren\'Py build check. Authors do not need this for normal work.'],
+  'dev.on': ['Показывать внутренние проверки', 'Show the internal checks'],
+  'dev.login.ok': ['Вход в GitHub как {0} есть, переключатель доступен.', 'Signed in to GitHub as {0}, the switch is available.'],
+  'dev.login.need': ['Чтобы включить, войдите в GitHub как {0}: Настройки → Подключения.', 'To switch it on, sign in to GitHub as {0}: Settings → Connections.'],
+  'dev.hide': ['Снова спрятать этот раздел', 'Hide this section again'],
   'ui.settings': ['Настройки', 'Settings'],
   'ui.tab.view': ['Вид и режим', 'Look and mode'], 'ui.tab.conn': ['Подключения', 'Connections'], 'ui.tab.mods': ['Модули', 'Modules'],
   'ui.mode': ['Режим интерфейса', 'Interface mode'],
   'ui.mode.simple': ['Простой', 'Simple'], 'ui.mode.pro': ['Профессиональный', 'Professional'],
-  'ui.mode.simple.h': ['На панели только самое нужное: Карта, Текст, Играть, Реестр, Сборка. Все остальные возможности программы лежат под кнопкой «Ещё».', 'The toolbar only has what matters: Map, Text, Play, Registry, Build. Every other feature of the app is under the “More” button.'],
-  'ui.mode.pro.h': ['Всё на виду: под панелью отдельная строка разделов (Карта, Тексты, Проверки, Игра, Работа команды), плюс статистика, команда, перевод, совместная работа. Ненужные модули выключаются на вкладке «Модули».', 'Everything is in view: a separate row of sections under the toolbar (Map, Texts, Checks, Play, Teamwork), plus statistics, team, translation, collaboration. Switch off unneeded modules on the “Modules” tab.'],
+  'ui.mode.simple.h': ['На панели только самое нужное: Играть, Текст, Реестр, Сборка, Файл. Все остальные возможности лежат под кнопкой «Ещё», по разделам.', 'The toolbar only has what matters: Play, Text, Registry, Build, File. Every other feature is under the “More” button, by section.'],
+  'ui.mode.pro.h': ['Всё на виду: под панелью строка разделов (Карта, Тексты, Код, Проверки, Игра, Работа команды), у каждого раздела свои функции. Что не вошло в показанные разделы, лежит в «Инструментах». Ненужные модули выключаются на вкладке «Модули».', 'Everything is in view: a row of sections under the toolbar (Map, Texts, Code, Checks, Play, Teamwork), each with its own features. Whatever is not in a shown section is under “Tools”. Switch off unneeded modules on the “Modules” tab.'],
   'ui.mode.note': ['Режим интерфейса личный и не меняет проект. Корпоративный режим прав доступа это другое: он относится к проекту (Участники → Права доступа).', 'The interface mode is personal and does not change the project. The corporate access-rights mode is a different thing: it belongs to the project (Members → Access rights).'],
   'ui.mode.first': ['Простой режим: на панели только главное, все остальные функции под кнопкой «Ещё». Чтобы они были на виду: Настройки → Профессиональный.', 'Simple mode: only the essentials are on the toolbar, every other feature is under the “More” button. To have them in view: Settings → Professional.'],
   'ui.look': ['Оформление', 'Appearance'], 'ui.theme': ['Тема', 'Theme'], 'ui.theme.dark': ['Тёмная', 'Dark'], 'ui.theme.light': ['Светлая', 'Light'], 'ui.lang': ['Язык интерфейса', 'Interface language'],
@@ -21,16 +29,17 @@ Object.assign(D, {
   'ui.bar.p': ['Отметьте, какие кнопки показывать на панели, и перетащите их мышью, чтобы поменять порядок. Спрятанное всё равно можно найти через поиск Ctrl+K. Настройка своя для простого и для профессионального режима.', 'Tick which buttons to show on the toolbar and drag them with the mouse to change the order. Hidden ones can still be found through the Ctrl+K search. The setting is separate for Simple and Professional mode.'],
   'ui.bar.p.touch': ['Отметьте, какие кнопки показывать на панели. Спрятанное всё равно можно найти через поиск Ctrl+K. Настройка своя для простого и для профессионального режима.', 'Tick which buttons to show on the toolbar. Hidden ones can still be found through the Ctrl+K search. The setting is separate for Simple and Professional mode.'],
   'ui.bar.main': ['Кнопки панели', 'Toolbar buttons'], 'ui.bar.strip': ['Разделы под панелью', 'Sections under the toolbar'],
-  'ui.bar.fixed': ['Всегда на панели: Блок, Поиск, Настройки, Справка (в простом режиме ещё «Ещё»).', 'Always on the toolbar: Block, Search, Settings, Help (and “More” in Simple mode).'],
+  'ui.bar.fixed': ['Всегда на панели: Блок, Поиск, Настройки, Справка (в простом режиме ещё «Ещё», в профессиональном «Инструменты»).', 'Always on the toolbar: Block, Search, Settings, Help (plus “More” in Simple mode and “Tools” in Professional).'],
   'ui.bar.drag': ['Перетащите, чтобы поменять порядок', 'Drag to reorder'],
   'ui.bar.reset': ['Вернуть панель по умолчанию', 'Restore the default toolbar'],
   'ui.g.map': ['Карта', 'Map'], 'ui.g.text': ['Тексты', 'Texts'], 'ui.g.check': ['Проверки', 'Checks'], 'ui.g.play': ['Игра', 'Play'], 'ui.g.team': ['Работа команды', 'Teamwork'],
   'ui.g.map.tip': ['Расстановка блоков, карта в PDF, заметки', 'Arranging blocks, map PDF, notes'],
-  'ui.g.text.tip': ['Редактор, импорт, вычитка, таблица реплик, переименование, персонажи', 'Editor, import, proofreading digest, replica table, renaming, characters'],
-  'ui.g.check.tip': ['Проверка сюжета, переменные, ветки и время, автопрогон, журнал, статистика', 'Plot check, variables, branches and time, autorun, log, statistics'],
-  'ui.g.play.tip': ['Плеер, HTML-игра для тестеров, запуск в Ren\'Py', 'Player, HTML game for testers, run in Ren\'Py'],
-  'ui.g.team.tip': ['Задачи и сроки, кто что сделал, уведомления, проверка правок', 'Tasks and deadlines, who did what, notifications, review of changes'],
-  'ui.more': ['Ещё', 'More'], 'ui.more.tip': ['Все остальные возможности: карта, тексты, проверки, игра, команда, переводы', 'All other features: map, texts, checks, play, team, translations'],
+  'ui.g.text.tip': ['Редактор, импорт, вычитка, таблица реплик, переименование, персонажи, лист озвучки, перевод', 'Editor, import, proofreading digest, replica table, renaming, characters, voice sheet, translation'],
+  'ui.g.code': ['Код', 'Code'], 'ui.g.code.tip': ['Свой код проекта, сниппеты, рецепты Ren\'Py, интерфейс игры', 'Your project code, snippets, Ren\'Py recipes, the game interface'],
+  'ui.g.check.tip': ['Проверка сюжета, недостающие файлы, переменные, статистика, ветки и время, гайд по концовкам, вес ресурсов', 'Plot check, missing files, variables, statistics, branches and time, endings guide, asset weight'],
+  'ui.g.play.tip': ['Плеер, автопрогон, журнал прохождений, HTML-игра для тестеров, запуск в Ren\'Py', 'Player, auto-run, playthrough log, HTML game for testers, run in Ren\'Py'],
+  'ui.g.team.tip': ['Команда и роли, «кто я», задачи и сроки, кто что сделал, проверка правок', 'Team and roles, “who am I”, tasks and deadlines, who did what, review of changes'],
+  'ui.more': ['Ещё', 'More'], 'ui.more.tip': ['Все возможности по разделам: карта, тексты, код, проверки, игра, команда', 'All features by section: map, texts, code, checks, play, team'],
   'ui.more.other': ['Ещё', 'Other'],
   'ui.build': ['Сборка', 'Build'], 'ui.build.tip': ['Собрать игру для Ren\'Py', 'Build the game for Ren\'Py'],
   'ui.file': ['Файл', 'File'], 'ui.file.tip': ['Сохранить проект, открыть, сохранить карту: SVG, PDF', 'Save the project, open one, save the map: SVG, PDF'],
@@ -52,27 +61,33 @@ Object.assign(D, {
   'ui.mods.only': ['Модули настраиваются в профессиональном режиме.', 'Modules are configured in the professional mode.'],
   'ui.mod.analysis': ['Анализ и статистика', 'Analysis and statistics'], 'ui.mod.analysis.h': ['Статистика, ветки и время, автопрогон, журнал прохождений, переменные в блоках.', 'Statistics, branches and time, auto-run, playthrough log, variables in blocks.'],
   'ui.mod.text': ['Тонкая работа с текстом', 'Fine text work'], 'ui.mod.text.h': ['Таблица реплик, переименование везде, страница персонажа, список ресурсов, импорт .rpy.', 'The replica table, rename everywhere, the character page, the resource list, .rpy import.'],
-  'ui.mod.team': ['Команда', 'Team'], 'ui.mod.team.h': ['Участники, задачи и сроки, «кто что сделал», уведомления, выбор «кто я».', 'Members, tasks and deadlines, “who did what”, notifications, “who am I”.'],
-  'ui.mod.collab': ['Совместная работа', 'Collaboration'], 'ui.mod.collab.h': ['Работа в реальном времени, проверка правок авторов.', 'Real-time work, review of the authors\' changes.'],
-  'ui.mod.translate': ['Переводы', 'Translations'], 'ui.mod.translate.h': ['Языки игры: перевод реплик и озвучка на каждом языке.', 'Game languages: dialogue translation and voice per language.'],
+  'ui.mod.team': ['Команда', 'Team'], 'ui.mod.team.h': ['Участники и роли, задачи и сроки, «кто что сделал», выбор «кто я». Раздел «Работа команды».', 'Members and roles, tasks and deadlines, “who did what”, “who am I”. The “Teamwork” section.'],
+  'ui.mod.collab': ['Совместная работа', 'Collaboration'], 'ui.mod.collab.h': ['Работа в реальном времени (карточка в «Настройки → Подключения»), проверка правок авторов.', 'Real-time work (a card in “Settings → Connections”), review of the authors\' changes.'],
+  'ui.mod.translate': ['Переводы', 'Translations'], 'ui.mod.translate.h': ['Языки игры: перевод реплик и озвучка на каждом языке. Пункт «Перевод» в разделе «Тексты».', 'Game languages: dialogue translation and voice per language. The “Translate” item in the “Texts” section.'],
 });
 
 const UI_MODS = ['analysis', 'text', 'team', 'collab', 'translate'];
 /** Профессиональный режим: строка разделов под верхней панелью (инструменты на виду). Пункты берутся из TOOL_ITEMS по id и фильтруются uiShow. */
 const UI_STRIP = [
   { id: 'map', ic: 'fit', items: ['layout', 'mappdf', 'notes'] },
-  { id: 'text', ic: 'type', items: ['texted', 'docimport', 'digest', 'replicas', 'rename', 'charpage', 'resources', 'rpyimport'] },
-  { id: 'check', ic: 'check', items: ['checks', 'missingfiles', 'varstates', 'stats'] },
-  { id: 'play', ic: 'play', items: ['player', 'htmlgame', 'renpy', 'ctrlcheck'] },
-  { id: 'team', ic: 'users', items: ['tasks', 'notify', 'review'] },
+  { id: 'text', ic: 'type', items: ['texted', 'docimport', 'digest', 'replicas', 'rename', 'charpage', 'resources', 'voicesheet', 'translate'] },
+  { id: 'code', ic: 'code', items: ['customcode', 'snippets', 'recipes', 'gui'] },
+  { id: 'check', ic: 'check', items: ['checks', 'missingfiles', 'varstates', 'stats', 'branchstats', 'endguide', 'weight'] },
+  { id: 'play', ic: 'play', items: ['player', 'autorun', 'testlog', 'htmlgame', 'renpy', 'ctrlcheck'] },
+  { id: 'team', ic: 'users', items: ['team', 'whoami', 'tasks', 'whodid', 'review'] },
 ];
+/** В каком разделе пункт «дома» ('' если ни в каком). Пункт, которого нет в видимом разделе, лежит в меню «Инструменты»: функции не пропадают, а переезжают. */
+const uiHome = id => { const g = UI_STRIP.find(x => x.items.includes(id)); return g ? g.id : ''; };
+/** Пункт сейчас на виду в строке разделов: профессиональный режим, раздел показан на вкладке «Панель». */
+const uiInStrip = id => { if (!uiPro()) return false; const g = uiHome(id); return !!g && barIds('strip').includes(g); };
 /** Правая часть панели по режимам: что есть по умолчанию (порядок слева направо). Модульные кнопки появляются, пока модуль не выключен. */
-const BAR_MAIN = { simple: ['play', 'text', 'registry', 'build', 'file', 'open'], pro: ['play', 'text', 'registry', 'stats', 'team', 'translate', 'collab', 'export', 'open'] };
+const BAR_MAIN = { simple: ['play', 'text', 'registry', 'build', 'file', 'open'], pro: ['play', 'text', 'registry', 'export', 'open'] };       // «Открыть» по умолчанию спрятана: есть начальный экран, меню «Файл» и Ctrl+O
 const barMk = () => (uiPro() ? 'p' : 's');                      // порядок и скрытое хранятся отдельно для каждого режима
 function barCfg() {
   const c = uiCfg(); if (!c.bar || typeof c.bar !== 'object') c.bar = {};
   if (!c.bar.order || typeof c.bar.order !== 'object') c.bar.order = {};
   if (!c.bar.hide || typeof c.bar.hide !== 'object') c.bar.hide = {};
+  if (!c.bar.v) { c.bar.v = 2; c.bar.hide['smain:open'] = true; c.bar.hide['pmain:open'] = true; }   // 1.6.15: кнопка «Открыть» по умолчанию не нужна, вернуть можно во вкладке «Панель»
   return c.bar;
 }
 /** Разделы строки с хотя бы одним доступным пунктом (порядок по умолчанию). */
@@ -81,7 +96,7 @@ function stripGroups() {
 }
 /** Все доступные сейчас id кнопок вида kind ('main' — правая часть панели, 'strip' — разделы) в порядке пользователя; скрытые тоже. */
 function barAll(kind) {
-  const ids = kind === 'strip' ? (uiPro() ? stripGroups().map(x => x.g.id) : []) : BAR_MAIN[uiPro() ? 'pro' : 'simple'].filter(id => !/^(stats|team|translate|collab)$/.test(id) || uiShow('bar.' + id));
+  const ids = kind === 'strip' ? (uiPro() ? stripGroups().map(x => x.g.id) : []) : BAR_MAIN[uiPro() ? 'pro' : 'simple'].slice();
   const ord = barCfg().order[barMk() + kind]; if (!Array.isArray(ord)) return ids;
   const rank = id => { const i = ord.indexOf(id); return i < 0 ? 1e6 : i; };
   return ids.map((id, i) => [id, i]).sort((a, b) => (rank(a[0]) - rank(b[0])) || a[1] - b[1]).map(x => x[0]);
@@ -92,7 +107,7 @@ function barMove(kind, from, to) {
   const ids = barAll(kind); if (from === to || from < 0 || to < 0 || from >= ids.length || to >= ids.length) return;
   const [x] = ids.splice(from, 1); ids.splice(to, 0, x); barCfg().order[barMk() + kind] = ids; saveSettings(); buildChrome();
 }
-function barReset() { const c = uiCfg(); delete c.bar; saveSettings(); buildChrome(); }
+function barReset() { const c = uiCfg(); delete c.bar; delete c.dock; saveSettings(); buildChrome(); }
 /** Строка разделов для профессионального режима; в простом её нет. Раздел без доступных пунктов (выключен модуль) или скрытый в «Панели» не рисуется. */
 function uiStrip() {
   if (!uiPro()) return null;
@@ -111,10 +126,20 @@ const UI_LVL = {
   layout: ['s'], mappdf: ['s'], notes: ['s'], texted: ['s'], docimport: ['s'], digest: ['s'], checks: ['s'], missingfiles: ['s'], htmlgame: ['s'], renpy: ['s'], player: ['s'], stats: ['s'],
   replicas: ['p', 'text'], rename: ['p', 'text'], charpage: ['p', 'text'], resources: ['p', 'text'], weight: ['s'], snippets: ['s'], endguide: ['p', 'analysis'], voicesheet: ['p', 'text'], recipes: ['s'], customcode: ['p'], rpyimport: ['p', 'text'],
   varstates: ['p', 'analysis'], branchstats: ['p', 'analysis'], autorun: ['p', 'analysis'], testlog: ['p', 'analysis'],
-  whoami: ['p', 'team'], tasks: ['p', 'team'], whodid: ['p', 'team'], notify: ['p', 'team'], review: ['p', 'collab'],
+  whoami: ['p', 'team'], tasks: ['p', 'team'], whodid: ['p', 'team'], notify: ['x'], review: ['p', 'collab'], team: ['p', 'team'], translate: ['p', 'translate'], collab: ['x'], gui: ['s'],
   ghopen: ['x'], snapshots: ['s'],
-  'bar.stats': ['p', 'analysis'], 'bar.team': ['p', 'team'], 'bar.translate': ['p', 'translate'], 'bar.collab': ['p', 'collab'], 'bar.theme': ['x'], 'bar.lang': ['x'], 'bar.layers': ['p'],
+  'bar.theme': ['x'], 'bar.lang': ['x'], 'bar.layers': ['p'],
 };
+/* ====== Режим разработчика ======
+   Отладка самой программы (контрольная новелла и шаги проверки сборки) обычному автору не нужна и только путает. Поэтому она спрятана:
+   сначала нужно открыть скрытый переключатель (семь нажатий на номер версии в «Настройках»), потом войти в GitHub под аккаунтом
+   разработчика и включить его. Это не защита (код открыт), а способ не показывать лишнее. */
+const DEV_LOGIN = 'Gamers-U';
+const UI_DEV = ['ctrlcheck'];
+const devLoginOk = () => !!(typeof GHS !== 'undefined' && GHS.st && GHS.st.hasToken && String(GHS.st.login || '').toLowerCase() === DEV_LOGIN.toLowerCase());
+const devOn = () => !!S.dev && devLoginOk();
+function devSetOn(v) { S.dev = !!v; saveSettings(); buildChrome(); updateStatus(); }
+
 function uiCfg() {
   const c = S.ui && typeof S.ui === 'object' ? S.ui : (S.ui = {});
   if (c.mode !== 'pro') c.mode = 'simple';
@@ -124,20 +149,36 @@ function uiCfg() {
 const uiPro = () => uiCfg().mode === 'pro';
 /** Есть ли возможность вообще (id пункта меню «Инструменты» или кнопки панели «bar.…»): не 'x' и модуль не выключен. Режим на это не влияет: в простом режиме всё доступно под «Ещё». */
 function uiShow(id) {
+  if (UI_DEV.includes(id) && !devOn()) return false;                       // отладка самой программы: только в режиме разработчика
   const d = UI_LVL[id]; if (!d) return true;
   if (d[0] === 'x') return false;
   return !(d[1] && uiCfg().off[d[1]]);
 }
 /** Лежит ли возможность на виду (на панели, в разделах): в простом режиме только 's', остальное под «Ещё». */
 const uiPlain = id => uiShow(id) && (uiPro() || (UI_LVL[id] || ['s'])[0] === 's');
+/** Пункты, которых нет ни в одном разделе (например «Импорт сценария из .rpy»): они всегда в «Ещё» и в «Инструментах». */
+const uiLeftovers = () => TOOL_ITEMS.filter(x => !uiHome(x.id) && x.menu !== false && uiShow(x.id));
+/** Меню «Инструменты» профессионального режима: всё, чего сейчас нет на виду в разделах под панелью. Скрыли раздел на вкладке «Панель» (или выключили показ), и его пункты переезжают сюда. */
+function uiToolsMenu(anchor) {
+  const by = new Map(), items = [];
+  for (const x of TOOL_ITEMS) {
+    if (x.menu === false || !uiShow(x.id) || uiInStrip(x.id)) continue;
+    const g = uiHome(x.id) || 'other'; if (!by.has(g)) by.set(g, []); by.get(g).push(x);
+  }
+  for (const g of [...UI_STRIP.map(x => x.id), 'other']) {
+    const L = by.get(g); if (!L) continue;
+    const sg = UI_STRIP.find(x => x.id === g); if (sg) L.sort((a, b) => sg.items.indexOf(a.id) - sg.items.indexOf(b.id));          // порядок такой же, как в самом разделе
+    if (items.length) items.push({ sep: true });
+    items.push({ header: g === 'other' ? t('help.other') : t('ui.g.' + g) }, ...L.map(it => ({ label: t(it.key), icon: it.ic, kbd: it.kbd, onClick: () => setTimeout(() => it.run(anchor), 0) })));
+  }
+  return popover(anchor, menuBox(items), { cls: 'menu-pop more-pop' });
+}
 /** Меню «Ещё» простого режима: все возможности программы по разделам (те же, что в профессиональном режиме лежат на виду). */
 function uiMoreMenu(anchor) {
   const items = [], add = (head, list) => { list = list.filter(Boolean); if (!list.length) return; if (items.length) items.push({ sep: true }); items.push({ header: head }, ...list); };
   for (const { g, its } of stripGroups()) add(t('ui.g.' + g.id), its.map(it => ({ label: t(it.key), icon: it.ic, kbd: it.kbd, onClick: () => setTimeout(() => it.run(anchor), 0) })));
   add(t('ui.more.other'), [
-    uiShow('bar.team') ? { label: t('team.btn'), icon: 'badge', onClick: () => setTimeout(() => openTeamMenu(anchor), 0) } : null,
-    uiShow('bar.translate') ? { label: t('tl.btn'), icon: 'globe', onClick: () => openTranslate() } : null,
-    uiShow('bar.collab') && typeof collabAvail === 'function' && collabAvail() ? { label: t('col.btn'), icon: 'users', onClick: () => openCollabPanel() } : null,
+    ...uiLeftovers().map(it => ({ label: t(it.key), icon: it.ic, kbd: it.kbd, onClick: () => setTimeout(() => it.run(anchor), 0) })),
     { label: t('exp.map'), icon: 'rows', onClick: exportMap },
     { label: t('tour.btn'), icon: 'sparkles', onClick: () => setTimeout(() => openTour(), 0) },
     { label: t('tb.echo'), icon: S.echo ? 'check' : null, onClick: () => { S.echo = !S.echo; saveSettings(); renderEchoes(); } },
@@ -185,9 +226,23 @@ function openSettingsWindow(tab) {
         st.body.replaceChildren(segmented(tabs, st.tab, v => { st.tab = v; render(); }), h('div', { class: 'set-pane' }, st.tab === 'view' ? setView(st, render) : st.tab === 'conn' ? setConn(st, render) : st.tab === 'bar' ? setBar(st, render) : setMods(st, render)));
       };
       st.render = render; render();
-      return h('div', { class: 'm-wrap' }, modalHead(t('ui.settings'), m), st.body);
+      const ver = h('div', { class: 'set-ver', id: 'set-ver', role: 'button', tabindex: '-1' }, t('ui.ver', APP_VERSION && APP_VERSION.charAt(0) !== '/' ? APP_VERSION : APP_BUILD));
+      let taps = 0, tapT = 0;
+      ver.addEventListener('click', () => {                                          // скрытый переключатель: семь нажатий подряд
+        const now = Date.now(); taps = now - tapT > 2500 ? 1 : taps + 1; tapT = now;
+        if (taps >= 7 && !S.devUnlocked) { S.devUnlocked = true; saveSettings(); toast(t('dev.unlocked')); st.tab = 'view'; render(); }
+      });
+      return h('div', { class: 'm-wrap' }, modalHead(t('ui.settings'), m), st.body, ver);
     },
   });
+}
+/** Карточка режима разработчика (видна только после семи нажатий на номер версии). */
+function devCard(render) {
+  const ok = devLoginOk(), sw = switchEl(devOn(), v => { devSetOn(v); render(); }, t('dev.on'));
+  if (!ok) { sw.querySelector('button').disabled = true; sw.classList.add('off'); }
+  return setCard(t('dev.t'), h('div', { class: 'hint' }, t('dev.h')), sw,
+    h('div', { class: 'hint', id: 'dev-state' }, ok ? t('dev.login.ok', DEV_LOGIN) : t('dev.login.need', DEV_LOGIN)),
+    h('button', { class: 'btn sm', id: 'dev-hide', onclick: () => { S.devUnlocked = false; S.dev = false; saveSettings(); buildChrome(); updateStatus(); render(); } }, t('dev.hide')));
 }
 const setCard = (title, ...kids) => h('div', { class: 'nt-card' }, h('div', { class: 'nt-ch' }, title), ...kids);
 function setView(st, render) {
@@ -208,6 +263,7 @@ function setView(st, render) {
     switchEl(S.snap, v => { S.snap = v; saveSettings(); }, t('set.snap')),
     field(t('set.wheel'), segmented([{ value: 'zoom', label: t('set.wheel.zoom') }, { value: 'pan', label: t('set.wheel.pan') }], S.wheel, v => { S.wheel = v; saveSettings(); }), t('set.wheel.hint')),
     field(t('set.trans'), sel, t('set.trans.hint'))));
+  if (S.devUnlocked) box.append(devCard(render));
   box.append(setCard(t('ui.project'), h('div', { class: 'nt-btns' },
     h('button', { class: 'btn', onclick: () => { st.m.close(); newProject(false); } }, icon('new', 16), t('proj.new')),
     h('button', { class: 'btn', onclick: () => { st.m.close(); newProject(true); } }, icon('book', 16), t('proj.demo')))));
@@ -216,7 +272,7 @@ function setView(st, render) {
 /** Строка состояния службы во вкладке: значок и текст (тот же текст, что в подсказке к значку внизу). */
 const syLineEl = p => h('div', { class: 'sy-line ' + p.st + (SY_WARN.includes(p.st) ? ' warn' : '') }, icon(p.st === 'ok' ? 'check' : p.st === 'syncing' ? 'refresh' : SY_WARN.includes(p.st) ? 'alert' : p.ic, 14), h('span', p.line));
 function setConn(st, render) {
-  const box = h('div', { class: 'nt-list' }), go = fn => () => { st.m.close(); setTimeout(fn, 0); };
+  const c0 = uiCfg(), box = h('div', { class: 'nt-list' }), go = fn => () => { st.m.close(); setTimeout(fn, 0); };
   const parts = syParts(), o = syOverall(parts), part = id => parts.find(p => p.id === id);
   box.append(h('div', { class: 'hint' }, t('ui.conn.p')));
   /* сводка: то же, что значок внизу */
@@ -235,7 +291,7 @@ function setConn(st, render) {
   /* Google Диск */
   box.append(setDriveCard(st, render, go, part('drive')));
   box.append(setCard(h('span', { class: 'nt-ch' }, icon('chat', 15), t('ui.notify')), h('div', { class: 'hint' }, t('ui.notify.t')), h('div', { class: 'nt-btns' }, h('button', { class: 'btn sm', onclick: go(() => openNotify()) }, t('ui.notify.btn')))));
-  if (typeof collabAvail === 'function' && collabAvail()) box.append(setCard(h('span', { class: 'nt-ch' }, icon('users', 15), t('ui.collab')), h('div', { class: 'hint' }, t('ui.collab.t')), h('div', { class: 'nt-btns' }, h('button', { class: 'btn sm', onclick: go(() => openCollabPanel()) }, t('ui.collab.btn')))));
+  if (typeof collabAvail === 'function' && collabAvail() && !c0.off.collab) box.append(setCard(h('span', { class: 'nt-ch' }, icon('users', 15), t('ui.collab')), h('div', { class: 'hint' }, t('ui.collab.t')), h('div', { class: 'nt-btns' }, h('button', { class: 'btn sm', onclick: go(() => openCollabPanel()) }, t('ui.collab.btn')))));
   return box;
 }
 /** Карточка Google Диска: вход, включение синхронизации для проекта и ручной обмен, не уходя из настроек. */
@@ -269,6 +325,7 @@ const BAR_META = {
 /** Вкладка «Панель»: галочки (везде) и перетаскивание порядка (мышью; на сенсорных экранах только галочки). */
 function setBar(st, render) {
   const box = h('div', { class: 'nt-list' }), touch = !!(window.matchMedia && matchMedia('(pointer: coarse)').matches);
+  if (typeof dockSettingsCard === 'function') box.append(dockSettingsCard(st));
   box.append(h('div', { class: 'hint' }, t(touch ? 'ui.bar.p.touch' : 'ui.bar.p')));
   const list = (kind, title) => {
     const ids = barAll(kind); if (!ids.length) return;
@@ -308,3 +365,8 @@ function setMods(st, render) {
   return box;
 }
 TOOL_ITEMS.push({ id: 'stats', group: 'story', ic: 'chart', key: 'sh.btn', kw: 'stats endings progress statistics time branches autorun log team статистика концовки прогресс время ветки автопрогон журнал команда', run: () => openStatsHub() });
+/* Пункты, которые раньше жили отдельными кнопками на панели (Команда, Перевод, Совместно). Теперь это обычные пункты разделов; совместная работа и уведомления открываются из «Настройки → Подключения» и по Ctrl+K. */
+TOOL_ITEMS.push({ id: 'team', group: 'team', ic: 'badge', key: 'team.btn', kw: 'team members roles credits participants команда участники роли титры', run: a => openTeamMenu(a) });
+TOOL_ITEMS.push({ id: 'translate', group: 'story', ic: 'globe', key: 'tl.btn', kw: 'translate translation languages localization перевод переводы язык локализация', run: () => openTranslate() });
+TOOL_ITEMS.push({ id: 'collab', group: 'team', ic: 'users', key: 'col.btn', menu: false, kw: 'collab together realtime live совместная работа вместе в реальном времени', run: () => openCollabPanel() });
+TOOL_ITEMS.push({ id: 'gui', group: 'story', ic: 'palette', key: 'reg.tab.gui', kw: 'gui interface dialogue window namebox choice buttons colors fonts интерфейс игры окно диалога плашка имени кнопки цвета шрифты', run: () => openRegistry('gui') });

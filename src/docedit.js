@@ -44,7 +44,8 @@ Object.assign(D, {
   'de.explain.h': ['Что это за панель?', 'What is this panel?'],
   'de.explain.1': ['Слева вы пишете обычный текст. Здесь видно, во что он превратится в игре: готовые строки сценария Ren\'Py (кто что говорит). Редактировать их тут не нужно.', 'You write plain text on the left. Here you see what it turns into in the game: ready Ren\'Py script lines (who says what). You do not have to edit them here.'],
   'de.explain.2': ['«Применить к сценарию» один раз превращает текст главы в строки сценария: заменяет сценарий или дописывает в конец.', '“Apply to script” turns the chapter text into script lines once: it replaces the script or appends to its end.'],
-  'de.explain.3': ['«Держать сценарий в синхроне с текстом» делает то же самое само при каждой правке. Пока переключатель включён, править сценарий вручную не стоит: правки пропадут.', '“Keep the script in sync with the text” does the same by itself after every edit. While the switch is on do not edit the script by hand: the edits would be lost.'],
+  'de.explain.3': ['«Обновлять сценарий автоматически» делает то же самое само при каждой правке текста. Пока переключатель включён, править сценарий вручную не стоит: правки пропадут. Если всё же поправите, программа остановит автообновление и спросит, что делать.', '“Update the script automatically” does the same by itself after every edit of the text. While the switch is on, do not edit the script by hand: the edits would be lost. If you do, the program stops the automatic update and asks what to do.'],
+  'de.explain.5': ['Что от переключателя не зависит: заголовки в тексте всегда связаны с блоками на карте (переименовали заголовок, переименовался блок; новый «Заголовок 1» создаёт блок), а пометки «развилка» связаны со стрелками. Переключатель отвечает только за строки сценария Ren\'Py.', 'What does not depend on the switch: headings in the text are always tied to the blocks on the map (rename a heading and the block is renamed; a new “Heading 1” creates a block), and the “fork” marks are tied to the arrows. The switch only controls the Ren\'Py script lines.'],
   'de.explain.4': ['Сценарий пока не нужен? Скройте панель кнопкой справа вверху, текст займёт всё окно.', 'Do not need the script yet? Hide the panel with the button at the top right and the text takes the whole window.'],
   'de.explain.more': ['Подробнее в справке', 'More in the help'],
   'de.help': ['Как пользоваться редактором (справка)', 'How to use the editor (help)'],
@@ -869,7 +870,7 @@ function openDocEditor(opts = {}) {
       /* «Что это за панель?»: объяснение, зачем справа сценарий; запоминает, свёрнуто ли */
       const explain = () => {
         const d = h('details', { class: 'de-explain', id: 'de-explain' }, h('summary', icon('info', 14), t('de.explain.h')),
-          h('p', t('de.explain.1')), h('p', t('de.explain.2')), h('p', t('de.explain.3')), h('p', t('de.explain.4')),
+          h('p', t('de.explain.1')), h('p', t('de.explain.2')), h('p', t('de.explain.3')), h('p', t('de.explain.5')), h('p', t('de.explain.4')),
           h('button', { class: 'btn sm', id: 'de-explain-more', onclick: () => openHelp('editor') }, icon('help', 14), t('de.explain.more')));
         if (S.teExplain !== false) d.open = S.teExplain === true;
         d.addEventListener('toggle', () => { S.teExplain = d.open; saveSettings(); });
@@ -903,6 +904,7 @@ function openDocEditor(opts = {}) {
             h('button', { class: 'btn sm', id: 'de-opennode', onclick: () => { focusNode(n.id); openNodeModal(n.id, f.id); } }, icon('open', 14), t('te.open.node'))),
           h('div', { class: 'de-sec-s ' + st }, st === 'ours' ? icon('check', 14) : st === 'manual' ? icon('alert', 14) : icon('dot', 14), t('de.sc.' + st), f.textLive && st !== 'manual' ? h('span', { class: 'te-sub' }, ' · ' + t('de.sc.live')) : null),
           h('div', { class: 'de-sec-b' }, live, h('div', { class: 'grow' }), applyBtn),
+          h('div', { class: 'hint de-live-h', id: 'de-live-h' }, t(f.textLive ? 'te.live.h.on' : 'te.live.h.off')),
           explain(),
           !deNorm(f.text) ? h('div', { class: 'de-sec-b' }, h('button', { class: 'btn sm', id: 'de-pull', 'data-tip': t('pull.btn.tip'), onclick: async () => { flushNow(); if (await pullChapter(n, f, { script: false })) { seen = DATA_VER; render({ keep: true }); } } }, icon('down', 14), t('pull.btn'))) : null,
           outs.length > 1 && !hasMark ? h('div', { class: 'de-sec-hint', id: 'de-forkhint' }, icon('fork', 14), h('span', t('de.hint.fork', outs.length)),
