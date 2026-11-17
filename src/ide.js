@@ -48,6 +48,7 @@ Object.assign(D, {
   'ide.lang.css': ['CSS', 'CSS'], 'ide.lang.javascript': ['JavaScript', 'JavaScript'], 'ide.lang.html': ['HTML', 'HTML'], 'ide.lang.xml': ['XML', 'XML'], 'ide.lang.yaml': ['YAML', 'YAML'], 'ide.lang.ini': ['INI', 'INI'],
   'ide.virt.note': ['Хранится в проекте, при сборке попадёт в game/{0}.rpy', 'Stored in the project, goes to game/{0}.rpy on build'],
   'ide.restored': ['Вернул несохранённые правки в «{0}»: окно закрылось раньше, чем вы их сохранили.', 'Restored the unsaved changes in “{0}”: the window was closed before you saved them.'],
+  'ide.lang.pick': ['Язык подсветки (щёлкните, чтобы сменить)', 'Highlight language (click to change)'],
   'ide.toggle.side': ['Показать или скрыть проводник (Ctrl+B)', 'Show or hide the explorer (Ctrl+B)'],
 });
 
@@ -58,6 +59,7 @@ const ideErr = r => t('ide.err', t('ide.e.' + ((r && r.code) || 'io')) || ((r &&
 const ideBase = p => String(p || '').split('/').pop();
 const ideDirOf = p => { const i = String(p || '').lastIndexOf('/'); return i < 0 ? '' : p.slice(0, i); };
 const ideJoin = (a, b) => (a ? a + '/' + b : b);
+const IDE_LANGS = ['text', 'renpy', 'python', 'json', 'markdown', 'css', 'javascript', 'html', 'xml', 'yaml', 'ini'];
 const IDE_ROW_MAX = 4000, IDE_BAK_MAX = 3 * 1024 * 1024, LS_IDE_BAK = 'vnmap.ide.bak.v1';
 
 let IDEW = null;
@@ -67,9 +69,9 @@ function openIde(opts) {
   closePopover();
   if (IDEW && !IDEW.m.closed) { IDEW.focus(opts); return IDEW.m; }
   const api = ideDiskApi(), key = typeof rpKey === 'function' ? rpKey() : String((P && (P.uid || P.name)) || 'x');
-  const S_ = { root: null, dirs: new Map([['', { items: null, open: true }]]), tabs: [], active: null, sel: '', hidden: !!(S.ide && S.ide.hidden), side: !(S.ide && S.ide.side === false), secVirt: true, secDisk: true, filter: '', files: null, status: null, poll: 0, dead: false };
+  const S_ = { fs: +(S.ide && S.ide.fs) || 0, root: null, dirs: new Map([['', { items: null, open: true }]]), tabs: [], active: null, sel: '', hidden: !!(S.ide && S.ide.hidden), side: !(S.ide && S.ide.side === false), secVirt: true, secDisk: true, filter: '', files: null, status: null, poll: 0, dead: false };
   let tree, tabsEl, host, emptyEl, statusL, statusR, banner, qEl, sideEl, mhead, rootChip;
-  const saveS = () => { S.ide = { hidden: S_.hidden, side: S_.side, sw: S_.sw || (S.ide && S.ide.sw) || 264 }; saveSettings(); };
+  const saveS = () => { S.ide = { hidden: S_.hidden, side: S_.side, sw: S_.sw || (S.ide && S.ide.sw) || 264, fs: S_.fs || 0 }; saveSettings(); };
 
   /* ---------- сервис ---------- */
   const tabById = id => S_.tabs.find(x => x.id === id) || null;
@@ -240,7 +242,9 @@ function openIde(opts) {
   function makeEditor(tab, text) {
     const ed = ceCreate({
       text, lang: tab.lang, label: tab.name,
+      fontSize: S_.fs,
       onChange: v => onEdit(tab, v), onCursor: c => { if (S_.active === tab.id) paintStatus(c); }, onSave: () => saveTab(tab),
+      onFont: v => { if (S_.fs === v) return; S_.fs = v; saveS(); for (const tb of S_.tabs) if (tb.ed && tb.ed.fs !== v) tb.ed.setFont(v); },
     });
     ed.el.classList.add('hide'); host.append(ed.el);
     return ed;
@@ -339,7 +343,12 @@ function openIde(opts) {
     if (!tab) { statusL.textContent = ''; statusR.replaceChildren(); return; }
     const cc = c || S_.lastCur || { line: 1, col: 1, len: 0 }; S_.lastCur = cc;
     statusL.textContent = t('ce.line', cc.line, cc.col) + (cc.len ? ' · ' + t('ce.sel', cc.len) : '');
-    statusR.replaceChildren(h('span', tab.kind === 'virt' ? t('ide.sec.virt') : tab.path), h('span', t('ide.lang.' + tab.lang)), h('span', 'UTF-8'), h('span', tab.eol === 'crlf' ? 'CRLF' : 'LF'));
+    statusR.replaceChildren(h('span', tab.kind === 'virt' ? t('ide.sec.virt') : tab.path),
+      h('button', { class: 'ide-sbtn ide-lang', id: 'ide-lang', 'data-tip': t('ide.lang.pick'), onclick: ev => langMenu(ev.currentTarget) }, t('ide.lang.' + tab.lang)), h('span', 'UTF-8'), h('span', tab.eol === 'crlf' ? 'CRLF' : 'LF'));
+  }
+  function langMenu(anchor) {
+    const tab = cur(); if (!tab) return;
+    menuAt(anchor, IDE_LANGS.map(l => ({ label: t('ide.lang.' + l), icon: l === tab.lang ? 'check' : null, onClick: () => { tab.lang = l; tab.ed.setLang(l); paintStatus(); } })));
   }
   function paintHead() {
     if (rootChip) rootChip.textContent = S_.root ? S_.root.name : '';
@@ -466,7 +475,7 @@ function openIde(opts) {
   }
 
   /* ---------- окно ---------- */
-  const win = { m: null, focus: o => { if (o && o.file) openByPath(o.file); } };
+  const win = { m: null, focus: o => { if (o && o.file) openByPath(o.file); }, tabs: () => S_.tabs, cur: () => cur() };           // tabs и cur нужны проверкам
   async function openByPath(p) {
     p = String(p || '');
     const virt = ccList().find(c => p === c.name + '.rpy' || p === 'v:' + c.id);

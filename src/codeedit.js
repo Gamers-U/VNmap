@@ -10,9 +10,17 @@
 Object.assign(D, {
   'ce.line': ['Строка {0}, столбец {1}', 'Line {0}, column {1}'], 'ce.sel': ['выделено {0}', '{0} selected'],
   'ce.goto': ['Перейти к строке', 'Go to line'], 'ce.goto.ph': ['Номер строки', 'Line number'],
+  'ce.find': ['Найти', 'Find'], 'ce.replace': ['Заменить', 'Replace'], 'ce.rep.ph': ['Чем заменить', 'Replace with'],
+  'ce.case': ['Учитывать регистр', 'Match case'], 'ce.word': ['Слово целиком', 'Whole word'], 'ce.regex': ['Регулярное выражение', 'Regular expression'],
+  'ce.prev': ['Предыдущее (Shift+Enter)', 'Previous (Shift+Enter)'], 'ce.next': ['Следующее (Enter)', 'Next (Enter)'], 'ce.fclose': ['Закрыть (Esc)', 'Close (Esc)'],
+  'ce.rep1': ['Заменить это', 'Replace'], 'ce.repall': ['Заменить все', 'Replace all'], 'ce.toggle.rep': ['Показать или скрыть замену (Ctrl+H)', 'Show or hide replace (Ctrl+H)'],
+  'ce.count': ['{0} из {1}', '{0} of {1}'], 'ce.none': ['Нет результатов', 'No results'], 'ce.badre': ['Неверное выражение', 'Invalid expression'],
+  'ce.replaced': ['Заменено: {0}', 'Replaced: {0}'],
 });
 
-const CE_LH = 20;                 // высота строки, пикселей (то же значение в style.css: .ce)
+const CE_LH = 20;                 // высота строки по умолчанию, пикселей (при другом размере шрифта E.lh; то же значение в style.css: .ce)
+const CE_FS = 13, CE_FS_MIN = 10, CE_FS_MAX = 28;
+const ceLh = fs => Math.round(fs * 1.55);
 const CE_PADY = 8;                // отступ сверху и снизу
 const CE_PADX = 12;
 const CE_LANGS = {};              // заполняет codelang.js
@@ -22,19 +30,24 @@ const CE_COMMENT = { renpy: '# ', python: '# ', yaml: '# ', ini: '; ', javascrip
 function ceCreate(opts) {
   opts = opts || {};
   const E = {
-    lang: opts.lang || 'text', tab: opts.tabSize || 4, ro: !!opts.readOnly, onChange: opts.onChange || null, onCursor: opts.onCursor || null, onSave: opts.onSave || null,
-    lines: [], els: [], hlState: [], wrap: false, cw: 8,
+    lang: opts.lang || 'text', tab: opts.tabSize || 4, ro: !!opts.readOnly, onChange: opts.onChange || null, onCursor: opts.onCursor || null, onSave: opts.onSave || null, onFont: opts.onFont || null,
+    lines: [], els: [], hlState: [], wrap: false, cw: 8, fs: Math.max(CE_FS_MIN, Math.min(CE_FS_MAX, +opts.fontSize || CE_FS)), lh: CE_LH, br: null,
+    find: { open: false, rep: false, q: '', r: '', cs: false, ww: false, re: false, matches: [], idx: -1, err: false },
   };
+  E.lh = ceLh(E.fs);
   const gutter = h('div', { class: 'ce-gutter', 'aria-hidden': 'true' });
   const hl = h('div', { class: 'ce-hl', 'aria-hidden': 'true' });
   const cur = h('div', { class: 'ce-cur', 'aria-hidden': 'true' });
   const ta = h('textarea', { class: 'ce-ta', spellcheck: 'false', autocapitalize: 'off', autocomplete: 'off', autocorrect: 'off', wrap: 'off', 'aria-label': opts.label || 'code' });
-  const code = h('div', { class: 'ce-code' }, cur, hl, ta);
+  const ov = h('div', { class: 'ce-ov', 'aria-hidden': 'true' });
+  const code = h('div', { class: 'ce-code' }, cur, ov, hl, ta);
   const content = h('div', { class: 'ce-content' }, gutter, code);
   const scroll = h('div', { class: 'ce-scroll' }, content);
   const root = h('div', { class: 'ce' }, scroll);
   const ruler = h('span', { class: 'ce-ruler' }, '0'.repeat(100));
   root.append(ruler);
+  const applyFont = () => { root.style.setProperty('--ce-fs', E.fs + 'px'); root.style.setProperty('--ce-lh', E.lh + 'px'); };
+  applyFont();
   if (E.ro) ta.readOnly = true;
   E.el = root; E.ta = ta; E.scroll = scroll;
 
@@ -43,7 +56,7 @@ function ceCreate(opts) {
   let maxLen = 0;
   const fit = () => {
     const n = E.lines.length;
-    const h2 = n * CE_LH + CE_PADY * 2;
+    const h2 = n * E.lh + CE_PADY * 2;
     content.style.height = Math.max(h2, scroll.clientHeight) + 'px';
     const w = Math.max(scroll.clientWidth - gutter.offsetWidth, maxLen * E.cw + CE_PADX * 2 + 24);
     code.style.width = w + 'px'; ta.style.width = w + 'px'; ta.style.height = Math.max(h2, scroll.clientHeight) + 'px';
@@ -96,23 +109,26 @@ function ceCreate(opts) {
     else while (gutter.childElementCount > lines.length) gutter.lastElementChild.remove();
     const w = String(lines.length).length; gutter.style.minWidth = Math.max(3, w + 1) + 'ch';
     maxLen = 0; for (const s of lines) if (s.length > maxLen) maxLen = s.length;
-    fit();
+    calcLs(); skipMap.clear();
+    fit(); paintOv();
   };
   const ceStEq = (x, y) => x === y || (x && y && JSON.stringify(x) === JSON.stringify(y));
   const sync = () => { patch(ta.value.split('\n')); };
 
   /* ---------- курсор ---------- */
-  const lineOf = pos => { let n = 0, i = -1; while ((i = ta.value.indexOf('\n', i + 1)) !== -1 && i < pos) n++; return n; };
+  let ls = [0];                                                   // смещения начал строк
+  const calcLs = () => { ls = new Array(E.lines.length); let p = 0; for (let i = 0; i < E.lines.length; i++) { ls[i] = p; p += E.lines[i].length + 1; } };
+  const lineOf = pos => { let lo = 0, hi = ls.length - 1; while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (ls[mid] <= pos) lo = mid; else hi = mid - 1; } return lo; };
   const lineStart = pos => ta.value.lastIndexOf('\n', pos - 1) + 1;
   let lastCur = '';
   const cursor = () => {
     const s = ta.selectionStart, e = ta.selectionEnd, ln = lineOf(s), col = s - lineStart(s);
-    cur.style.top = (CE_PADY + ln * CE_LH) + 'px'; cur.style.display = s === e && !E.ro ? '' : 'none'; cur.classList.toggle('on', document.activeElement === ta);
+    cur.style.top = (CE_PADY + ln * E.lh) + 'px'; cur.style.display = s === e && !E.ro ? 'block' : 'none'; cur.classList.toggle('on', document.activeElement === ta);
     const key = ln + ':' + col + ':' + (e - s);
-    if (key !== lastCur) { lastCur = key; if (E.onCursor) E.onCursor({ line: ln + 1, col: col + 1, len: e - s, pos: s, lines: E.lines.length }); }
+    if (key !== lastCur) { lastCur = key; matchBracket(); paintOv(); if (E.onCursor) E.onCursor({ line: ln + 1, col: col + 1, len: e - s, pos: s, lines: E.lines.length }); }
   };
   const keepVisible = () => {
-    const s = ta.selectionStart, ln = lineOf(s), top = CE_PADY + ln * CE_LH, bot = top + CE_LH;
+    const s = ta.selectionStart, ln = lineOf(s), top = CE_PADY + ln * E.lh, bot = top + E.lh;
     if (top < scroll.scrollTop + 4) scroll.scrollTop = Math.max(0, top - 40);
     else if (bot > scroll.scrollTop + scroll.clientHeight - 4) scroll.scrollTop = bot - scroll.clientHeight + 40;
     const col = s - lineStart(s), x = col * E.cw + CE_PADX + gutter.offsetWidth;
@@ -194,12 +210,19 @@ function ceCreate(opts) {
     const mod = ev.ctrlKey || ev.metaKey, k = ev.key;
     if (mod && !ev.shiftKey && !ev.altKey && k.toLowerCase() === 's') { ev.preventDefault(); if (E.onSave) E.onSave(); return; }
     if (E.extraKey && E.extraKey(ev)) return;
+    if (k === 'Escape' && F.open) { ev.preventDefault(); ev.stopPropagation(); E.closeFind(false); return; }
     if (k === 'Tab' && !mod && !ev.altKey) { ev.preventDefault(); onTab(ev); return; }
     if (k === 'Enter') { if (onEnter(ev)) ev.preventDefault(); return; }
     if (mod && k === '/') { ev.preventDefault(); toggleComment(); return; }
     if (ev.altKey && !mod && (k === 'ArrowUp' || k === 'ArrowDown')) { ev.preventDefault(); if (ev.shiftKey) dupLine(k === 'ArrowDown'); else moveLines(k === 'ArrowUp' ? -1 : 1); return; }
     if (mod && ev.shiftKey && k.toLowerCase() === 'k') { ev.preventDefault(); deleteLine(); return; }
     if (mod && k.toLowerCase() === 'g') { ev.preventDefault(); E.gotoPrompt(); return; }
+    if (mod && !ev.altKey && !ev.shiftKey && k.toLowerCase() === 'f') { ev.preventDefault(); E.openFind(false); return; }
+    if (mod && !ev.altKey && !ev.shiftKey && k.toLowerCase() === 'h') { ev.preventDefault(); E.openFind(true); return; }
+    if (k === 'F3') { ev.preventDefault(); if (!F.q) E.openFind(false); else step(ev.shiftKey ? -1 : 1); return; }
+    if (mod && !ev.altKey && (k === '=' || k === '+')) { ev.preventDefault(); E.setFont(E.fs + 1); return; }
+    if (mod && !ev.altKey && (k === '-' || k === '_')) { ev.preventDefault(); E.setFont(E.fs - 1); return; }
+    if (mod && !ev.altKey && k === '0') { ev.preventDefault(); E.setFont(CE_FS); return; }
     /* парные скобки и кавычки */
     if (!mod && !ev.altKey && PAIRS[k] && E.pairs !== false) {
       const s = ta.selectionStart, e = ta.selectionEnd, v = ta.value, close = PAIRS[k];
@@ -223,32 +246,185 @@ function ceCreate(opts) {
 
   /* ---------- события ---------- */
   let sigT = 0;
-  const onInput = () => { sync(); cursor(); keepVisible(); if (E.onChange) E.onChange(ta.value); };
+  const onInput = () => { sync(); cursor(); keepVisible(); if (F.open) { clearTimeout(fT); fT = setTimeout(() => compute(false), 120); } if (E.onChange) E.onChange(ta.value); };
+  let fT = 0;
   ta.addEventListener('input', onInput);
   ta.addEventListener('keydown', onKeyDown);
   for (const ev of ['keyup', 'click', 'focus', 'blur']) ta.addEventListener(ev, cursor);
   const onSel = () => { if (document.activeElement === ta) { clearTimeout(sigT); sigT = setTimeout(cursor, 10); } };
   document.addEventListener('selectionchange', onSel);
   const ro = new ResizeObserver(() => { if (root.isConnected) { measure(); fit(); } }); ro.observe(scroll);
+  /* ширина знака может уточниться позже (шрифт догрузился): пересчитываем и перерисовываем всё, что стоит на ней */
+  const remeasure = () => { if (!root.isConnected) return; const o = E.cw; measure(); if (E.cw !== o) { fit(); cursor(); paintOv(); } };
+  const remT = [60, 400, 1500].map(ms => setTimeout(remeasure, ms));
+  const onFonts = () => remeasure();
+  try { if (document.fonts) { document.fonts.addEventListener('loadingdone', onFonts); if (document.fonts.ready) document.fonts.ready.then(onFonts); } } catch (e) { /* нет API шрифтов */ }
   ta.addEventListener('paste', () => setTimeout(() => keepVisible(), 0));
   /* щелчок по пустому месту под текстом ставит курсор в конец */
   content.addEventListener('mousedown', ev => { if (ev.target === content || ev.target === gutter) { ev.preventDefault(); ta.focus(); } });
+
+  /* ---------- слой поверх подсветки: найденное и парные скобки ---------- */
+  const skipMap = new Map();
+  const vcol = (li, col) => { const tx = E.lines[li] || ''; const ti = tx.indexOf('\t'); if (ti < 0 || ti >= col) return col; let v = 0; for (let k = 0; k < col; k++) v += tx[k] === '\t' ? E.tab - (v % E.tab) : 1; return v; };
+  const box = (li, c0, c1, cls) => { const el = h('div', { class: cls }); el.style.top = (CE_PADY + li * E.lh) + 'px'; el.style.left = (CE_PADX + vcol(li, c0) * E.cw) + 'px'; el.style.width = Math.max(2, (vcol(li, c1) - vcol(li, c0)) * E.cw) + 'px'; el.style.height = E.lh + 'px'; return el; };
+  const segs = (s0, e0, cls, frag) => { const l0 = lineOf(s0), l1 = lineOf(e0); for (let li = l0; li <= l1 && li < E.lines.length; li++) { const a = li === l0 ? s0 - ls[li] : 0, b = li === l1 ? e0 - ls[li] : E.lines[li].length; if (b > a) frag.append(box(li, a, b, cls)); } };
+  let ovRaf = 0;
+  const paintOv = () => { if (ovRaf) return; ovRaf = requestAnimationFrame(() => { ovRaf = 0; drawOv(); }); };
+  const drawOv = () => {
+    ov.replaceChildren(); if (!E.lines.length) return;
+    const F = E.find, top = scroll.scrollTop, hgt = scroll.clientHeight;
+    const l0 = Math.max(0, Math.floor((top - CE_PADY) / E.lh) - 1), l1 = Math.min(E.lines.length - 1, Math.ceil((top + hgt - CE_PADY) / E.lh) + 1);
+    const frag = document.createDocumentFragment();
+    if (F.open && F.matches.length) {
+      const from = ls[l0], to = ls[l1] + E.lines[l1].length;
+      let lo = 0, hi = F.matches.length; while (lo < hi) { const mid = (lo + hi) >> 1; if (F.matches[mid].e <= from) lo = mid + 1; else hi = mid; }
+      for (let k = lo; k < F.matches.length && F.matches[k].s <= to; k++) segs(F.matches[k].s, F.matches[k].e, 'ce-find' + (k === F.idx ? ' on' : ''), frag);
+    }
+    if (E.br) for (const q of E.br) frag.append(box(q.l, q.c, q.c + 1, 'ce-br'));
+    ov.append(frag);
+  };
+  scroll.addEventListener('scroll', paintOv, { passive: true });
+
+  /* парные скобки: скобки внутри строк и комментариев не считаются (это решает подсветка языка) */
+  const BR_OPEN = { '(': ')', '[': ']', '{': '}' }, BR_CLOSE = { ')': '(', ']': '[', '}': '{' };
+  const skipAt = li => {
+    let m = skipMap.get(li); if (m) return m;
+    const L = tok(), text = E.lines[li] || ''; m = new Uint8Array(text.length);
+    if (L) { try { const r = L.tokenize(text, li > 0 ? E.hlState[li - 1] : undefined); for (const [a, b, c] of r.tokens) if (c === 'str' || c === 'com' || c === 'esc' || c === 'tag') m.fill(1, a, b); } catch (e) { /* без пропуска */ } }
+    skipMap.set(li, m); return m;
+  };
+  const matchBracket = () => {
+    E.br = null;
+    const s0 = ta.selectionStart; if (s0 !== ta.selectionEnd || !E.lines.length) return;
+    const v = ta.value;
+    for (const pos of [s0 - 1, s0]) {
+      const ch = v[pos]; if (!ch || (!BR_OPEN[ch] && !BR_CLOSE[ch])) continue;
+      const li = lineOf(pos), col = pos - ls[li]; if (skipAt(li)[col]) continue;
+      const dir = BR_OPEN[ch] ? 1 : -1, other = BR_OPEN[ch] || BR_CLOSE[ch];
+      let li2 = li, depth = 1;
+      for (let p = pos + dir, n = 0; p >= 0 && p < v.length && n < 80000; p += dir, n++) {
+        const c = v[p];
+        if (c === '\n') { li2 += dir; continue; }
+        if (c !== ch && c !== other) continue;
+        const col2 = p - ls[li2]; if (skipAt(li2)[col2]) continue;
+        if (c === ch) depth++; else if (--depth === 0) { E.br = [{ l: li, c: col }, { l: li2, c: col2 }]; return; }
+      }
+    }
+  };
+
+  /* ---------- поиск и замена (Ctrl+F, Ctrl+H) ---------- */
+  const F = E.find;
+  const fbInp = h('input', { class: 'ce-fi', type: 'text', placeholder: t('ce.find'), 'aria-label': t('ce.find'), spellcheck: 'false', autocomplete: 'off' });
+  const fbRep = h('input', { class: 'ce-fri', type: 'text', placeholder: t('ce.rep.ph'), 'aria-label': t('ce.rep.ph'), spellcheck: 'false', autocomplete: 'off' });
+  const fbCount = h('span', { class: 'ce-fc' });
+  const tgl = (txt, tip, key) => { const b = h('button', { class: 'ce-ft', type: 'button', 'data-tip': tip, 'aria-label': tip, 'aria-pressed': 'false', onclick: () => { F[key] = !F[key]; b.classList.toggle('on', F[key]); b.setAttribute('aria-pressed', String(F[key])); compute(true); fbInp.focus(); } }, txt); return b; };
+  const fbBtn = (ic, tip, fn, cls) => h('button', { class: 'ce-fb-btn' + (cls ? ' ' + cls : ''), type: 'button', 'data-tip': tip, 'aria-label': tip, onclick: fn }, typeof ic === 'string' && ic.length < 3 && !/^[a-z]+$/.test(ic) ? ic : icon(ic, 14, 2));
+  const fbToggleRep = h('button', { class: 'ce-fb-btn ce-ftr', type: 'button', 'data-tip': t('ce.toggle.rep'), 'aria-label': t('ce.toggle.rep'), onclick: () => { F.rep = !F.rep; paintFind(); (F.rep ? fbRep : fbInp).focus(); } }, icon('chev', 13, 2.4));
+  const bCase = tgl('Aa', t('ce.case'), 'cs'), bWord = tgl('ab', t('ce.word'), 'ww'), bRe = tgl('.*', t('ce.regex'), 're');
+  const bPrev = fbBtn('up', t('ce.prev'), () => step(-1)), bNext = fbBtn('down', t('ce.next'), () => step(1)), bClose = fbBtn('x', t('ce.fclose'), () => E.closeFind(true));
+  const bRep1 = h('button', { class: 'ce-fb-btn ce-r1', type: 'button', 'data-tip': t('ce.rep1'), 'aria-label': t('ce.rep1'), onclick: () => replaceOne() }, icon('check', 14, 2));
+  const bRepAll = h('button', { class: 'ce-fb-btn ce-rall', type: 'button', 'data-tip': t('ce.repall'), 'aria-label': t('ce.repall'), onclick: () => replaceAll() }, icon('rows', 14, 2));
+  const fbRow2 = h('div', { class: 'ce-fr ce-fr2' }, fbRep, bRep1, bRepAll);
+  const fb = h('div', { class: 'ce-fb', hidden: true }, h('div', { class: 'ce-fr' }, fbToggleRep, fbInp, fbCount, bCase, bWord, bRe, bPrev, bNext, bClose), fbRow2);
+  root.append(fb);
+  const paintFind = () => {
+    fb.hidden = !F.open; fb.classList.toggle('rep', F.rep); fbRow2.hidden = !F.rep; fbToggleRep.classList.toggle('open', F.rep);
+    fbCount.textContent = !F.q ? '' : F.err ? t('ce.badre') : !F.matches.length ? t('ce.none') : t('ce.count', F.idx + 1, F.matches.length);
+    fbCount.classList.toggle('bad', !!F.q && (F.err || !F.matches.length)); fbInp.classList.toggle('bad', !!F.q && (F.err || !F.matches.length));
+    bPrev.disabled = bNext.disabled = !F.matches.length; bRep1.disabled = bRepAll.disabled = !F.matches.length || E.ro;
+    paintOv();
+  };
+  const mkRe = () => {
+    if (!F.q) return null;
+    const src0 = F.re ? F.q : F.q.replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&');
+    const wrap = x => (F.ww ? '(?<![\\p{L}\\p{N}_])(?:' + x + ')(?![\\p{L}\\p{N}_])' : x);
+    for (const u of ['u', '']) { try { return new RegExp(u ? wrap(src0) : src0, 'gm' + u + (F.cs ? '' : 'i')); } catch (e) { /* пробуем без u */ } }
+    return false;
+  };
+  /** Пересчитать найденное; near — выбрать совпадение ближе всего к курсору (не прыгать при каждой букве запроса). */
+  function compute(near) {
+    F.matches = []; F.err = false; const re = mkRe();
+    if (re === false) F.err = true;
+    if (re) {
+      const v = ta.value; let m, n = 0; re.lastIndex = 0;
+      while ((m = re.exec(v)) && n < 5000) { if (!m[0].length) { re.lastIndex++; continue; } F.matches.push({ s: m.index, e: m.index + m[0].length }); n++; }
+    }
+    if (!F.matches.length) F.idx = -1;
+    else if (near !== false) { const pos = Math.min(ta.selectionStart, ta.selectionEnd); let k = F.matches.findIndex(x => x.e > pos && x.s >= pos); if (k < 0) k = F.matches.findIndex(x => x.e > pos); F.idx = k < 0 ? 0 : k; }
+    else F.idx = Math.min(Math.max(0, F.idx), F.matches.length - 1);
+    paintFind();
+  }
+  const reveal = (s0, e0) => { ta.setSelectionRange(s0, e0); const ln = lineOf(s0), top = CE_PADY + ln * E.lh; if (top < scroll.scrollTop + 4 || top + E.lh > scroll.scrollTop + scroll.clientHeight - 4) scroll.scrollTop = Math.max(0, top - scroll.clientHeight / 3); keepVisible(); cursor(); };
+  function step(dir) {
+    if (!F.matches.length) { compute(true); if (!F.matches.length) return; }
+    F.idx = (F.idx + dir + F.matches.length) % F.matches.length;
+    const m = F.matches[F.idx]; reveal(m.s, m.e); paintFind();
+  }
+  const subst = (m0, re) => (F.re ? m0.replace(new RegExp(re.source, re.flags.replace('g', '')), F.r) : F.r);
+  function replaceOne() {
+    if (E.ro || !F.matches.length) return;
+    const re = mkRe(); if (!re) return;
+    const m = F.matches[F.idx < 0 ? 0 : F.idx], text = subst(ta.value.slice(m.s, m.e), re);
+    replace(m.s, m.e, text, m.s + text.length);
+    compute(true); if (F.matches.length) { const nx = F.matches[F.idx]; reveal(nx.s, nx.e); paintFind(); }
+    fbRep.focus();
+  }
+  function replaceAll() {
+    if (E.ro || !F.matches.length) return;
+    const re = mkRe(); if (!re) return;
+    const v = ta.value, n = F.matches.length, top = scroll.scrollTop;
+    const out = F.re ? v.replace(re, F.r) : v.replace(re, () => F.r);
+    if (out !== v) replace(0, v.length, out, 0);
+    scroll.scrollTop = top; compute(true); toast(t('ce.replaced', n), 2200);
+    fbRep.focus();
+  }
+  E.openFind = (withReplace) => {
+    const sel = ta.value.slice(ta.selectionStart, ta.selectionEnd);
+    F.open = true; if (withReplace) F.rep = true;
+    if (sel && sel.length < 200 && !/\n/.test(sel)) { F.q = sel; fbInp.value = sel; }
+    paintFind(); compute(true); fbInp.focus(); fbInp.select();
+  };
+  E.closeFind = back => { F.open = false; paintFind(); if (back) { if (F.matches[F.idx]) { const m = F.matches[F.idx]; ta.setSelectionRange(m.s, m.e); } ta.focus({ preventScroll: true }); cursor(); } };
+  fbInp.addEventListener('input', () => { F.q = fbInp.value; compute(true); if (F.matches.length) { const m = F.matches[F.idx]; reveal(m.s, m.e); paintFind(); } });
+  fbRep.addEventListener('input', () => { F.r = fbRep.value; });
+  const fbKeys = ev => {
+    const mod = ev.ctrlKey || ev.metaKey, k = ev.key;
+    if (k === 'Escape') { ev.preventDefault(); ev.stopPropagation(); E.closeFind(true); }
+    else if (k === 'Enter' && ev.target === fbInp) { ev.preventDefault(); step(ev.shiftKey ? -1 : 1); }
+    else if (k === 'Enter' && ev.target === fbRep) { ev.preventDefault(); if (ev.ctrlKey || ev.metaKey) replaceAll(); else replaceOne(); }
+    else if (k === 'F3') { ev.preventDefault(); step(ev.shiftKey ? -1 : 1); }
+    else if (mod && k.toLowerCase() === 'h') { ev.preventDefault(); ev.stopPropagation(); F.rep = true; paintFind(); fbRep.focus(); fbRep.select(); }
+    else if (mod && k.toLowerCase() === 'f') { ev.preventDefault(); ev.stopPropagation(); fbInp.focus(); fbInp.select(); }
+    else if (mod && ev.altKey && k.toLowerCase() === 'c') { ev.preventDefault(); bCase.click(); }
+    else if (mod && ev.altKey && k.toLowerCase() === 'w') { ev.preventDefault(); bWord.click(); }
+    else if (mod && ev.altKey && k.toLowerCase() === 'r') { ev.preventDefault(); bRe.click(); }
+  };
+  fb.addEventListener('keydown', fbKeys);
+
+  /* ---------- размер шрифта (Ctrl+колесо, Ctrl+=, Ctrl+-, Ctrl+0) ---------- */
+  E.setFont = px => {
+    const v = Math.max(CE_FS_MIN, Math.min(CE_FS_MAX, Math.round(+px || CE_FS)));
+    if (v === E.fs) return; E.fs = v; E.lh = ceLh(v); applyFont();
+    measure(); calcLs(); fit(); cursor(); paintOv();
+    if (E.onFont) E.onFont(v);
+  };
+  scroll.addEventListener('wheel', ev => { if (ev.ctrlKey || ev.metaKey) { ev.preventDefault(); E.setFont(E.fs + (ev.deltaY < 0 ? 1 : -1)); } }, { passive: false });
 
   /* ---------- внешний вид API ---------- */
   E.get = () => ta.value;
   E.set = (text, o) => {
     o = o || {}; ta.value = String(text == null ? '' : text); patch(ta.value.split('\n'), !!o.force);
     if (o.keepSel) { /* позиция уже сохранена браузером при записи value обычно сбрасывается: вернём */ ta.setSelectionRange(o.keepSel[0], o.keepSel[1]); } else ta.setSelectionRange(0, 0);
-    cursor();
+    if (F.open) compute(true); else cursor();
   };
-  E.setLang = name => { if (name === E.lang) return; E.lang = name; sync(); patch(ta.value.split('\n'), true); };
-  E.focus = () => { ta.focus({ preventScroll: true }); };
+  E.setLang = name => { if (name === E.lang) return; E.lang = name; skipMap.clear(); sync(); patch(ta.value.split('\n'), true); cursor(); };
+  E.focus = () => { remeasure(); ta.focus({ preventScroll: true }); };
   E.goto = (line, col) => {
     const lines = ta.value.split('\n'), ln = Math.max(0, Math.min(lines.length - 1, (line | 0) - 1));
     let pos = 0; for (let i = 0; i < ln; i++) pos += lines[i].length + 1;
     pos += Math.max(0, Math.min(lines[ln].length, (col | 0) - 1 || 0));
     ta.focus({ preventScroll: true }); ta.setSelectionRange(pos, pos); cursor();
-    scroll.scrollTop = Math.max(0, CE_PADY + ln * CE_LH - scroll.clientHeight / 3);
+    scroll.scrollTop = Math.max(0, CE_PADY + ln * E.lh - scroll.clientHeight / 3);
   };
   E.select = (from, to) => { ta.focus({ preventScroll: true }); ta.setSelectionRange(from, to); cursor(); keepVisible(); };
   E.gotoPrompt = () => {
@@ -258,8 +434,8 @@ function ceCreate(opts) {
   E.restore = st => { if (!st) return; ta.setSelectionRange(Math.min(st.s, ta.value.length), Math.min(st.e, ta.value.length)); scroll.scrollTop = st.top; scroll.scrollLeft = st.left; cursor(); };
   E.setReadOnly = v => { E.ro = !!v; ta.readOnly = E.ro; cursor(); };
   E.lineCount = () => E.lines.length;
-  E.destroy = () => { document.removeEventListener('selectionchange', onSel); clearTimeout(sigT); ro.disconnect(); root.remove(); };
-  E.measure = () => { measure(); fit(); cursor(); };
+  E.destroy = () => { document.removeEventListener('selectionchange', onSel); remT.forEach(clearTimeout); try { if (document.fonts) document.fonts.removeEventListener('loadingdone', onFonts); } catch (e) { /* ok */ } clearTimeout(sigT); clearTimeout(fT); cancelAnimationFrame(ovRaf); ro.disconnect(); root.remove(); };
+  E.measure = () => { measure(); fit(); cursor(); paintOv(); };
   E.set(opts.text || '');
   return E;
 }
