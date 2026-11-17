@@ -2345,3 +2345,21 @@ html.sat-win .modal.win-free{position:relative}
 .ce-ac-k.k-kw{color:var(--ce-kw)}.ce-ac-k.k-label{color:var(--ce-fn)}.ce-ac-k.k-char{color:var(--ce-type)}.ce-ac-k.k-var{color:var(--ce-var)}.ce-ac-k.k-img{color:var(--ce-const)}.ce-ac-k.k-audio{color:var(--ce-str)}.ce-ac-k.k-tag{color:var(--ce-tag)}
 .ce-ac-l{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .ce-ac-d{flex:none;max-width:180px;overflow:hidden;text-overflow:ellipsis;color:var(--text2);font:11.5px var(--font)}
+/* ===== структура файла, список выбора ===== */
+.ide-olbox{flex:none;display:flex;flex-direction:column;border-top:1px solid var(--border);min-height:0;max-height:42%}
+.ide-oh{display:flex;align-items:center;gap:6px;height:30px;padding:0 10px 0 10px;background:transparent;border:0;color:var(--text2);cursor:pointer;text-align:left;font:inherit}
+.ide-oh:hover{background:var(--hover)}
+.ide-oh b{font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:600}
+.ide-oh svg{transition:transform .12s}
+.ide-olbox.open .ide-oh svg{transform:rotate(90deg)}
+.ide-ol-n{margin-left:auto;font-size:11px;color:var(--text2)}
+.ide-ol{display:none;overflow:auto;padding:2px 0 8px;min-height:0}
+.ide-olbox.open .ide-ol{display:block}
+.ide-ol-empty{padding:6px 12px;font-size:12px;color:var(--text2)}
+.ide-ol-i{display:flex;align-items:center;gap:7px;height:24px;padding-right:10px;cursor:pointer;font-size:12.5px;white-space:nowrap}
+.ide-ol-i:hover{background:var(--hover)}
+.ide-ol-i.on{background:var(--accent-soft)}
+.ide-ol-t{overflow:hidden;text-overflow:ellipsis}
+.ide-ol-k{flex:none;width:16px;height:16px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;font:700 10px var(--font);color:var(--text2);background:var(--hover)}
+.ide-ol-k.k-label{color:var(--ce-fn)}.ide-ol-k.k-screen{color:var(--ce-type)}.ide-ol-k.k-transform{color:var(--ce-const)}.ide-ol-k.k-def{color:var(--ce-kw)}.ide-ol-k.k-class{color:var(--ce-type)}.ide-ol-k.k-var{color:var(--ce-var)}.ide-ol-k.k-char{color:var(--ce-type)}.ide-ol-k.k-image{color:var(--ce-const)}
+.ide-pick .ide-qo-i{gap:8px}

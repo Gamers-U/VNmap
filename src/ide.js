@@ -48,6 +48,12 @@ Object.assign(D, {
   'ide.lang.css': ['CSS', 'CSS'], 'ide.lang.javascript': ['JavaScript', 'JavaScript'], 'ide.lang.html': ['HTML', 'HTML'], 'ide.lang.xml': ['XML', 'XML'], 'ide.lang.yaml': ['YAML', 'YAML'], 'ide.lang.ini': ['INI', 'INI'],
   'ide.virt.note': ['Хранится в проекте, при сборке попадёт в game/{0}.rpy', 'Stored in the project, goes to game/{0}.rpy on build'],
   'ide.restored': ['Вернул несохранённые правки в «{0}»: окно закрылось раньше, чем вы их сохранили.', 'Restored the unsaved changes in “{0}”: the window was closed before you saved them.'],
+  'ide.outline': ['Структура', 'Outline'], 'ide.outline.empty': ['В файле нет меток, экранов и функций', 'No labels, screens or functions in this file'], 'ide.outline.toggle': ['Показать или скрыть структуру файла', 'Show or hide the file outline'],
+  'ide.k.label': ['метка', 'label'], 'ide.k.screen': ['экран', 'screen'], 'ide.k.transform': ['преобразование', 'transform'], 'ide.k.style': ['стиль', 'style'], 'ide.k.def': ['функция', 'function'], 'ide.k.class': ['класс', 'class'],
+  'ide.k.char': ['герой', 'character'], 'ide.k.var': ['переменная', 'variable'], 'ide.k.image': ['картинка', 'image'],
+  'ide.sym.ph': ['Перейти к символу в файле…', 'Go to a symbol in the file…'], 'ide.sym.none': ['В этом файле нет символов', 'No symbols in this file'], 'ide.sym.nofile': ['Откройте файл', 'Open a file first'],
+  'ide.def.none': ['Определение «{0}» не найдено', 'No definition of “{0}” found'], 'ide.def.proj': ['«{0}»: метка блока проекта «{1}», отдельного файла у неё нет', '“{0}” is the label of the project block “{1}”, it has no file'],
+  'ide.def.pick': ['Несколько определений «{0}»…', 'Several definitions of “{0}”…'], 'ide.nav.none': ['Некуда возвращаться', 'Nothing to go back to'],
   'ch.var.flag': ['флаг', 'flag'], 'ch.var.number': ['число', 'number'], 'ch.var.choice': ['выбор', 'choice'],
   'ide.lang.pick': ['Язык подсветки (щёлкните, чтобы сменить)', 'Highlight language (click to change)'],
   'ide.toggle.side': ['Показать или скрыть проводник (Ctrl+B)', 'Show or hide the explorer (Ctrl+B)'],
@@ -70,9 +76,9 @@ function openIde(opts) {
   closePopover();
   if (IDEW && !IDEW.m.closed) { IDEW.focus(opts); return IDEW.m; }
   const api = ideDiskApi(), key = typeof rpKey === 'function' ? rpKey() : String((P && (P.uid || P.name)) || 'x');
-  const S_ = { fs: +(S.ide && S.ide.fs) || 0, root: null, dirs: new Map([['', { items: null, open: true }]]), tabs: [], active: null, sel: '', hidden: !!(S.ide && S.ide.hidden), side: !(S.ide && S.ide.side === false), secVirt: true, secDisk: true, filter: '', files: null, status: null, poll: 0, dead: false };
+  const S_ = { fs: +(S.ide && S.ide.fs) || 0, root: null, dirs: new Map([['', { items: null, open: true }]]), tabs: [], active: null, sel: '', hidden: !!(S.ide && S.ide.hidden), side: !(S.ide && S.ide.side === false), secVirt: true, secDisk: true, filter: '', files: null, ol: !(S.ide && S.ide.ol === false), nav: [], status: null, poll: 0, dead: false };
   let tree, tabsEl, host, emptyEl, statusL, statusR, banner, qEl, sideEl, mhead, rootChip;
-  const saveS = () => { S.ide = { hidden: S_.hidden, side: S_.side, sw: S_.sw || (S.ide && S.ide.sw) || 264, fs: S_.fs || 0 }; saveSettings(); };
+  const saveS = () => { S.ide = { hidden: S_.hidden, side: S_.side, sw: S_.sw || (S.ide && S.ide.sw) || 264, fs: S_.fs || 0, ol: S_.ol }; saveSettings(); };
 
   /* ---------- сервис ---------- */
   const tabById = id => S_.tabs.find(x => x.id === id) || null;
@@ -139,13 +145,15 @@ function openIde(opts) {
     } finally { hintBusy = false; }
   }
   const scanOf = (id, text) => { let c = hintScan.get(id); if (!c || c.text !== text) { c = { text, scan: chScan(text) }; hintScan.set(id, c); } return c.scan; };
-  const hintScans = () => {
+  /** Все известные разборы: «Свой код», открытые вкладки (живой текст) и индекс остальных .rpy папки. */
+  const hintSources = () => {
     const out = [], open = new Set();
-    for (const c of ccList()) out.push(scanOf('v' + c.id, c.text || ''));
-    for (const tb of S_.tabs) if (tb.kind === 'disk' && tb.ed) { open.add(tb.path); if (/\.rpy$/i.test(tb.path)) out.push(scanOf('d' + tb.path, tb.ed.get())); }
-    for (const [pth, sc] of hintIx) if (!open.has(pth)) out.push(sc);
+    for (const c of ccList()) out.push({ virt: c.id, name: c.name + '.rpy', scan: scanOf('v' + c.id, c.text || '') });
+    for (const tb of S_.tabs) if (tb.kind === 'disk' && tb.ed) { open.add(tb.path); if (/\.rpy$/i.test(tb.path)) out.push({ path: tb.path, name: tb.name, scan: scanOf('d' + tb.path, tb.ed.get()) }); }
+    for (const [pth, sc] of hintIx) if (!open.has(pth)) out.push({ path: pth, name: ideBase(pth), scan: sc });
     return out;
   };
+  const hintScans = () => hintSources().map(x => x.scan);
   let hintMemo = null;
   const hintOnce = (k, fn) => { const now = Date.now(); if (!hintMemo || now - hintMemo.t > 400) hintMemo = { t: now, v: {} }; return k in hintMemo.v ? hintMemo.v[k] : (hintMemo.v[k] = fn()); };
   const IMG_RE = /\.(?:png|jpe?g|webp|avif|gif|svg|bmp)$/i, AUD_RE = /\.(?:ogg|mp3|wav|opus|flac|m4a|aac)$/i;
@@ -304,7 +312,7 @@ function openIde(opts) {
     const ed = ceCreate({
       text, lang: tab.lang, label: tab.name,
       fontSize: S_.fs,
-      hint: ctx => chHint(ctx, hintEnv),
+      hint: ctx => chHint(ctx, hintEnv), onDefinition: info => defineAt(tab, info),
       onChange: v => onEdit(tab, v), onCursor: c => { if (S_.active === tab.id) paintStatus(c); }, onSave: () => saveTab(tab),
       onFont: v => { if (S_.fs === v) return; S_.fs = v; saveS(); for (const tb of S_.tabs) if (tb.ed && tb.ed.fs !== v) tb.ed.setFont(v); },
     });
@@ -312,6 +320,7 @@ function openIde(opts) {
     return ed;
   }
   function onEdit(tab, v) {
+    if (S_.active === tab.id) schedOutline();
     if (tab.kind === 'virt') {
       const c = virtOf(tab.vid); if (!c) return;
       c.text = v; clearTimeout(tab.vt); tab.vt = setTimeout(() => { commit(false); }, 250); tab.saved = v; tab.dirty = false;
@@ -326,7 +335,7 @@ function openIde(opts) {
     for (const tb of S_.tabs) tb.ed.el.classList.toggle('hide', tb.id !== id);
     const tab = cur();
     emptyEl.hidden = !!tab;
-    paintTabs(); paintBanner(); paintStatus(); if (tab) { S_.sel = tab.path; tab.ed.measure(); if (focusEd) { tab.ed.focus(); setTimeout(() => { if (S_.active === tab.id) tab.ed.focus(); }, 0); } }
+    paintTabs(); paintBanner(); paintStatus(); paintOutline(); if (tab) { S_.sel = tab.path; tab.ed.measure(); if (focusEd) { tab.ed.focus(); setTimeout(() => { if (S_.active === tab.id) tab.ed.focus(); }, 0); } }
     paintTree();
   }
   async function closeTab(id, force) {
@@ -406,6 +415,7 @@ function openIde(opts) {
     if (!tab) { statusL.textContent = ''; statusR.replaceChildren(); return; }
     const cc = c || S_.lastCur || { line: 1, col: 1, len: 0 }; S_.lastCur = cc;
     statusL.textContent = t('ce.line', cc.line, cc.col) + (cc.len ? ' · ' + t('ce.sel', cc.len) : '');
+    markOutline(cc.line - 1);
     statusR.replaceChildren(h('span', tab.kind === 'virt' ? t('ide.sec.virt') : tab.path),
       h('button', { class: 'ide-sbtn ide-lang', id: 'ide-lang', 'data-tip': t('ide.lang.pick'), onclick: ev => langMenu(ev.currentTarget) }, t('ide.lang.' + tab.lang)), h('span', 'UTF-8'), h('span', tab.eol === 'crlf' ? 'CRLF' : 'LF'));
   }
@@ -520,6 +530,127 @@ function openIde(opts) {
     host.parentElement.append(box); paint(); inp.focus();
   }
 
+  /* ---------- структура файла, переход к символу и к определению ---------- */
+  const OL_KINDS = new Set(['label', 'screen', 'transform', 'style', 'def', 'class']);
+  const OL_MARK = { label: 'L', screen: 'S', transform: 'T', style: 'Y', def: 'F', class: 'C', char: 'H', var: 'V', image: 'I' };
+  let olBox, olList, olCount, olT = 0, olEnts = [];
+  function buildOutline() {
+    olCount = h('span', { class: 'ide-ol-n' });
+    const head = h('button', { class: 'ide-oh', id: 'ide-oh', type: 'button', 'aria-expanded': String(S_.ol), 'data-tip': t('ide.outline.toggle'), onclick: () => { S_.ol = !S_.ol; saveS(); paintOutlineBox(); } }, icon('chev', 13, 2.4), h('b', t('ide.outline')), olCount);
+    olList = h('div', { class: 'ide-ol scroll', id: 'ide-ol', role: 'list' });
+    olBox = h('div', { class: 'ide-olbox' }, head, olList);
+    paintOutlineBox();
+    return olBox;
+  }
+  function paintOutlineBox() { olBox.classList.toggle('open', !!S_.ol); olBox.querySelector('#ide-oh').setAttribute('aria-expanded', String(!!S_.ol)); }
+  const defsOf = tab => scanOf('o' + tab.id, tab.ed.get()).defs;
+  function schedOutline() { clearTimeout(olT); olT = setTimeout(paintOutline, 350); }
+  function paintOutline() {
+    clearTimeout(olT); if (!olList) return;
+    const tab = cur(); olList.replaceChildren(); olEnts = [];
+    if (!tab) { olCount.textContent = ''; return; }
+    olEnts = defsOf(tab).filter(d => OL_KINDS.has(d.kind));
+    olCount.textContent = olEnts.length ? String(olEnts.length) : '';
+    if (!olEnts.length) { olList.append(h('div', { class: 'ide-ol-empty' }, t('ide.outline.empty'))); return; }
+    const f = document.createDocumentFragment();
+    olEnts.forEach((d, i) => f.append(h('div', { class: 'ide-ol-i', role: 'listitem', 'data-i': String(i), style: 'padding-left:' + (12 + d.lvl * 12) + 'px', 'data-tip': t('ide.k.' + d.kind) + ' · ' + (d.line + 1), onclick: () => jumpTo(null, d) },
+      h('span', { class: 'ide-ol-k k-' + d.kind, 'aria-hidden': 'true' }, OL_MARK[d.kind]), h('span', { class: 'ide-ol-t' }, d.name))));
+    olList.append(f); markOutline(S_.lastCur ? S_.lastCur.line - 1 : 0);
+  }
+  /** Подсветить в структуре символ, внутри которого стоит курсор. */
+  function markOutline(line) {
+    if (!olList || !olEnts.length) return;
+    let k = -1; for (let i = 0; i < olEnts.length; i++) { if (olEnts[i].line <= line) k = i; else break; }
+    const rows = olList.children; if (rows.length !== olEnts.length) return;
+    for (let i = 0; i < rows.length; i++) rows[i].classList.toggle('on', i === k);
+    if (k >= 0 && S_.ol) { const el = rows[k], t0 = el.offsetTop, t1 = t0 + el.offsetHeight; if (t0 < olList.scrollTop) olList.scrollTop = t0; else if (t1 > olList.scrollTop + olList.clientHeight) olList.scrollTop = t1 - olList.clientHeight; }
+  }
+  const absPos = (text, line, col) => { let p = 0; for (let i = 0; i < line; i++) { const n = text.indexOf('\n', p); if (n < 0) return text.length; p = n + 1; } return Math.min(text.length, p + col); };
+  const navPush = tab => { if (!tab || !tab.ed) return; const st = tab.ed.state(); S_.nav.push({ id: tab.id, pos: st.s }); if (S_.nav.length > 60) S_.nav.shift(); };
+  function navBack() {
+    while (S_.nav.length) {
+      const n = S_.nav.pop(), tb = tabById(n.id); if (!tb) continue;
+      activate(tb.id, true); tb.ed.select(Math.min(n.pos, tb.ed.get().length), Math.min(n.pos, tb.ed.get().length)); return;
+    }
+    toast(t('ide.nav.none'), 1800);
+  }
+  /** Перейти к объявлению d (из src: { virt } или { path }; null — этот же файл). */
+  async function jumpTo(src, d) {
+    const from = cur(); navPush(from);
+    let tab = from;
+    if (src && src.virt) tab = openVirt(src.virt, true);
+    else if (src && src.path) tab = await openDisk(src.path, true);
+    if (!tab) return;
+    const text = tab.ed.get(), p = absPos(text, d.line, d.col);
+    activate(tab.id, true);
+    tab.ed.goto(d.line + 1, d.col + 1); tab.ed.select(p, p + (d.kind === 'label' && d.name[0] === '.' ? d.name.length : d.name.length));
+  }
+  /** Универсальный список выбора поверх редактора (как быстрый переход к файлу). items: [{ title, detail, mark, kind, go }] */
+  function pickBox(o) {
+    const old = host.parentElement.querySelector('.ide-qo'); if (old) old.remove();
+    const inp = h('input', { class: 'inp', id: 'ide-pick', placeholder: o.ph, autocomplete: 'off', spellcheck: 'false', 'aria-label': o.ph });
+    const res = h('div', { class: 'ide-qo-list scroll' }), box = h('div', { class: 'ide-qo ide-pick' }, inp, res);
+    let hits = [], idx = 0;
+    const score = (it, q) => { if (!q) return 1; const n = it.title.toLowerCase(); let i = n.indexOf(q); if (i >= 0) return 1000 - i - n.length; i = (it.detail || '').toLowerCase().indexOf(q); if (i >= 0) return 300 - i; let k = 0; for (const ch of n) if (ch === q[k]) k++; return k === q.length ? 100 : -1; };
+    const paint = () => {
+      const q = inp.value.trim().toLowerCase();
+      hits = o.items.map(it => [it, score(it, q)]).filter(x => x[1] >= 0).sort((a, b) => b[1] - a[1] || a[0].order - b[0].order).slice(0, 60).map(x => x[0]);
+      idx = Math.min(idx, Math.max(0, hits.length - 1)); res.replaceChildren();
+      if (!hits.length) res.append(h('div', { class: 'empty small' }, o.empty || t('ide.nomatch')));
+      hits.forEach((it, i) => res.append(h('div', { class: 'ide-qo-i' + (i === idx ? ' on' : ''), onclick: () => go(it) }, h('span', { class: 'ide-ol-k k-' + it.kind, 'aria-hidden': 'true' }, it.mark || ''), h('b', it.title), it.detail ? h('span', { class: 'ide-rp' }, it.detail) : null)));
+      const on = res.querySelector('.on'); if (on) { const t0 = on.offsetTop, t1 = t0 + on.offsetHeight; if (t0 < res.scrollTop) res.scrollTop = t0; else if (t1 > res.scrollTop + res.clientHeight) res.scrollTop = t1 - res.clientHeight; }
+    };
+    const go = it => { box.remove(); it.go(); };
+    inp.addEventListener('input', () => { idx = 0; paint(); });
+    inp.addEventListener('keydown', ev => {
+      if (ev.key === 'Escape') { ev.preventDefault(); ev.stopPropagation(); box.remove(); const tb = cur(); if (tb) tb.ed.focus(); }
+      else if (ev.key === 'ArrowDown') { ev.preventDefault(); idx = Math.min(idx + 1, hits.length - 1); paint(); }
+      else if (ev.key === 'ArrowUp') { ev.preventDefault(); idx = Math.max(0, idx - 1); paint(); }
+      else if (ev.key === 'Enter') { ev.preventDefault(); if (hits[idx]) go(hits[idx]); }
+    });
+    host.parentElement.append(box); paint(); inp.focus();
+  }
+  /** Ctrl+Shift+O: все символы файла (метки, экраны, функции, герои, переменные, картинки). */
+  function symbolPick() {
+    const tab = cur(); if (!tab) { toast(t('ide.sym.nofile'), 1600); return; }
+    const items = defsOf(tab).map((d, i) => ({ title: d.name, detail: t('ide.k.' + d.kind) + ' · ' + (d.line + 1), mark: OL_MARK[d.kind], kind: d.kind, order: i, go: () => jumpTo(null, d) }));
+    pickBox({ ph: t('ide.sym.ph'), items, empty: t('ide.sym.none') });
+  }
+  /** F12 и Ctrl+щелчок: найти, где объявлено слово под курсором. */
+  function defineAt(tab, info) {
+    const word = info.word, before = info.before || '';
+    const KIND_ORDER = ['label', 'screen', 'transform', 'char', 'var', 'image', 'def', 'class', 'style'];
+    let want = null;
+    const lineText = (before + word + (info.after || ''));
+    if (/^\s*(?:jump|call)\s+(?:expression\s+)?$/.test(before) || /^\s*(?:jump|call)\s+$/.test(before.replace(/\w+$/, ''))) want = 'label';
+    else if (/^\s*(?:show|scene|hide)\s+(?:screen\s+)?/.test(before)) want = /^\s*(?:show|scene|hide)\s+screen\s+/.test(before) ? 'screen' : /\bat\s+(?:[\p{L}\p{N}_]+\s*,\s*)*$/u.test(before) ? 'transform' : 'image';
+    else if (/^\s*call\s+screen\s+$/.test(before) || /^\s*(?:use)\s+$/.test(before)) want = 'screen';
+    /* картинка «show eileen happy»: определение ищем по всему имени, а не по слову под курсором */
+    let imgName = null;
+    const mi = /^\s*(?:show|scene|hide)\s+((?:[\p{L}\p{N}_]+\s*)+?)(?:\s+(?:at|with|as|behind|onlayer|zorder)\b.*)?$/u.exec(lineText);
+    if (mi && want === 'image') { const toks = mi[1].trim().split(/\s+/); for (let k = toks.length; k >= 1; k--) { imgName = toks.slice(0, k).join(' '); if (hintSources().some(sc => sc.scan.defs.some(d => d.kind === 'image' && d.name === imgName))) break; imgName = null; } }
+    const found = [];
+    for (const src of hintSources()) for (const d of src.scan.defs) {
+      const nm = d.kind === 'image' ? d.name.split(' ')[0] : d.name.replace(/^\./, '');
+      const hit = imgName && d.kind === 'image' ? d.name === imgName : (d.kind === 'image' ? nm === word : (nm === word || d.name === word));
+      if (hit) found.push({ src, d });
+    }
+    if (!found.length) {
+      const pl = hintEnv.labels().find(l => l.name === word && !l.code);
+      toast(pl ? t('ide.def.proj', word, pl.detail || '') : t('ide.def.none', word), pl ? 4500 : 2200);
+      return false;
+    }
+    const rank = f => (want && f.d.kind === want ? -10 : 0) + KIND_ORDER.indexOf(f.d.kind);
+    found.sort((a, b) => rank(a) - rank(b));
+    const bestKind = found[0].d.kind; let list = found.filter(f => f.d.kind === bestKind);
+    const same = list.filter(f => (f.src.virt && tab.kind === 'virt' && f.src.virt === tab.vid) || (f.src.path && tab.kind === 'disk' && f.src.path === tab.path));
+    if (same.length === 1 && list.length > 1 && bestKind !== 'label') list = same;
+    const go = f => jumpTo(f.src.virt ? { virt: f.src.virt } : f.src.path ? { path: f.src.path } : null, f.d);
+    if (list.length === 1) { go(list[0]); return true; }
+    pickBox({ ph: t('ide.def.pick', word), items: list.map((f, i) => ({ title: f.d.name, detail: f.src.name + ' · ' + (f.d.line + 1), mark: OL_MARK[f.d.kind], kind: f.d.kind, order: i, go: () => go(f) })) });
+    return true;
+  }
+
   /* ---------- проверка «изменили снаружи» ---------- */
   async function pollDisk() {
     if (S_.dead || !api || !S_.root || !document.hasFocus()) return;
@@ -563,7 +694,7 @@ function openIde(opts) {
         h('div', { class: 'ide-sh' }, h('b', t('ide.explorer')), h('div', { class: 'grow' }),
           sbtn('new', t('ide.new.file'), () => newItem('file', parentFor()), 'ide-newfile'), sbtn('folder', t('ide.new.dir'), () => newItem('dir', parentFor()), 'ide-newdir'),
           sbtn('refresh', t('ide.refresh'), () => { hintIx.clear(); refreshOpenDirs().then(buildHintIx); }, 'ide-refresh'), sbtn('eye', t('ide.hidden'), () => { S_.hidden = !S_.hidden; saveS(); eyeBtn.classList.toggle('on', S_.hidden); paintTree(); }, 'ide-hidden')),
-        h('div', { class: 'ide-sf' }, qEl), tree);
+        h('div', { class: 'ide-sf' }, qEl), tree, buildOutline());
       const eyeBtn = sideEl.querySelector('#ide-hidden'); eyeBtn.classList.toggle('on', S_.hidden);
       tabsEl = h('div', { class: 'ide-tabs scroll-x', id: 'ide-tabs' });
       banner = h('div', { class: 'ide-banner', hidden: true });
@@ -600,6 +731,8 @@ function openIde(opts) {
     /* Ctrl+S, Ctrl+Shift+S, Ctrl+B в этом окне значат своё (файл, все файлы, проводник), а не «сохранить проект» и «собрать игру» главного окна: дальше событие не пускаем.
        Файл «Кода внутри проекта» часть проекта: для него Ctrl+S ещё и сохраняет проект, как в других окнах. */
     if (mod && k === 'p' && !ev.shiftKey) { ev.preventDefault(); ev.stopPropagation(); quickOpen(); }
+    else if (mod && ev.shiftKey && !ev.altKey && k === 'o') { ev.preventDefault(); ev.stopPropagation(); symbolPick(); }
+    else if (ev.altKey && !mod && !ev.shiftKey && ev.key === 'ArrowLeft' && (inEd || ev.target === document.body)) { ev.preventDefault(); ev.stopPropagation(); navBack(); }
     else if (mod && k === 'b' && !ev.shiftKey) { ev.preventDefault(); ev.stopPropagation(); toggleSide(); }
     else if (mod && k === 'w') { ev.preventDefault(); ev.stopPropagation(); const tb = cur(); if (tb) closeTab(tb.id); }
     else if (mod && ev.shiftKey && k === 's') { ev.preventDefault(); ev.stopPropagation(); saveAll(); }

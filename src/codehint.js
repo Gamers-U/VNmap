@@ -30,8 +30,9 @@ const CH_KW = { renpy: CH_RPY_STMT, python: CH_PY, javascript: CH_JS, css: CH_CS
 
 /** Имена из текста файла: метки, герои, переменные, картинки, преобразования. */
 function chScan(text) {
-  const o = { labels: [], chars: [], vars: [], images: [], trans: [] };
+  const o = { labels: [], chars: [], vars: [], images: [], trans: [], defs: [] };
   if (!text) return o;
+  o.defs = chDefs(text);
   let m;
   const reL = /^[ \t]*label[ \t]+([\p{L}_][\p{L}\p{N}_.]*)/gmu; while ((m = reL.exec(text))) o.labels.push(m[1]);
   const reC = /^[ \t]*define[ \t]+([\p{L}_][\p{L}\p{N}_]*)[ \t]*=[ \t]*(?:Dynamic)?Character\([ \t]*(?:_\()?[ \t]*(?:"([^"\n]*)"|'([^'\n]*)')?/gmu;
@@ -41,6 +42,35 @@ function chScan(text) {
   const reI = /^[ \t]*image[ \t]+([\p{L}_][\p{L}\p{N}_]*(?:[ \t]+[\p{L}\p{N}_]+)*?)[ \t]*[=:]/gmu; while ((m = reI.exec(text))) o.images.push(m[1].replace(/\s+/g, ' '));
   const reT = /^[ \t]*transform[ \t]+([\p{L}_][\p{L}\p{N}_]*)/gmu; while ((m = reT.exec(text))) o.trans.push(m[1]);
   return o;
+}
+
+/** Где что объявлено: [{ name, kind, line, col, lvl, detail? }], line с нуля. kind: label, screen, transform, style, def, class, char, var, image. */
+const CH_DEF_RE = [
+  ['label', /^([ \t]*)label[ \t]+(\.?[\p{L}_][\p{L}\p{N}_.]*)/u], ['screen', /^([ \t]*)screen[ \t]+([\p{L}_][\p{L}\p{N}_]*)/u],
+  ['transform', /^([ \t]*)transform[ \t]+([\p{L}_][\p{L}\p{N}_]*)/u], ['style', /^([ \t]*)style[ \t]+([\p{L}_][\p{L}\p{N}_]*)/u],
+  ['def', /^([ \t]*)(?:async[ \t]+)?def[ \t]+([\p{L}_][\p{L}\p{N}_]*)/u], ['class', /^([ \t]*)class[ \t]+([\p{L}_][\p{L}\p{N}_]*)/u],
+  ['image', /^([ \t]*)(?:layered)?image[ \t]+([\p{L}_][\p{L}\p{N}_]*(?:[ \t]+[\p{L}\p{N}_]+)*?)(?=[ \t]*[=:])/u],
+];
+function chDefs(text) {
+  const out = [], lines = String(text).split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    const ln = lines[i];
+    if (!ln || ln.charCodeAt(0) === 35 || !/\S/.test(ln)) continue;
+    let m = null, hit = false;
+    for (const [kind, re] of CH_DEF_RE) {
+      m = re.exec(ln); if (!m) continue;
+      const nm = m[2].replace(/\s+/g, ' ');
+      out.push({ name: nm, kind, line: i, col: m[1].length + (m[0].length - m[1].length - m[2].length), lvl: kind === 'def' || kind === 'class' ? (m[1].length ? 1 : 0) : 0 });
+      hit = true; break;
+    }
+    if (hit) continue;
+    m = /^([ \t]*(?:default|define)[ \t]+(?:-?\d+[ \t]+)?)([\p{L}_][\p{L}\p{N}_.]*)[ \t]*=[ \t]*(.*)$/u.exec(ln);
+    if (m) {
+      const c = /^(?:Dynamic)?Character\([ \t]*(?:_\()?[ \t]*(?:"([^"\n]*)"|'([^'\n]*)')?/.exec(m[3]);
+      out.push({ name: m[2], kind: c ? 'char' : 'var', line: i, col: m[1].length, lvl: 0, detail: c ? (c[1] != null ? c[1] : c[2] || '') : '' });
+    }
+  }
+  return out;
 }
 
 /** Ближайшая сверху строка с меньшим отступом: что это за блок (python, screen или обычный сценарий). */

@@ -31,7 +31,7 @@ const CE_COMMENT = { renpy: '# ', python: '# ', yaml: '# ', ini: '; ', javascrip
 function ceCreate(opts) {
   opts = opts || {};
   const E = {
-    lang: opts.lang || 'text', tab: opts.tabSize || 4, ro: !!opts.readOnly, onChange: opts.onChange || null, onCursor: opts.onCursor || null, onSave: opts.onSave || null, onFont: opts.onFont || null, hint: opts.hint || null,
+    lang: opts.lang || 'text', tab: opts.tabSize || 4, ro: !!opts.readOnly, onChange: opts.onChange || null, onCursor: opts.onCursor || null, onSave: opts.onSave || null, onFont: opts.onFont || null, hint: opts.hint || null, onDefinition: opts.onDefinition || null,
     lines: [], els: [], hlState: [], wrap: false, cw: 8, fs: Math.max(CE_FS_MIN, Math.min(CE_FS_MAX, +opts.fontSize || CE_FS)), lh: CE_LH, br: null,
     find: { open: false, rep: false, q: '', r: '', cs: false, ww: false, re: false, matches: [], idx: -1, err: false },
   };
@@ -216,6 +216,7 @@ function ceCreate(opts) {
     if (k === 'Escape' && F.open) { ev.preventDefault(); ev.stopPropagation(); E.closeFind(false); return; }
     if (k === 'Tab' && !mod && !ev.altKey) { ev.preventDefault(); onTab(ev); return; }
     if (k === 'Enter') { if (onEnter(ev)) ev.preventDefault(); return; }
+    if (k === 'F12' && !mod && !ev.shiftKey && !ev.altKey && E.onDefinition) { ev.preventDefault(); goDefinition(); return; }
     if (mod && !ev.altKey && !ev.shiftKey && k === ' ') { ev.preventDefault(); acRefresh(true, true); return; }
     if (mod && k === '/') { ev.preventDefault(); toggleComment(); return; }
     if (ev.altKey && !mod && (k === 'ArrowUp' || k === 'ArrowDown')) { ev.preventDefault(); if (ev.shiftKey) dupLine(k === 'ArrowDown'); else moveLines(k === 'ArrowUp' ? -1 : 1); return; }
@@ -551,6 +552,23 @@ function ceCreate(opts) {
   E.showHints = () => { ta.focus(); acRefresh(true, true); };
   E.hints = () => ({ open: AC.open, items: AC.items.map(x => x.label), idx: AC.idx, start: AC.start });
   E.acceptHint = () => acAccept();
+
+
+  /* ---------- «Перейти к определению»: F12 или Ctrl+щелчок по слову (что считать определением, решает opts.onDefinition) ---------- */
+  const wordAt = pos => {
+    const v = ta.value; let a = pos, b = pos;
+    while (a > 0 && WORD_CH.test(v[a - 1])) a--;
+    while (b < v.length && WORD_CH.test(v[b])) b++;
+    return a < b ? { word: v.slice(a, b), from: a, to: b } : null;
+  };
+  const goDefinition = () => {
+    if (!E.onDefinition) return false;
+    const w = wordAt(ta.selectionStart); if (!w) return false;
+    const li = lineOf(w.from);
+    return !!E.onDefinition({ word: w.word, from: w.from, to: w.to, line: li, col: w.from - ls[li], before: E.lines[li].slice(0, w.from - ls[li]), after: E.lines[li].slice(w.to - ls[li]), lang: E.lang });
+  };
+  ta.addEventListener('click', ev => { if ((ev.ctrlKey || ev.metaKey) && !ev.altKey && !ev.shiftKey && ev.button === 0 && E.onDefinition) { ev.preventDefault(); goDefinition(); } });
+  E.goDefinition = goDefinition;
 
   /* ---------- внешний вид API ---------- */
   E.get = () => ta.value;
