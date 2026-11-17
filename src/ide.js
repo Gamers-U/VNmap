@@ -76,9 +76,9 @@ function openIde(opts) {
   closePopover();
   if (IDEW && !IDEW.m.closed) { IDEW.focus(opts); return IDEW.m; }
   const api = ideDiskApi(), key = typeof rpKey === 'function' ? rpKey() : String((P && (P.uid || P.name)) || 'x');
-  const S_ = { fs: +(S.ide && S.ide.fs) || 0, root: null, dirs: new Map([['', { items: null, open: true }]]), tabs: [], active: null, sel: '', hidden: !!(S.ide && S.ide.hidden), side: !(S.ide && S.ide.side === false), secVirt: true, secDisk: true, filter: '', files: null, ol: !(S.ide && S.ide.ol === false), nav: [], status: null, poll: 0, dead: false };
-  let tree, tabsEl, host, emptyEl, statusL, statusR, banner, qEl, sideEl, mhead, rootChip;
-  const saveS = () => { S.ide = { hidden: S_.hidden, side: S_.side, sw: S_.sw || (S.ide && S.ide.sw) || 264, fs: S_.fs || 0, ol: S_.ol }; saveSettings(); };
+  const S_ = { fs: +(S.ide && S.ide.fs) || 0, root: null, dirs: new Map([['', { items: null, open: true }]]), tabs: [], active: null, sel: '', hidden: !!(S.ide && S.ide.hidden), side: !(S.ide && S.ide.side === false), secVirt: true, secDisk: true, filter: '', files: null, ol: !(S.ide && S.ide.ol === false), ai: !!(S.ide && S.ide.ai), nav: [], status: null, poll: 0, dead: false };
+  let tree, tabsEl, host, emptyEl, statusL, statusR, banner, qEl, sideEl, mhead, rootChip, aiSideEl, aiSplitEl, aiBtn;
+  const saveS = () => { S.ide = { hidden: S_.hidden, side: S_.side, sw: S_.sw || (S.ide && S.ide.sw) || 264, fs: S_.fs || 0, ol: S_.ol, ai: S_.ai, aw: S_.aw || (S.ide && S.ide.aw) || 360 }; saveSettings(); };
 
   /* ---------- сервис ---------- */
   const tabById = id => S_.tabs.find(x => x.id === id) || null;
@@ -189,6 +189,86 @@ function openIde(opts) {
     audio: () => hintOnce('aud', () => hintFiles.filter(f => !f.virt && AUD_RE.test(f.path)).map(f => f.path.replace(/^game\//, '')).slice(0, 400)),
     transforms: () => hintOnce('trf', () => { const o = new Set(); for (const sc of hintScans()) for (const x of sc.trans) o.add(x); return [...o]; }),
   };
+
+  /* ---------- помощник ИИ (aichat.js): окно справа, ему даём только то, что он просит ---------- */
+  let aiP = null;
+  const aiOverview = () => {
+    const cut = (arr, n) => arr.slice(0, n).join(', ') + (arr.length > n ? ' … (+' + (arr.length - n) + ')' : '');
+    const lab = hintEnv.labels().map(x => x.name), ch = hintEnv.chars().map(x => x.tag + (x.name ? ' (' + x.name + ')' : '')), vr = hintEnv.vars().map(x => x.name), im = hintEnv.images().map(x => x.name), tr = hintEnv.transforms();
+    const out = [];
+    if (lab.length) out.push('Метки: ' + cut(lab, 80)); if (ch.length) out.push('Герои: ' + cut(ch, 40)); if (vr.length) out.push('Переменные: ' + cut(vr, 60));
+    if (im.length) out.push('Картинки: ' + cut(im, 60)); if (tr.length) out.push('Преобразования: ' + cut(tr, 30));
+    return out.join('\n');
+  };
+  const aiHost = {
+    file: () => { const tb = cur(); return tb && tb.ed ? { name: tb.name, lang: tb.lang || 'text', text: tb.ed.get() } : null; },
+    sel: () => { const tb = cur(); if (!tb || !tb.ed) return null; const st = tb.ed.state(); return st.e > st.s ? { text: tb.ed.get().slice(st.s, st.e), from: st.s, to: st.e, tabId: tb.id } : null; },
+    line: () => { const tb = cur(); if (!tb || !tb.ed) return 0; return tb.ed.get().slice(0, tb.ed.state().s).split('\n').length - 1; },
+    project: () => aiOverview(),
+    canInsert: () => { const tb = cur(); return !!(tb && tb.ed && !tb.ed.ro); },
+    canNew: () => true,
+    onClose: () => toggleAi(false),
+    focusEditor: () => { const tb = cur(); if (tb && tb.ed) tb.ed.focus(); },
+    apply: async (kind, o) => {
+      const tb = cur();
+      if (kind === 'replace') {
+        if (!tb || !tb.ed || !o.sel || tb.id !== o.sel.tabId || tb.ed.get().slice(o.sel.from, o.sel.to) !== o.sel.text) { toast(t('aic.ap.changed'), 4500); return false; }
+        if (tb.ed.ro) { toast(t('aic.ap.ro'), 3500); return false; }
+        tb.ed.replace(o.sel.from, o.sel.to, o.code, o.sel.from, o.sel.from + o.code.length); tb.ed.focus();
+        return t('aic.done.replace');
+      }
+      if (kind === 'insert') {
+        if (!tb || !tb.ed || tb.ed.ro) { toast(t('aic.ap.nothing'), 3500); return false; }
+        const v = tb.ed.get(), pos = tb.ed.state().s, ls = v.lastIndexOf('\n', pos - 1) + 1; let le = v.indexOf('\n', pos); if (le < 0) le = v.length;
+        const blank = !v.slice(ls, le).trim(), from = blank ? ls : le, to = blank ? le : le, text = blank ? o.code : '\n' + o.code;
+        tb.ed.replace(from, to, text, from + text.length); tb.ed.focus();
+        return t('aic.done.insert');
+      }
+      if (kind === 'new') {
+        let nm = String(o.name || '').trim().replace(/[\\/]+/g, '/').replace(/^\/+/, ''); if (!nm) return false;
+        if (!/\.[A-Za-z0-9]+$/.test(nm)) nm += '.rpy';
+        if (api && S_.root) {
+          const parent = parentFor(), rel = ideJoin(parent, nm), segs = nm.split('/'); segs.pop();
+          let acc = parent;                                                    // подпапки из имени создаём по пути; уже существующие не трогаем
+          for (const sg of segs) {
+            acc = ideJoin(acc, sg);
+            const d = await api.create(key, acc, 'dir').catch(() => ({ ok: false, code: 'io' }));
+            if (!d.ok && d.code !== 'exists') { fail(d); return false; }
+          }
+          const r = await api.create(key, rel, 'file').catch(() => ({ ok: false, code: 'io' }));
+          if (!r.ok) { fail(r); return false; }
+          const w = await api.write(key, r.rel, { text: o.code.replace(/\n*$/, '\n') }).catch(() => ({ ok: false, code: 'io' }));
+          if (!w.ok) { fail(w); return false; }
+          const pd = S_.dirs.get(parent) || { items: null, open: true }; pd.open = true; S_.dirs.set(parent, pd);
+          await loadDir(parent, true); S_.files = null; S_.sel = r.rel; paintTree(); await openDisk(r.rel, true);
+          return t('aic.done.new', ideBase(r.rel));
+        }
+        const c = ccAdd({ name: nm.replace(/\.[A-Za-z0-9]+$/, ''), text: o.code.replace(/\n*$/, '\n') });
+        if (!c) { toast(t('aic.fail.new'), 4000); return false; }
+        S_.files = null; paintTree(); openVirt(c.id, true);
+        return t('aic.done.new', c.name + '.rpy');
+      }
+      if (kind === 'snip') {
+        const sn = typeof spAdd === 'function' ? spAdd({ name: o.name, code: o.code }) : null;
+        if (!sn) { toast(t('aic.fail.snip'), 4500); return false; }
+        return t('aic.done.snip', sn.name);
+      }
+      if (kind === 'custom') {
+        const c = ccAdd({ name: o.name || 'ai_code', text: o.code.replace(/\n*$/, '\n') });
+        if (!c) { toast(t('aic.fail.custom'), 4500); return false; }
+        S_.files = null; paintTree();
+        return t('aic.done.custom', c.name);
+      }
+      return false;
+    },
+  };
+  function toggleAi(force) {
+    S_.ai = force === undefined ? !S_.ai : !!force; saveS();
+    if (!aiP && S_.ai) { aiP = aiPanel(aiHost); aiSideEl.append(aiP.el); }
+    aiSideEl.classList.toggle('hide', !S_.ai); aiSplitEl.classList.toggle('hide', !S_.ai); aiBtn.classList.toggle('on', S_.ai);
+    const tb = cur(); if (tb) setTimeout(() => tb.ed.measure(), 30);
+    if (S_.ai && aiP) { aiP.refresh(); setTimeout(() => aiP.focus(), 40); } else if (tb) setTimeout(() => tb.ed.focus(), 40);
+  }
 
   /* ---------- дерево ---------- */
   const IDE_ICON = { png: 'image', jpg: 'image', jpeg: 'image', webp: 'image', gif: 'image', bmp: 'image', svg: 'image', avif: 'image', ogg: 'music', mp3: 'music', wav: 'music', opus: 'music', flac: 'music', webm: 'film', mp4: 'film', ogv: 'film', avi: 'film', mkv: 'film', ttf: 'type', otf: 'type', woff: 'type', woff2: 'type', rpyc: 'box', rpa: 'box', pyc: 'box', zip: 'box', exe: 'box' };
@@ -415,7 +495,7 @@ function openIde(opts) {
     if (!tab) { statusL.textContent = ''; statusR.replaceChildren(); return; }
     const cc = c || S_.lastCur || { line: 1, col: 1, len: 0 }; S_.lastCur = cc;
     statusL.textContent = t('ce.line', cc.line, cc.col) + (cc.len ? ' · ' + t('ce.sel', cc.len) : '');
-    markOutline(cc.line - 1);
+    markOutline(cc.line - 1); if (aiP) aiP.touch();
     statusR.replaceChildren(h('span', tab.kind === 'virt' ? t('ide.sec.virt') : tab.path),
       h('button', { class: 'ide-sbtn ide-lang', id: 'ide-lang', 'data-tip': t('ide.lang.pick'), onclick: ev => langMenu(ev.currentTarget) }, t('ide.lang.' + tab.lang)), h('span', 'UTF-8'), h('span', tab.eol === 'crlf' ? 'CRLF' : 'LF'));
   }
@@ -708,6 +788,8 @@ function openIde(opts) {
       mhead = modalHead(t('ide.title'), mm, h('span', { class: 'ide-hchip' }, rootChip));
       const fb = h('button', { class: 'btn sm', id: 'ide-folder', hidden: !api, onclick: pickFolder }, icon('folder', 14), t('ide.change'));
       mhead.insertBefore(fb, mhead.querySelector('.grow').nextSibling);
+      aiBtn = h('button', { class: 'btn sm' + (S_.ai ? ' on' : ''), id: 'ide-ai', 'data-tip': t('aic.toggle'), onclick: () => toggleAi() }, icon('wand', 14), t('aic.btn'));
+      mhead.insertBefore(aiBtn, mhead.querySelector('.grow').nextSibling);
       mhead.insertBefore(h('button', { class: 'btn sm', id: 'ide-saveall', 'data-tip': t('ide.saveall'), onclick: () => saveAll() }, icon('save', 14), t('ide.saveall')), mhead.querySelector('.grow').nextSibling);
       winControl(mm, mhead, 'ide');
       const split = h('div', { class: 'ide-split' + (S_.side ? '' : ' hide'), id: 'ide-split' });
@@ -720,7 +802,17 @@ function openIde(opts) {
         split.addEventListener('pointermove', mv); split.addEventListener('pointerup', up); split.addEventListener('pointercancel', up);
       });
       S_.split = split;
-      const body = h('div', { class: 'ide-body' }, sideEl, split, main);
+      aiSideEl = h('div', { class: 'ide-ai' + (S_.ai ? '' : ' hide'), id: 'ide-aiside' }); aiSplitEl = h('div', { class: 'ide-split ide-aisplit' + (S_.ai ? '' : ' hide'), id: 'ide-aisplit' });
+      aiSideEl.style.width = Math.max(260, Math.min(640, +(S.ide && S.ide.aw) || 360)) + 'px';
+      aiSplitEl.addEventListener('pointerdown', ev => {
+        ev.preventDefault(); aiSplitEl.setPointerCapture(ev.pointerId); aiSplitEl.classList.add('drag');
+        const x0 = ev.clientX, w0 = aiSideEl.getBoundingClientRect().width;
+        const mv = e2 => { aiSideEl.style.width = Math.max(260, Math.min(640, Math.min(w0 + x0 - e2.clientX, body.clientWidth - 360))) + 'px'; const tb = cur(); if (tb) tb.ed.measure(); };
+        const up = () => { aiSplitEl.classList.remove('drag'); aiSplitEl.removeEventListener('pointermove', mv); aiSplitEl.removeEventListener('pointerup', up); aiSplitEl.removeEventListener('pointercancel', up); S_.aw = Math.round(aiSideEl.getBoundingClientRect().width); saveS(); };
+        aiSplitEl.addEventListener('pointermove', mv); aiSplitEl.addEventListener('pointerup', up); aiSplitEl.addEventListener('pointercancel', up);
+      });
+      const body = h('div', { class: 'ide-body' }, sideEl, split, main, aiSplitEl, aiSideEl);
+      if (S_.ai) { aiP = aiPanel(aiHost); aiSideEl.append(aiP.el); }
       const wrap = h('div', { class: 'm-wrap ide-wrap' }, mhead, body, status);
       S_.wrap = wrap; wrap.addEventListener('keydown', onKeys);
       return wrap;
@@ -733,6 +825,7 @@ function openIde(opts) {
     if (mod && k === 'p' && !ev.shiftKey) { ev.preventDefault(); ev.stopPropagation(); quickOpen(); }
     else if (mod && ev.shiftKey && !ev.altKey && k === 'o') { ev.preventDefault(); ev.stopPropagation(); symbolPick(); }
     else if (ev.altKey && !mod && !ev.shiftKey && ev.key === 'ArrowLeft' && (inEd || ev.target === document.body)) { ev.preventDefault(); ev.stopPropagation(); navBack(); }
+    else if (mod && ev.shiftKey && !ev.altKey && k === 'a') { ev.preventDefault(); ev.stopPropagation(); toggleAi(); }
     else if (mod && k === 'b' && !ev.shiftKey) { ev.preventDefault(); ev.stopPropagation(); toggleSide(); }
     else if (mod && k === 'w') { ev.preventDefault(); ev.stopPropagation(); const tb = cur(); if (tb) closeTab(tb.id); }
     else if (mod && ev.shiftKey && k === 's') { ev.preventDefault(); ev.stopPropagation(); saveAll(); }
