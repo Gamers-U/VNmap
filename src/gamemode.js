@@ -29,7 +29,7 @@ Object.assign(D, {
   'lg.h.notes': ['Замечания тестеров', 'Testers’ notes'],
 });
 
-TOOL_ITEMS.push({ id: 'htmlgame', group: 'play', ic: 'box', key: 'gm.btn', kw: 'html game testers standalone single file build share playtest игра тестеров один файл браузер собрать сборка', run: () => openHtmlGame() });
+TOOL_ITEMS.push({ id: 'htmlgame', group: 'play', ic: 'browser', key: 'gm.btn', kw: 'html game testers standalone single file build share playtest игра тестеров один файл браузер собрать сборка', run: () => openHtmlGame() });
 
 const GAME_TPL_B64 = '/*GAMETPL*/';
 /** Данные игры, если страница открыта как игра для тестеров. */

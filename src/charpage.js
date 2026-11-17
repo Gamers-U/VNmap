@@ -221,4 +221,4 @@ function openCharPage(charId) {
     }
   });
 }
-TOOL_ITEMS.push({ id: 'charpage', group: 'story', menu: false, ic: 'user', key: 'cp.btn', kw: 'character page sprites lines stats persona страница персонажа образы спрайты реплики статистика карточка', run: () => openCharPage() });
+TOOL_ITEMS.push({ id: 'charpage', group: 'story', menu: false, ic: 'idcard', key: 'cp.btn', kw: 'character page sprites lines stats persona страница персонажа образы спрайты реплики статистика карточка', run: () => openCharPage() });

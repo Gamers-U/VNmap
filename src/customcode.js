@@ -308,4 +308,4 @@ function openCustomCode(selId) {
     }
   });
 }
-TOOL_ITEMS.push({ id: 'customcode', group: 'story', ic: 'code', key: 'cu.btn', kw: 'custom code screen screens init python style styles define own file rpy minigame inventory screen свой код экран экраны инициализация питон стиль стили файл rpy вставить кастомный код вне меток собственный', run: () => openCustomCode() });
+TOOL_ITEMS.push({ id: 'customcode', group: 'story', ic: 'fileCode', key: 'cu.btn', kw: 'custom code screen screens init python style styles define own file rpy minigame inventory screen свой код экран экраны инициализация питон стиль стили файл rpy вставить кастомный код вне меток собственный', run: () => openCustomCode() });

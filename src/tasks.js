@@ -216,4 +216,4 @@ function tkSum(st, render) {
   wrap.append(h('div', { class: 'hint' }, t('tk.sum.hint')));
   return wrap;
 }
-TOOL_ITEMS.push({ id: 'tasks', group: 'team', ic: 'flag', key: 'tk.menu', kw: 'tasks deadline due todo corporate задачи сроки дедлайн корпоративный мои задачи сводка руководитель', run: () => openTasks() });
+TOOL_ITEMS.push({ id: 'tasks', group: 'team', ic: 'checklist', key: 'tk.menu', kw: 'tasks deadline due todo corporate задачи сроки дедлайн корпоративный мои задачи сводка руководитель', run: () => openTasks() });

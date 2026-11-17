@@ -287,10 +287,10 @@ function tlText(l) {
   return [tlTitle(l), tlPick(l.why), ...l.how.map(tlPick), tlPick(l.tip), loc.text].join(' ');
 }
 /** Подсветить, где функция лежит, одной карточкой. После неё вернуться в список уроков. */
-function tlSpotlight(l) {
+function tlSpotlight(l, back) {
   const loc = tlLocate(l), title = tlTitle(l);
   const step = { target: tourEl(loc.target) ? loc.target : null, h: title, p: loc.text, actions: tlCanOpen(l) && !loc.off ? [{ label: t('tour.open'), run: () => tlOpen(l) }] : [] };
-  if (!tourStart([step], { onEnd: why => { if (why !== 'action') setTimeout(() => openTour(l.id), 0); } })) openTour(l.id);
+  if (!tourStart([step], { onEnd: why => { if (why !== 'action') setTimeout(() => (back ? back() : openTour(l.id)), 0); } })) (back ? back() : openTour(l.id));
 }
 
 const TOUR_TAB_LS = 'vnmap.tour.tab';
@@ -363,7 +363,8 @@ function openTour(focus) {
     cls: 'help-m tour-m', build: m => {
       modal = m; paint();
       setTimeout(() => { if (window.matchMedia && matchMedia('(pointer:fine)').matches) search.focus(); }, 60);
-      return h('div', { class: 'm-wrap' }, modalHead(t('tour.title'), m, h('div', { class: 'help-sw' }, icon('search', 15), search, cnt)), h('div', { class: 'help-body' }, nav, view));
+      const body = h('div', { class: 'help-body' }, nav, view);
+      return h('div', { class: 'm-wrap' }, modalHead(t('tour.title'), m, [h('div', { class: 'help-sw' }, icon('search', 15), search, cnt), helpZoomCtl(body)]), body);
     }
   });
   return modal;

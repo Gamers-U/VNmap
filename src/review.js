@@ -582,4 +582,4 @@ function rvPanelCards(st, m, guard) {
   return [card];
 }
 
-TOOL_ITEMS.push({ id: 'review', group: 'files', ic: 'check', key: 'rv.menu', kw: 'review branch author github accept проверка правок ветка автор принять вернуть замечание рецензирование', run: () => openReviewList() });
+TOOL_ITEMS.push({ id: 'review', group: 'files', ic: 'diff', key: 'rv.menu', kw: 'review branch author github accept проверка правок ветка автор принять вернуть замечание рецензирование', run: () => openReviewList() });

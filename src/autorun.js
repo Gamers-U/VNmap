@@ -40,7 +40,7 @@ Object.assign(D, {
   'ar.foot': ['Время считается так: слова реплики ÷ скорость чтения, но не меньше минимума; длинная озвучка и паузы {w=…}, pause удлиняют реплику; на каждый выбор уходит заданное время. Случайные числа (renpy.random) берутся на удачу, концовки, открытые в прошлых играх, считаются закрытыми.', 'Timing: words of a line ÷ reading speed, but not less than the minimum; a longer voice clip and {w=…}/pause waits stretch the line; each choice takes the set time. Random numbers (renpy.random) are a single guess, and endings unlocked in earlier playthroughs count as locked.'],
 });
 
-TOOL_ITEMS.push({ id: 'autorun', group: 'play', ic: 'zap', key: 'ar.btn', kw: 'autorun auto run time duration speed route fastest voice playthrough автопрогон время длительность путь озвучка скорость самый быстрый', run: () => openAutorun() });
+TOOL_ITEMS.push({ id: 'autorun', group: 'play', ic: 'fastfwd', key: 'ar.btn', kw: 'autorun auto run time duration speed route fastest voice playthrough автопрогон время длительность путь озвучка скорость самый быстрый', run: () => openAutorun() });
 
 const AR_DEF = { line: 1.5, choice: 4, pause: 1, voice: true, limit: 12000 };
 const arCfg = () => { if (!S.autorun || typeof S.autorun !== 'object') S.autorun = {}; for (const k in AR_DEF) if (S.autorun[k] === undefined) S.autorun[k] = AR_DEF[k]; return S.autorun; };

@@ -357,4 +357,4 @@ function ntPaneGh(st, render) {
   if (!me) wrap.append(h('div', { class: 'hint' }, t('nt.e.nothing')));
   return wrap;
 }
-TOOL_ITEMS.push({ id: 'notify', group: 'team', ic: 'chat', key: 'nt.menu', kw: 'notify notifications telegram discord bot webhook reminder deadline уведомления телеграм дискорд бот вебхук напоминания сроки закрытие проекта', run: () => openNotify() });
+TOOL_ITEMS.push({ id: 'notify', group: 'team', ic: 'bell', key: 'nt.menu', kw: 'notify notifications telegram discord bot webhook reminder deadline уведомления телеграм дискорд бот вебхук напоминания сроки закрытие проекта', run: () => openNotify() });

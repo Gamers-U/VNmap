@@ -346,4 +346,4 @@ function mfBanner() {
   return box;
 }
 
-TOOL_ITEMS.push({ id: 'missingfiles', group: 'files', ic: 'cloud', key: 'mf.btn', kw: 'missing files placeholders download drive github folder недостающие файлы заглушки докачка диск папка', run: () => openMissingFiles() });
+TOOL_ITEMS.push({ id: 'missingfiles', group: 'files', ic: 'fileX', key: 'mf.btn', kw: 'missing files placeholders download drive github folder недостающие файлы заглушки докачка диск папка', run: () => openMissingFiles() });

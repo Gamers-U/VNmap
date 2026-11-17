@@ -256,4 +256,4 @@ function vsNodeField(n, closeWin) {
   box.append(h('div', { class: 'row-actions left' }, h('button', { class: 'btn sm', onclick: () => { closeWin(); openVarStates(); } }, t('vs.nm.all'))));
   return field(t('vs.nm'), box);
 }
-TOOL_ITEMS.push({ id: 'varstates', group: 'story', ic: 'sliders', key: 'vs.btn', kw: 'variables values flags counters state condition where hold переменные значения флаги счётчик состояние условие где выполнится', run: () => openVarStates() });
+TOOL_ITEMS.push({ id: 'varstates', group: 'story', ic: 'variable', key: 'vs.btn', kw: 'variables values flags counters state condition where hold переменные значения флаги счётчик состояние условие где выполнится', run: () => openVarStates() });

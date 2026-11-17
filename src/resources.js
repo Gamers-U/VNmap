@@ -264,4 +264,4 @@ function openResources(opts) {
     }
   });
 }
-TOOL_ITEMS.push({ id: 'resources', group: 'story', ic: 'box', key: 'rs.btn', kw: 'resources assets backgrounds sprites music sounds checklist artist composer todo ресурсы ассеты фоны спрайты музыка звуки чек-лист художник композитор список', run: () => openResources({ nodeId: '' }) });
+TOOL_ITEMS.push({ id: 'resources', group: 'story', ic: 'stack', key: 'rs.btn', kw: 'resources assets backgrounds sprites music sounds checklist artist composer todo ресурсы ассеты фоны спрайты музыка звуки чек-лист художник композитор список', run: () => openResources({ nodeId: '' }) });

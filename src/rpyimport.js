@@ -596,4 +596,4 @@ function openRpyImport() {
   });
   return m;
 }
-TOOL_ITEMS.push({ id: 'rpyimport', group: 'story', ic: 'upload', key: 'ri.btn', kw: 'import rpy renpy script labels jump menu импорт сценарий метки перенос ренпай исходники', run: () => openRpyImport() });
+TOOL_ITEMS.push({ id: 'rpyimport', group: 'story', ic: 'signin', key: 'ri.btn', kw: 'import rpy renpy script labels jump menu импорт сценарий метки перенос ренпай исходники', run: () => openRpyImport() });

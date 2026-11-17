@@ -62,6 +62,51 @@ Object.assign(D, {
   'tw.se.2.t': ['Напечатайте любое слово, например имя героя или «сборка».', 'Type any word, for example a character\'s name or "build".'],
   'tw.se.3': ['Готово', 'That is it'],
   'tw.se.3.p': ['Теперь вы знаете, как найти что угодно. Esc закрывает поиск.', 'Now you know how to find anything. Esc closes the search.'],
+
+  /* ---------- редактор кода ---------- */
+  'tw.ide.0': ['Практика: редактор кода', 'Hands-on: the code editor'],
+  'tw.ide.0.p': ['Окно открылось само. Пройдём по нему: создадим файл, напечатаем строку, посмотрим структуру и быстрый поиск файла.\nФайл, который мы создадим, останется в проекте. В нём будет только комментарий, сборке он не мешает; убрать его можно в проводнике (правый клик по файлу → «Удалить…»).', 'The window has opened by itself. We will go through it: create a file, type a line, look at the outline and the quick file search.\nThe file we create stays in the project. It will hold only a comment, so it does not disturb the build; you can remove it in the explorer (right-click the file → Delete…).'],
+  'tw.ide.1': ['Слева: проводник', 'On the left: the explorer'],
+  'tw.ide.1.p': ['В начале списка «Код внутри проекта»: это ваш «Свой код», он хранится в проекте и при сборке попадает в игру. В программе для компьютера ниже виден проект Ren\'Py с диска: папку выбираете один раз. Глаз над списком показывает служебные файлы.', 'At the top of the list is "Code inside the project": it is your Custom code, stored in the project and added to the game on build. In the desktop app the Ren\'Py project from disk is shown below: you choose the folder once. The eye above the list shows service files.'],
+  'tw.ide.2': ['Новый файл', 'A new file'],
+  'tw.ide.2.p': ['Файл появится в списке и сразу откроется во вкладке справа. Если выбрана папка Ren\'Py, файл создастся в ней, иначе во «Свой код».', 'The file appears in the list and opens in a tab on the right at once. If a Ren\'Py folder is chosen, the file is created in it, otherwise in Custom code.'],
+  'tw.ide.2.t': ['Нажмите этот значок, впишите имя (например `practice`) и «Создать».', 'Press this icon, type a name (for example `practice`) and press Create.'],
+  'tw.ide.3': ['Пишем код', 'Writing code'],
+  'tw.ide.3.p': ['Код раскрашен по языку файла. Пока печатаете, редактор подсказывает команды Ren\'Py, метки, героев и картинки проекта: выберите подсказку стрелками и примите клавишей Enter или Tab.', 'The code is coloured by the file language. While you type, the editor suggests Ren\'Py commands, labels, characters and project images: choose a suggestion with the arrows and accept it with Enter or Tab.'],
+  'tw.ide.3.t': ['Щёлкните в поле и напечатайте комментарий, например `# моя проба`. Решётка начинает комментарий, игре он не мешает.', 'Click the field and type a comment, for example `# my try`. The hash sign starts a comment, the game ignores it.'],
+  'tw.ide.4': ['Внизу: язык и положение', 'At the bottom: language and position'],
+  'tw.ide.4.p': ['Здесь язык файла (щелчок по нему меняет подсветку), строка и столбец курсора, кодировка. Левая кнопка прячет и показывает проводник (Ctrl+B).', 'Here are the file language (click it to change the highlighting), the cursor line and column, and the encoding. The left button hides and shows the explorer (Ctrl+B).'],
+  'tw.ide.5': ['Структура файла', 'The file outline'],
+  'tw.ide.5.p': ['В большом файле удобно прыгать по меткам, экранам и функциям: раскройте «Структуру» под проводником и щёлкните по нужной строке. Пока файл пуст, список пуст, он наполнится по мере кода.', 'In a big file it is handy to jump between labels, screens and functions: open the Outline under the explorer and click a line. While the file is empty the list is empty too; it fills up as you write code.'],
+  'tw.ide.6': ['Быстрый поиск файла', 'Quick file search'],
+  'tw.ide.6.p': ['Ctrl+P находит любой файл по имени, Ctrl+G переходит к строке, Ctrl+S сохраняет, Ctrl+Shift+S сохраняет все файлы.', 'Ctrl+P finds any file by name, Ctrl+G jumps to a line, Ctrl+S saves, Ctrl+Shift+S saves every file.'],
+  'tw.ide.6.t': ['Нажмите Ctrl+P (или значок поиска в проводнике, если он есть) и начните печатать имя файла. Esc закрывает поиск.', 'Press Ctrl+P and start typing a file name. Esc closes the search.'],
+  'tw.ide.7': ['Сохранение и помощник', 'Saving and the helper'],
+  'tw.ide.7.p': ['«Сохранить всё» записывает все изменённые файлы. Если закроете окно, не сохранив, правки вернутся при следующем открытии файла. Кнопка «ИИ» открывает помощника справа: он видит открытый файл (нужно подключение ИИ в «Настройки → Подключения»).', 'Save all writes every changed file. If you close the window without saving, your edits come back the next time you open the file. The AI button opens a helper on the right that sees the open file (it needs an AI connection in Settings → Connections).'],
+  'tw.ide.8': ['Готово', 'That is it'],
+  'tw.ide.8.p': ['Вы знаете главное: проводник, вкладки, подсказки, структура и быстрый поиск. Файл `practice` остался во «Свой код»: удалите его, если он не нужен.', 'You know the basics: the explorer, tabs, suggestions, the outline and the quick search. The file `practice` stays in Custom code: delete it if you do not need it.'],
+
+  /* ---------- интерфейс: режимы, наборы, панель ---------- */
+  'tw.modes.0': ['Практика: интерфейс', 'Hands-on: the interface'],
+  'tw.modes.0.p': ['Посмотрим, где что лежит, и попробуем переключить режим. Всё обратимо: любое переключение можно вернуть тем же способом.', 'We will see where things live and try to switch the mode. Everything is reversible: any switch can be undone the same way.'],
+  'tw.modes.1': ['Значок проекта', 'The project icon'],
+  'tw.modes.1.p': ['Значок рядом с названием проекта открывает общее меню: новый проект, открыть, сохранить, сборка, настройки, тема, язык и справка.', 'The icon next to the project name opens the general menu: new project, open, save, build, settings, theme, language and help.'],
+  'tw.modes.1.t': ['Нажмите на значок проекта.', 'Press the project icon.'],
+  'tw.modes.2': ['Инструменты', 'Tools'],
+  'tw.modes.2.p': ['Здесь живут все функции программы по разделам: карта, тексты, код, проверки, игра, команда. Если не помните, где что, нажмите Ctrl+K и напишите название.', 'Every function of the app lives here by section: map, texts, code, checks, play, team. If you do not remember where something is, press Ctrl+K and type its name.'],
+  'tw.modes.2.t': ['Нажмите кнопку «Инструменты» (четыре кубика).', 'Press the Tools button (four cubes).'],
+  'tw.modes.3': ['Настройки', 'Settings'],
+  'tw.modes.3.p': ['В настройках выбирают вид программы: набор, режим, панель и модули. Там же подключения и копии.', 'The settings define how the app looks: the preset, the mode, the toolbar and the modules. The connections and backups are there too.'],
+  'tw.modes.3.t': ['Нажмите «Настройки» на верхней панели.', 'Press Settings on the top bar.'],
+  'tw.modes.4': ['Наборы', 'Presets'],
+  'tw.modes.4.p': ['Набор одним нажатием настраивает режим, панель и модули: «Только пишу», «Пишу и собираю в Ren\'Py» или «Команда». Выбранный набор можно потом подправить вручную, а прежний вернуть тем же нажатием.', 'A preset sets the mode, the toolbar and the modules in one press: Just writing, Writing and building in Ren\'Py, or Team. You can adjust the chosen preset by hand afterwards and bring the old one back with the same press.'],
+  'tw.modes.5': ['Режим', 'The mode'],
+  'tw.modes.5.p': ['Простой режим показывает главное, остальное лежит под кнопкой «Инструменты». Профессиональный выводит все разделы на панель.', 'Simple mode shows the essentials, the rest lies under the Tools button. Professional mode puts every section on the bar.'],
+  'tw.modes.5.t': ['Переключите режим на другой. Вернуть его можно тут же.', 'Switch the mode to the other one. You can switch it back right here.'],
+  'tw.modes.6': ['Панель и модули', 'Toolbar and modules'],
+  'tw.modes.6.p': ['Вкладка «Панель» решает, какие кнопки стоят наверху и в каком порядке (их можно перетаскивать). В профессиональном режиме есть и вкладка «Модули»: она выключает целые группы возможностей. Ничего не удаляется, выключенное всегда можно вернуть.', 'The Toolbar tab decides which buttons are on top and in what order (you can drag them). Professional mode also has a Modules tab that switches whole groups of features off. Nothing is deleted, anything switched off can be brought back.'],
+  'tw.modes.7': ['Готово', 'That is it'],
+  'tw.modes.7.p': ['Теперь вы знаете, где меню проекта, где все инструменты и где настраивается вид программы.', 'Now you know where the project menu is, where all the tools are and where the look of the app is set.'],
 });
 
 /** Короткая запись шага: ключ текстов tw.<id>.<n>, цель и дополнения. */
@@ -130,7 +175,48 @@ function twSearch() {
   ];
 }
 
-const TOUR_WALKS = { texted: twTextEditor, map: twMap, search: twSearch };
+/** Редактор кода: файл, строка кода, структура, быстрый поиск. */
+function twIde() {
+  let tabs0 = 0, len0 = 0;
+  const hostLen = () => { const e = document.querySelector('.ide-edhost'); return e ? e.textContent.length : 0; };
+  const open = () => { if (!document.querySelector('.ide-m')) openIde(); };
+  const S = (n, target, extra) => twStep('ide', n, target, extra);
+  return [
+    S(0, '.ide-m', { late: true, setup: () => { MODALS.slice().forEach(m => m.close()); closePopover(); openIde(); } }),
+    S(1, '.ide-side', { late: true, setup: open }),
+    S(2, '#ide-newfile', { late: true, live: true, task: twTask('ide', 2), setup: () => { open(); tabs0 = document.querySelectorAll('.ide-tab').length; }, until: () => document.querySelectorAll('.ide-tab').length > tabs0 }),
+    S(3, '.ide-edwrap', { late: true, live: true, cardAt: '.ide-status', task: twTask('ide', 3), setup: () => { open(); len0 = hostLen(); }, until: () => hostLen() >= len0 + 3 }),
+    S(4, '.ide-status', { late: true, setup: open }),
+    S(5, '.ide-olbox', { late: true, setup: open }),
+    S(6, '.ide-edwrap', { late: true, live: true, cardAt: '.ide-status', task: twTask('ide', 6), setup: () => { open(); const q = document.querySelector('#ide-qo'); if (q) q.closest('.ide-qo').remove(); }, until: () => !!document.querySelector('#ide-qo') }),
+    S(7, '#ide-saveall', { late: true, setup: () => { open(); const q = document.querySelector('.ide-qo'); if (q) q.remove(); } }),
+    S(8, null, { actions: [{ label: t('tour.openlessons'), run: () => setTimeout(() => openTour('ide'), 0) }] }),
+  ];
+}
+
+/** Интерфейс: меню проекта, «Инструменты», настройки, режим. */
+function twModes() {
+  let mode0 = '';
+  const popOpen = () => !!document.querySelector('.pop');
+  const toolsBtn = () => document.querySelector('.tools-btn') || document.querySelector('.more-btn');
+  const setOpen = () => !!document.querySelector('.set-modal');
+  const openSet = () => { if (!setOpen()) openSettingsWindow('view'); };
+  const card = txt => () => [...document.querySelectorAll('.set-modal .set-pane .nt-list > *')].find(x => x.textContent.trim().startsWith(txt)) || null;
+  const closeAll = () => { MODALS.slice().forEach(m => m.close()); closePopover(); };
+  const S = (n, target, extra) => twStep('modes', n, target, extra);
+  return [
+    S(0, null, { setup: closeAll, p: t('tw.modes.0.p') + '\n' + t('tw.undo') }),
+    S(1, '#app-logo', { live: true, task: twTask('modes', 1), setup: closeAll, until: popOpen }),
+    S(2, toolsBtn, { live: true, task: twTask('modes', 2), setup: closePopover, until: popOpen }),
+    S(3, () => tourBtn(t('top.settings')), { live: true, task: twTask('modes', 3), setup: closeAll, until: setOpen }),
+    S(4, card(t('ui.preset')), { late: true, setup: openSet }),
+    S(5, card(t('ui.mode')), { late: true, live: true, task: twTask('modes', 5), setup: () => { openSet(); mode0 = uiCfg().mode; }, until: () => uiCfg().mode !== mode0 }),
+    S(6, '.set-modal .set-body > .seg', { late: true, setup: openSet }),
+    S(7, null, { setup: closeAll, actions: [{ label: t('tour.openlessons'), run: () => setTimeout(() => openTour('modes'), 0) }] }),
+  ];
+}
+
+const TOUR_WALKS = { texted: twTextEditor, map: twMap, search: twSearch, ide: twIde, modes: twModes };
 /** Есть ли у урока практика, и сама практика. */
 const tlWalkOf = l => (l && TOUR_WALKS[l.tool || l.id]) || null;
 function tlWalkRun(l) {

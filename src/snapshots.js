@@ -333,4 +333,4 @@ function snPane(m) {
 }
 /** Старый вход (метка «Сохранено», меню «Файл», палитра) ведёт во вкладку «Копии» настроек. */
 function openSnapshots() { openSettingsWindow('backup'); }
-TOOL_ITEMS.push({ id: 'snapshots', group: 'files', ic: 'undo', key: 'sn.btn', kw: 'snapshots backup restore history versions copy undo return снимки резервная копия восстановить вернуть версия история автокопия сравнить', run: () => openSnapshots(), menu: false });
+TOOL_ITEMS.push({ id: 'snapshots', group: 'files', ic: 'history', key: 'sn.btn', kw: 'snapshots backup restore history versions copy undo return снимки резервная копия восстановить вернуть версия история автокопия сравнить', run: () => openSnapshots(), menu: false });

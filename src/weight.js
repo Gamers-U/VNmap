@@ -158,4 +158,4 @@ function openWeight() {
     }
   });
 }
-TOOL_ITEMS.push({ id: 'weight', group: 'story', ic: 'box', key: 'wt.btn', kw: 'weight size heavy big images pictures sound audio wav ogg webp compress megabytes phone memory mobile вес размер тяжёлые большие картинки звук мегабайты сжать телефон память', run: () => openWeight() });
+TOOL_ITEMS.push({ id: 'weight', group: 'story', ic: 'scale', key: 'wt.btn', kw: 'weight size heavy big images pictures sound audio wav ogg webp compress megabytes phone memory mobile вес размер тяжёлые большие картинки звук мегабайты сжать телефон память', run: () => openWeight() });

@@ -22,10 +22,10 @@ const APP_DIR = path.join(__dirname, 'app');
 const PROJECT_EXTS = ['.vnmap', '.zip', '.json'];
 const DEV = process.argv.includes('--dev');
 /* Windows и Linux: без системной рамки и меню. Сверху тонкая полоска страницы (src/winbar.js), кнопки «свернуть, развернуть, закрыть»
-   рисует сама система поверх неё (titleBarOverlay), поэтому остаются родные края окна и привязка окон Windows 11. macOS оставляем как есть:
+   с 1.7.12 рисует сама страница (15 пикселей, автоскрытие в полном экране); родные края окна остаются, привязка Win11 по наведению на кнопку «развернуть» пропадает. macOS оставляем как есть:
    там строка меню обязательна по правилам системы. Переменная VN_NATIVE_FRAME=1 возвращает обычное окно (на случай, если что-то пойдёт не так). */
 const FRAMELESS = process.platform !== 'darwin' && !process.env.VN_NATIVE_FRAME;
-const WINBAR_H = 20;
+const WINBAR_H = 15;
 const CHROME_DEF = { dark: { color: '#343439', symbolColor: '#a4a4ac' }, light: { color: '#f0f0f5', symbolColor: '#6a6a72' } };
 const BRIDGE = 10;                     // версия «моста» оболочки: страница может потребовать не меньше (data-needs в её отметке сборки)
 const RECENT_MAX = 12;
@@ -726,7 +726,7 @@ function showAbout() {
 /** Параметры окна без системной рамки (общие для главного окна и окон-спутников). tool — имя спутника или '' для главного. */
 function frameOpts(tool) {
   return {
-    ...(FRAMELESS ? { titleBarStyle: 'hidden', titleBarOverlay: { ...CHROME_DEF[nativeTheme.shouldUseDarkColors ? 'dark' : 'light'], height: WINBAR_H }, autoHideMenuBar: true } : {}),
+    ...(FRAMELESS ? { titleBarStyle: 'hidden', autoHideMenuBar: true } : {}),                 // кнопки окна рисует страница (с 1.7.12), системных поверх неё нет
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true, spellcheck: false, devTools: DEV, additionalArguments: [...(FRAMELESS ? ['--vn-frameless=1'] : []), ...(tool ? ['--vn-sat=' + tool] : [])] },
   };
 }

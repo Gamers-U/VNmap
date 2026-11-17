@@ -281,4 +281,4 @@ function openMapPdf() {
     }
   });
 }
-TOOL_ITEMS.push({ id: 'mappdf', group: 'map', ic: 'image', key: 'mp.btn', kw: 'map pdf print export sheet paper a4 a3 poster карта печать лист бумага постер экспорт', run: () => openMapPdf() });
+TOOL_ITEMS.push({ id: 'mappdf', group: 'map', ic: 'printer', key: 'mp.btn', kw: 'map pdf print export sheet paper a4 a3 poster карта печать лист бумага постер экспорт', run: () => openMapPdf() });
