@@ -82,6 +82,7 @@ const TOUR_LESSONS = [
 
   /* ---------- Тексты ---------- */
   { id: 'texted', g: 'text', tool: 'texted',
+    where: ['Кнопка «Текст» на верхней панели справа (или Ctrl+K → «Редактор текста»).', 'The Text button on the top bar, on the right (or Ctrl+K → “Text editor”).'], spot: () => tourBtn(t('te.top')),
     why: ['Редактор прозы: пишете главу как документ в Word, а программа превращает её в сценарий Ren\'Py.', 'A prose editor: you write a chapter like a Word document and the app turns it into a Ren\'Py script.'],
     how: [['Заголовок 1 это блок карты, Заголовок 2 глава (файл), Заголовок 3 сцена. Остальное это текст.', 'Heading 1 is a map block, Heading 2 is a chapter (file), Heading 3 is a scene. The rest is text.'],
       ['Реплики пишите так: `— Привет, — сказал Боб.` или `Боб: Привет.` Справа виден сценарий, который получится.', 'Write lines like this: `"Hi," Bob said.` or `Bob: Hi.` The script you will get is shown on the right.'],
@@ -112,6 +113,7 @@ const TOUR_LESSONS = [
     how: [['Выберите, что переименовать, и введите новое имя.', 'Choose what to rename and enter the new name.'], ['Просмотрите, где именно произойдёт замена, и подтвердите.', 'Look through where exactly the replacement will happen and confirm.']],
     tip: ['Предпросмотр показывает все места замены до того, как вы её подтвердите.', 'The preview shows every place of the replacement before you confirm it.'] },
   { id: 'charpage', g: 'text', tool: 'charpage',
+    where: ['Реестр → Герои → кнопка «Страница персонажа» у нужного героя (или Ctrl+K → «Страница персонажа»).', 'Registry → Characters → the “Character page” button on the character (or Ctrl+K → “Character page”).'], spot: () => tourBtn(t('top.registry.tip')),
     why: ['Страница персонажа: сколько он говорит, в каких образах появляется и где его реплики.', 'A character page: how much they speak, in which looks they appear and where their lines are.'],
     how: [['Выберите персонажа из списка.', 'Pick a character from the list.'], ['Смотрите статистику, образы и реплики, переходите к нужному блоку.', 'Look at the statistics, the looks and the lines, and jump to the block you need.']],
     tip: ['Если герой почти молчит, а в сюжете главный, это повод пересмотреть сцены.', 'If a hero is almost silent but central to the plot, it is a reason to revisit the scenes.'] },

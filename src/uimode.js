@@ -34,10 +34,10 @@ Object.assign(D, {
   'ui.bar.reset': ['Вернуть панель по умолчанию', 'Restore the default toolbar'],
   'ui.g.map': ['Карта', 'Map'], 'ui.g.text': ['Тексты', 'Texts'], 'ui.g.check': ['Проверки', 'Checks'], 'ui.g.play': ['Игра', 'Play'], 'ui.g.team': ['Работа команды', 'Teamwork'],
   'ui.g.map.tip': ['Расстановка блоков, карта в PDF, заметки', 'Arranging blocks, map PDF, notes'],
-  'ui.g.text.tip': ['Редактор, импорт, вычитка, таблица реплик, переименование, персонажи, лист озвучки, перевод', 'Editor, import, proofreading digest, replica table, renaming, characters, voice sheet, translation'],
+  'ui.g.text.tip': ['Импорт, вычитка, таблица реплик, переименование, лист озвучки, перевод (редактор текста: кнопка «Текст» справа)', 'Import, proofreading digest, replica table, renaming, voice sheet, translation (the text editor: the "Text" button on the right)'],
   'ui.g.code': ['Код', 'Code'], 'ui.g.code.tip': ['Свой код проекта, сниппеты, рецепты Ren\'Py, интерфейс игры', 'Your project code, snippets, Ren\'Py recipes, the game interface'],
-  'ui.g.check.tip': ['Проверка сюжета, недостающие файлы, переменные, статистика, ветки и время, гайд по концовкам, вес ресурсов', 'Plot check, missing files, variables, statistics, branches and time, endings guide, asset weight'],
-  'ui.g.play.tip': ['Плеер, автопрогон, журнал прохождений, HTML-игра для тестеров, запуск в Ren\'Py', 'Player, auto-run, playthrough log, HTML game for testers, run in Ren\'Py'],
+  'ui.g.check.tip': ['Проверка сюжета, недостающие файлы, переменные, статистика, ветки и время, журнал прохождений и тепловая карта, гайд по концовкам, вес и список ресурсов', 'Plot check, missing files, variables, statistics, branches and time, playthrough log and heat map, endings guide, asset weight and list'],
+  'ui.g.play.tip': ['Плеер, автопрогон, HTML-игра для тестеров, запуск в Ren\'Py', 'Player, auto-run, HTML game for testers, run in Ren\'Py'],
   'ui.g.team.tip': ['Команда и роли, «кто я», задачи и сроки, кто что сделал, проверка правок', 'Team and roles, “who am I”, tasks and deadlines, who did what, review of changes'],
   'ui.more': ['Ещё', 'More'], 'ui.more.tip': ['Все возможности по разделам: карта, тексты, код, проверки, игра, команда', 'All features by section: map, texts, code, checks, play, team'],
   'ui.more.other': ['Ещё', 'Other'],
@@ -70,10 +70,10 @@ const UI_MODS = ['analysis', 'text', 'team', 'collab', 'translate'];
 /** Профессиональный режим: строка разделов под верхней панелью (инструменты на виду). Пункты берутся из TOOL_ITEMS по id и фильтруются uiShow. */
 const UI_STRIP = [
   { id: 'map', ic: 'fit', items: ['layout', 'mappdf', 'notes'] },
-  { id: 'text', ic: 'type', items: ['texted', 'docimport', 'digest', 'replicas', 'rename', 'charpage', 'resources', 'voicesheet', 'translate'] },
+  { id: 'text', ic: 'type', items: ['docimport', 'digest', 'replicas', 'rename', 'voicesheet', 'translate'] },
   { id: 'code', ic: 'code', items: ['ide', 'customcode', 'snippets', 'recipes', 'gui'] },
-  { id: 'check', ic: 'check', items: ['checks', 'missingfiles', 'varstates', 'stats', 'branchstats', 'endguide', 'weight'] },
-  { id: 'play', ic: 'play', items: ['player', 'autorun', 'testlog', 'htmlgame', 'renpy', 'ctrlcheck'] },
+  { id: 'check', ic: 'check', items: ['checks', 'missingfiles', 'varstates', 'stats', 'branchstats', 'testlog', 'endguide', 'weight', 'resources'] },
+  { id: 'play', ic: 'play', items: ['player', 'autorun', 'htmlgame', 'renpy', 'ctrlcheck'] },
   { id: 'team', ic: 'users', items: ['team', 'whoami', 'tasks', 'whodid', 'review'] },
 ];
 /** В каком разделе пункт «дома» ('' если ни в каком). Пункт, которого нет в видимом разделе, лежит в меню «Инструменты»: функции не пропадают, а переезжают. */

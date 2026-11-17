@@ -6,16 +6,11 @@
    и из общего списка «Инструменты»). Карточки модулей, которые выключены или недоступны в простом режиме, не показываются. */
 
 Object.assign(D, {
-  'sh.btn': ['Статистика', 'Statistics'], 'sh.tip': ['Ход работы и прохождение: проект, концовки, время, автопрогон, журнал, команда', 'Progress and playthroughs: project, endings, time, autorun, log, team'],
+  'sh.btn': ['Статистика', 'Statistics'], 'sh.tip': ['Ход работы: проект, концовки, кто что сделал', 'Progress: project, endings, who did what'],
   'sh.title': ['Статистика', 'Statistics'],
-  'sh.p': ['Всё о ходе работы и прохождении в одном месте. Подробные окна открываются кнопками.', 'Everything about progress and playthroughs in one place. The detail windows open with the buttons.'],
+  'sh.p': ['Ход работы в одном месте. Время и ветки, журнал прохождений и тепловая карта лежат в «Проверках», автопрогон в «Игре».', 'Progress in one place. Time and branches, the playthrough log and heat map are under "Checks"; autorun is under "Play".'],
   'sh.proj': ['Проект', 'Project'], 'sh.proj.p': ['Сколько сделано и какие концовки вы уже открыли.', 'How much is done and which endings you have already opened.'],
   'sh.proj.btn': ['Концовки и блоки', 'Endings and blocks'],
-  'sh.time': ['Время и ветки', 'Time and branches'], 'sh.time.p': ['Самое короткое и длинное прохождение, перекос развилок, сколько читать до любого блока.', 'The shortest and longest playthrough, fork imbalance, how long it takes to read up to any block.'],
-  'sh.time.read': ['Читается примерно {0} при скорости {1} слов в минуту', 'Takes about {0} to read at {1} words per minute'],
-  'sh.auto': ['Автопрогон', 'Autorun'], 'sh.auto.p': ['Программа сама проходит новеллу всеми способами и считает время до каждого блока и концовки.', 'The app plays through the novel every way and counts the time to every block and ending.'],
-  'sh.log': ['Журнал прохождений', 'Playthrough log'], 'sh.log.p': ['Прохождения ваши и тестеров, тепловая карта: где доходят и где бросают.', 'Playthroughs of yours and of testers, a heat map: where players get to and where they quit.'],
-  'sh.log.n': ['Журналов: {0}', 'Logs: {0}'], 'sh.log.none': ['Журналов пока нет', 'No logs yet'],
   'sh.team': ['Кто что сделал', 'Who did what'], 'sh.team.p': ['Правки по людям за 7 или 30 дней или за всё время.', 'Edits per person over 7 or 30 days or all time.'],
   'sh.team.need': ['Нужны хотя бы два участника в Реестре → «Участники»', 'At least two members are needed in Registry → “Members”'],
   'sh.ends': ['концовок открыто', 'endings opened'],
@@ -50,13 +45,6 @@ function openStatsHub() {
           if (tl) tl.after(h('div', { class: 'hint sh-note' }, t('mx.note')));
           if (en.total && en.reachable < en.total) pc.querySelector('.nt-btns').before(h('div', { class: 'hint sh-num warn' }, t('mx.ends.un', en.total - en.reachable, en.total)));
         }
-      }
-      if (typeof uiShow !== 'function' || uiShow('branchstats')) body.append(card('time', 'zap', t('sh.time'), t('sh.time.p'),
-        st.words ? h('div', { class: 'hint sh-num' }, t('sh.time.read', mxRead(st.words).text, rdWpm())) : null, null, () => openBranchStats()));
-      if (typeof uiShow !== 'function' || uiShow('autorun')) body.append(card('auto', 'play', t('sh.auto'), t('sh.auto.p'), null, null, () => openAutorun()));
-      if (typeof uiShow !== 'function' || uiShow('testlog')) {
-        let n = 0; try { n = lgLoad().length; } catch (e) { n = 0; }
-        body.append(card('log', 'flag', t('sh.log'), t('sh.log.p'), h('div', { class: 'hint sh-num' }, n ? t('sh.log.n', n) : t('sh.log.none')), null, () => openTestLog()));
       }
       if (typeof uiShow !== 'function' || uiShow('whodid')) body.append(card('team', 'users', t('sh.team'), t('sh.team.p'),
         typeof whOn === 'function' && !whOn() ? h('div', { class: 'hint sh-num warn' }, t('sh.team.need')) : null, null, () => openWhoDid()));
