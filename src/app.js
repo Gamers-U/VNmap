@@ -7,8 +7,7 @@ function tbtn(ic, label, tip, onClick, cls = '') {
 }
 /** Кнопки правой части панели по id. Какие показывать и в каком порядке, решают режим интерфейса и вкладка «Панель» в Настройках (uimode.js). */
 function barBuilders() {
-  const open = () => (DESK ? tbtn('folder', t('desk.open.short'), t('desk.open.tip') + ' (Ctrl+O)', () => deskCommand('open')) : tbtn('upload', t('top.import'), t('top.import.tip'), importJSONFile));
-  const saveItems = (withBackups = true) => [...(withBackups ? [{ label: t('sn.btn'), icon: 'undo', onClick: () => openSnapshots() }] : []), ...(DESK ? [
+  const saveItems = (withBackups = true) => [...(withBackups ? [{ label: t('wb.open'), icon: 'folder', kbd: DESK ? 'Ctrl+O' : undefined, onClick: () => (DESK ? deskCommand('open') : importJSONFile()) }, { label: t('sn.btn'), icon: 'undo', onClick: () => openSnapshots() }] : []), ...(DESK ? [
     { label: t('desk.save'), icon: 'save', kbd: 'Ctrl+S', onClick: () => deskCommand('save') },
     { label: t('desk.saveas'), icon: 'save', kbd: 'Ctrl+Shift+S', onClick: () => deskCommand('saveas') },
     { label: t('desk.copy'), icon: 'copy', onClick: exportJSON }] : [{ label: t('exp.json'), icon: 'save', kbd: 'Ctrl+S', onClick: exportJSON }])];
@@ -31,7 +30,6 @@ function barBuilders() {
       { label: t('exp.svg.light'), icon: 'image', onClick: () => exportSVG('light') },
       { label: t('mp.menu'), icon: 'image', onClick: () => openMapPdf() },
       { label: t('exp.map'), icon: 'rows', onClick: exportMap }]), 'file-btn')),
-    open,
   };
 }
 /** Правая часть верхней панели: зависит от режима интерфейса и настройки «Панель» (uimode.js). */
@@ -56,11 +54,12 @@ function buildChrome() {
   BTN.redo = tbtn('redo', '', t('c.redo') + ' (Ctrl+Shift+Z)', () => redo());
   BTN.theme = tbtn(S.theme === 'dark' ? 'sun' : 'moon', '', t('top.theme'), () => toggleTheme());
   const langSeg = segmented([{ value: 'ru', label: 'RU' }, { value: 'en', label: 'EN' }], S.lang, v => setLang(v), 'mini');
-  const identity = h('div', { class: 'bar', id: 'bar-id' }, h('div', { class: 'logo' }, icon('fork', 18, 2)), nameI, badge);
+  const logo = h('button', { class: 'logo', id: 'app-logo', type: 'button', 'data-tip': t('wb.menu'), 'aria-label': t('wb.menu'), onclick: e => appMenu(e.currentTarget) }, icon('fork', 18, 2));      // значок рядом с названием открывает меню «Файл, Вид, Справка» (с 1.7.9)
+  const identity = h('div', { class: 'bar', id: 'bar-id' }, logo, nameI, badge);
   const core = h('div', { class: 'bar', id: 'bar-core' }, BTN.undo, BTN.redo, h('div', { class: 'tsep' }),
     tbtn('plus', t('top.add'), t('top.add.tip'), b => menuAt(b, NODE_TYPES.map(tp => ({ label: t('type.' + tp), icon: TYPE_ICON[tp], onClick: () => addNodeAtCenter(tp) })))),
     tbtn('search', t('top.search'), t('top.search') + ' (Ctrl+K)', () => openSearch()),
-    uiPro() ? tbtn('wand', t('tools.btn'), t('tools.tip'), b => toolsMenu(b), 'tools-btn') : tbtn('grid', t('ui.more'), t('ui.more.tip'), b => uiMoreMenu(b), 'more-btn'));
+    uiPro() ? tbtn('grid', '', t('tools.btn') + '. ' + t('tools.tip'), b => toolsMenu(b), 'tools-btn') : tbtn('grid', t('ui.more'), t('ui.more.tip'), b => uiMoreMenu(b), 'more-btn'));      // один значок (четыре кубика) во всех режимах
   const strip = uiStrip();
   const mainBar = h('div', { class: 'bar', id: 'bar-main' }, ...topRight(langSeg));
   document.body.classList.toggle('ui-pro', uiPro());

@@ -1,6 +1,6 @@
 'use strict';
 /* ====== Тонкая полоска сверху окна (программа для Windows и Linux) ======
-   У окна нет системной рамки и меню «Файл, Правка, Вид, Справка». Вместо них сверху узкая полоска цвета кнопок (26 пикселей):
+   У окна нет системной рамки и меню «Файл, Правка, Вид, Справка». Вместо них сверху узкая полоска цвета кнопок (20 пикселей, примерно 5 мм):
    слева значок (нажмите: меню «Файл, Вид, Справка»), название проекта, справа родные кнопки «свернуть, развернуть, закрыть» (их рисует
    система поверх полоски и подгоняет под цвет темы). Окно тянется за полоску. Во весь экран: F11 или пункт меню.
    Если система не умеет рисовать кнопки поверх страницы (или включён полный экран), полоска показывает свои маленькие кнопки.
@@ -15,7 +15,7 @@ Object.assign(D, {
   'wb.theme': ['Светлая / тёмная тема', 'Light / dark theme'], 'wb.lang.ru': ['Язык: русский', 'Language: Russian'], 'wb.lang.en': ['Язык: English', 'Language: English'],
   'wb.zoomin': ['Крупнее', 'Zoom in'], 'wb.zoomout': ['Мельче', 'Zoom out'], 'wb.zoom0': ['Масштаб 100%', 'Zoom 100%'], 'wb.full': ['Во весь экран', 'Full screen'],
   'wb.helpopen': ['Справка', 'Help'], 'wb.upd': ['Обновить версию…', 'Update the app…'], 'wb.renpy': ['Сайт Ren\'Py', 'Ren\'Py website'], 'wb.about': ['О программе и версия', 'About and version'],
-  'wb.quit': ['Выход', 'Quit'],
+  'wb.quit': ['Выход', 'Quit'], 'wb.settings': ['Настройки…', 'Settings…'], 'wb.web.save': ['Сохранить файл проекта', 'Save the project file'],
   'wb.min': ['Свернуть', 'Minimize'], 'wb.max': ['Развернуть', 'Maximize'], 'wb.restore': ['Восстановить', 'Restore'], 'wb.close': ['Закрыть', 'Close'], 'wb.exitfull': ['Выйти из полного экрана', 'Exit full screen'],
   'wb.app': ['Карта новеллы', 'Story Map'],
 });
@@ -41,6 +41,25 @@ function winbarTitle() {
   WB.title.textContent = tool + (dot + (P.name || '')).trim() + ' — ' + t('wb.app');
 }
 
+/** Меню по значку рядом с названием проекта (с 1.7.9): в программе с полоской это то же меню, что у значка в полоске; в браузере и на macOS (там своё системное меню) короткое: файл, вид, настройки, справка. */
+function appMenu(anchor) {
+  if (winbarOn()) return winbarMenu(anchor);
+  const open = () => (DESK ? deskCommand('open') : importJSONFile());
+  menuAt(anchor, [
+    { header: t('wb.file') },
+    { label: t('wb.new'), icon: 'new', onClick: () => newProject(false) },
+    { label: t('wb.open'), icon: 'folder', kbd: DESK ? 'Ctrl+O' : undefined, onClick: open },
+    { label: DESK ? t('wb.save') : t('wb.web.save'), icon: 'save', kbd: 'Ctrl+S', onClick: () => (DESK ? deskCommand('save') : exportJSON()) },
+    { label: t('wb.build'), icon: 'box', kbd: DESK ? 'Ctrl+B' : undefined, onClick: () => openBuild() },
+    { header: t('wb.view') },
+    { label: t('wb.settings'), icon: 'sliders', onClick: () => openSettingsWindow() },
+    { label: t('wb.theme'), icon: S.theme === 'dark' ? 'sun' : 'moon', onClick: () => toggleTheme() },
+    { label: S.lang === 'ru' ? t('wb.lang.en') : t('wb.lang.ru'), icon: 'globe', onClick: () => setLang(S.lang === 'ru' ? 'en' : 'ru') },
+    { header: t('wb.help') },
+    { label: t('wb.helpopen'), icon: 'help', kbd: '?', onClick: () => openHelp() },
+    { label: t('wb.about'), icon: 'info', onClick: () => openSettingsWindow('view') },
+  ]);
+}
 function winbarMenu(anchor) {
   const cmd = c => () => deskCommand(c);
   menuAt(anchor, [
@@ -54,6 +73,7 @@ function winbarMenu(anchor) {
     { label: t('wb.build'), icon: 'box', kbd: 'Ctrl+B', onClick: cmd('build') },
     { label: t('wb.drive'), icon: 'cloud', onClick: cmd('drive') },
     { header: t('wb.view') },
+    { label: t('wb.settings'), icon: 'sliders', onClick: () => openSettingsWindow() },
     { label: t('wb.theme'), icon: S.theme === 'dark' ? 'sun' : 'moon', onClick: () => toggleTheme() },
     { label: S.lang === 'ru' ? t('wb.lang.en') : t('wb.lang.ru'), icon: 'globe', onClick: () => setLang(S.lang === 'ru' ? 'en' : 'ru') },
     { label: t('wb.zoomin'), icon: 'plus', kbd: 'Ctrl+=', onClick: () => DESK.win.action('zoomin') },
@@ -93,7 +113,7 @@ function winbarInit() {
   document.body.insertBefore(bar, document.body.firstChild);
   WB = { bar, title, ctl, st: { max: false, full: false } };
   DESK.win.onState(st => { WB.st = st || WB.st; winbarPaint(); });
-  DESK.win.info().then(i => { if (i) WB.st = { max: !!i.max, full: !!i.full }; winbarPaint(); }).catch(() => { });
+  DESK.win.info().then(i => { if (i) { WB.st = { max: !!i.max, full: !!i.full }; if (i.h > 0) root.style.setProperty('--winbar-h', i.h + 'px'); } winbarPaint(); }).catch(() => { });
   try { if (navigator.windowControlsOverlay) navigator.windowControlsOverlay.addEventListener('geometrychange', winbarPaint); } catch (e) { /* нет API */ }
   winbarTitle(); winbarPaint(); winbarSync();
 }

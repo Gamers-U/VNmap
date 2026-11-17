@@ -83,7 +83,7 @@ const uiHome = id => { const g = UI_STRIP.find(x => x.items.includes(id)); retur
 /** Пункт сейчас на виду в строке разделов: профессиональный режим, раздел показан на вкладке «Панель». */
 const uiInStrip = id => { if (!uiPro()) return false; const g = uiHome(id); return !!g && barIds('strip').includes(g); };
 /** Правая часть панели по режимам: что есть по умолчанию (порядок слева направо). Модульные кнопки появляются, пока модуль не выключен. */
-const BAR_MAIN = { simple: ['play', 'text', 'registry', 'build', 'file', 'open'], pro: ['play', 'text', 'registry', 'export', 'open'] };       // «Открыть» по умолчанию спрятана: есть начальный экран, меню «Файл» и Ctrl+O
+const BAR_MAIN = { simple: ['play', 'text', 'registry', 'build', 'file'], pro: ['play', 'text', 'registry', 'export'] };       // кнопки «Открыть» нет с 1.7.9: «Открыть…» лежит в «Файл» (простой режим), в меню по значку проекта, на начальном экране и по Ctrl+O
 const barMk = () => (uiPro() ? 'p' : 's');                      // порядок и скрытое хранятся отдельно для каждого режима
 function barCfg() {
   const c = uiCfg(); if (!c.bar || typeof c.bar !== 'object') c.bar = {};
@@ -354,7 +354,7 @@ function setBar(st, render) {
     const ids = barAll(kind); if (!ids.length) return;
     const rows = h('div', { class: 'bar-rows', 'data-kind': kind });
     ids.forEach((id, i) => {
-      const meta = kind === 'strip' ? [UI_STRIP.find(g => g.id === id).ic, 'ui.g.' + id] : (id === 'open' ? [DESK ? 'folder' : 'upload', DESK ? 'desk.open.short' : 'top.import'] : BAR_META[id]);
+      const meta = kind === 'strip' ? [UI_STRIP.find(g => g.id === id).ic, 'ui.g.' + id] : BAR_META[id];
       const row = h('div', { class: 'bar-row', 'data-id': id, 'data-idx': String(i) },
         touch ? null : h('span', { class: 'bar-grip', 'data-tip': t('ui.bar.drag') }, icon('grip', 14)),
         h('span', { class: 'bar-ic' }, icon(meta[0], 16)),

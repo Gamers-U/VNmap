@@ -29,7 +29,8 @@ kbd{font:600 11px/1 var(--font);display:inline-block;padding:3px 6px;border-radi
 #zoombar,#statusbar{pointer-events:none}
 #zoombar>.bar,#statusbar>.bar{pointer-events:auto}
 .bar{pointer-events:auto;display:flex;align-items:center;gap:2px;padding:4px;background:var(--glass);-webkit-backdrop-filter:saturate(180%) blur(24px);backdrop-filter:saturate(180%) blur(24px);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow-sm)}
-.logo{width:32px;height:32px;display:grid;place-items:center;border-radius:10px;background:var(--accent);color:#fff;flex:none}
+.logo{width:32px;height:32px;display:grid;place-items:center;border-radius:10px;background:var(--accent);color:#fff;flex:none;border:0;padding:0;cursor:pointer}
+.logo:hover{filter:brightness(1.12)}.logo:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .proj-name{border:0;background:transparent;font-size:14px;font-weight:650;width:230px;height:32px;padding:0 10px;border-radius:9px;outline:none;color:var(--text);text-overflow:ellipsis}
 .proj-name:hover{background:var(--hover)}
 .proj-name:focus{background:var(--surface2);box-shadow:0 0 0 2px var(--accent)}
@@ -2204,14 +2205,14 @@ body.dock-edit [data-dock].dock-lifted{opacity:.45}
 .pal-tips b{color:var(--text)}
 
 /* ---- тонкая полоска сверху окна (Windows и Linux, winbar.js) ---- */
-html.has-winbar{--winbar-h:26px}
+html.has-winbar{--winbar-h:20px}
 html.has-winbar body{display:flex;flex-direction:column}
 html.has-winbar #app{height:auto;flex:1 1 0;min-height:0}
 html.has-winbar .backdrop,html.has-winbar .tour-block,html.has-winbar #dock-zones{top:var(--winbar-h)}
-.winbar{flex:none;position:relative;z-index:900;height:var(--winbar-h,26px);display:flex;align-items:center;gap:4px;padding:0 0 0 4px;padding-right:calc(100vw - env(titlebar-area-x,0px) - env(titlebar-area-width,100vw));background:var(--surface2);color:var(--text2);font-size:11.5px;line-height:1;-webkit-app-region:drag;user-select:none}
+.winbar{flex:none;position:relative;z-index:900;height:var(--winbar-h,20px);display:flex;align-items:center;gap:4px;padding:0 0 0 4px;padding-right:calc(100vw - env(titlebar-area-x,0px) - env(titlebar-area-width,100vw));background:var(--surface2);color:var(--text2);font-size:11px;line-height:1;-webkit-app-region:drag;user-select:none}
 .winbar .grow{flex:1 1 auto}
 .winbar .wb-title{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;pointer-events:none}
-.winbar .wb-btn{-webkit-app-region:no-drag;height:20px;min-width:24px;padding:0 5px;border:0;border-radius:6px;background:transparent;color:inherit;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.winbar .wb-btn{-webkit-app-region:no-drag;height:calc(var(--winbar-h,20px) - 2px);min-width:24px;padding:0 5px;border:0;border-radius:5px;background:transparent;color:inherit;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
 .winbar .wb-btn:hover{background:color-mix(in srgb,var(--text) 12%,transparent);color:var(--text)}
 .winbar .wb-menu{color:var(--accent)}
 .winbar .wb-ctl{display:flex;gap:2px;-webkit-app-region:no-drag;padding-right:3px}

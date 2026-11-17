@@ -25,7 +25,7 @@ const DEV = process.argv.includes('--dev');
    рисует сама система поверх неё (titleBarOverlay), поэтому остаются родные края окна и привязка окон Windows 11. macOS оставляем как есть:
    там строка меню обязательна по правилам системы. Переменная VN_NATIVE_FRAME=1 возвращает обычное окно (на случай, если что-то пойдёт не так). */
 const FRAMELESS = process.platform !== 'darwin' && !process.env.VN_NATIVE_FRAME;
-const WINBAR_H = 26;
+const WINBAR_H = 20;
 const CHROME_DEF = { dark: { color: '#343439', symbolColor: '#a4a4ac' }, light: { color: '#f0f0f5', symbolColor: '#6a6a72' } };
 const BRIDGE = 10;                     // версия «моста» оболочки: страница может потребовать не меньше (data-needs в её отметке сборки)
 const RECENT_MAX = 12;
