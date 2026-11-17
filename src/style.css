@@ -2201,3 +2201,18 @@ body.dock-edit [data-dock].dock-lifted{opacity:.45}
 
 .pal-tips{padding:8px 14px 6px;font-size:12.5px;color:var(--text2);line-height:1.5}
 .pal-tips b{color:var(--text)}
+
+/* ---- тонкая полоска сверху окна (Windows и Linux, winbar.js) ---- */
+html.has-winbar{--winbar-h:26px}
+html.has-winbar body{display:flex;flex-direction:column}
+html.has-winbar #app{height:auto;flex:1 1 0;min-height:0}
+html.has-winbar .backdrop,html.has-winbar .tour-block,html.has-winbar #dock-zones{top:var(--winbar-h)}
+.winbar{flex:none;position:relative;z-index:900;height:var(--winbar-h,26px);display:flex;align-items:center;gap:4px;padding:0 0 0 4px;padding-right:calc(100vw - env(titlebar-area-x,0px) - env(titlebar-area-width,100vw));background:var(--surface2);color:var(--text2);font-size:11.5px;line-height:1;-webkit-app-region:drag;user-select:none}
+.winbar .grow{flex:1 1 auto}
+.winbar .wb-title{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;pointer-events:none}
+.winbar .wb-btn{-webkit-app-region:no-drag;height:20px;min-width:24px;padding:0 5px;border:0;border-radius:6px;background:transparent;color:inherit;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.winbar .wb-btn:hover{background:color-mix(in srgb,var(--text) 12%,transparent);color:var(--text)}
+.winbar .wb-menu{color:var(--accent)}
+.winbar .wb-ctl{display:flex;gap:2px;-webkit-app-region:no-drag;padding-right:3px}
+.winbar .wb-close:hover{background:#e5484d;color:#fff}
+.winbar [data-tip]:hover::after{top:calc(100% + 4px)}

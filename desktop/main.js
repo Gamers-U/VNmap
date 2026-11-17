@@ -20,6 +20,12 @@ const HOST = 'app';
 const APP_DIR = path.join(__dirname, 'app');
 const PROJECT_EXTS = ['.vnmap', '.zip', '.json'];
 const DEV = process.argv.includes('--dev');
+/* Windows и Linux: без системной рамки и меню. Сверху тонкая полоска страницы (src/winbar.js), кнопки «свернуть, развернуть, закрыть»
+   рисует сама система поверх неё (titleBarOverlay), поэтому остаются родные края окна и привязка окон Windows 11. macOS оставляем как есть:
+   там строка меню обязательна по правилам системы. Переменная VN_NATIVE_FRAME=1 возвращает обычное окно (на случай, если что-то пойдёт не так). */
+const FRAMELESS = process.platform !== 'darwin' && !process.env.VN_NATIVE_FRAME;
+const WINBAR_H = 26;
+const CHROME_DEF = { dark: { color: '#343439', symbolColor: '#a4a4ac' }, light: { color: '#f0f0f5', symbolColor: '#6a6a72' } };
 const BRIDGE = 7;                      // версия «моста» оболочки: страница может потребовать не меньше (data-needs в её отметке сборки)
 const RECENT_MAX = 12;
 
@@ -608,6 +614,21 @@ function registerIpc() {
   handle('gd:upload', async (e, o) => getGd().upload(o || {}));
   handle('gd:download', async (e, id) => getGd().download(id));
 
+  /* полоска сверху: действия с окном и цвет системных кнопок (цвет берётся у полоски страницы, чтобы они сливались с темой) */
+  ipcMain.on('desk:win', (e, a) => {
+    if (!trusted(e) || !win || win.isDestroyed()) return;
+    if (a === 'minimize') win.minimize();
+    else if (a === 'maximize') { if (win.isMaximized()) win.unmaximize(); else win.maximize(); }
+    else if (a === 'fullscreen') win.setFullScreen(!win.isFullScreen());
+    else if (a === 'close') win.close();
+    else if (a === 'zoomin' || a === 'zoomout' || a === 'zoomreset') { const wc = win.webContents; wc.setZoomLevel(a === 'zoomreset' ? 0 : Math.max(-3, Math.min(5, wc.getZoomLevel() + (a === 'zoomin' ? 0.5 : -0.5)))); }
+  });
+  ipcMain.on('desk:chrome', (e, c) => {
+    if (!trusted(e) || !win || win.isDestroyed() || !FRAMELESS || !c) return;
+    const hex = v => typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v);
+    if (hex(c.color) && hex(c.symbolColor)) { try { win.setTitleBarOverlay({ color: c.color, symbolColor: c.symbolColor, height: WINBAR_H }); } catch (x) { /* платформа без поддержки */ } }
+  });
+  ipcMain.handle('desk:winInfo', e => { if (!trusted(e)) throw new Error('untrusted'); return { frameless: FRAMELESS, max: !!(win && win.isMaximized()), full: !!(win && win.isFullScreen()), h: WINBAR_H, menu: !!Menu.getApplicationMenu() }; });
   ipcMain.on('desk:closeNow', e => { if (!trusted(e)) return; forceClose = true; closing = false; if (win && !win.isDestroyed()) win.close(); });
 }
 
@@ -622,6 +643,7 @@ function applyTitle() {
 function send(cmd, arg) { if (win && !win.isDestroyed()) win.webContents.send('desk:cmd', cmd, arg); }
 
 function buildMenu() {
+  if (FRAMELESS) { Menu.setApplicationMenu(null); return; }             // пункты меню живут в странице: значок в полоске сверху
   const T_ = T(), mac = process.platform === 'darwin';
   const item = (label, cmd, accelerator, arg) => ({ label, accelerator, click: () => send(cmd, arg) });
   const tpl = [];
@@ -670,8 +692,27 @@ function createWindow() {
     ...b, minWidth: 900, minHeight: 600, show: false, title: T().appName,
     backgroundColor: nativeTheme.shouldUseDarkColors ? '#1c1c1e' : '#f2f2f7',
     icon: path.join(__dirname, 'build', 'icon.png'),
-    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true, spellcheck: false, devTools: DEV },
+    ...(FRAMELESS ? { titleBarStyle: 'hidden', titleBarOverlay: { ...CHROME_DEF[nativeTheme.shouldUseDarkColors ? 'dark' : 'light'], height: WINBAR_H }, autoHideMenuBar: true } : {}),
+    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true, spellcheck: false, devTools: DEV, additionalArguments: FRAMELESS ? ['--vn-frameless=1'] : [] },
   });
+  if (FRAMELESS) {
+    win.setMenuBarVisibility(false);
+    const state = () => { if (win && !win.isDestroyed()) win.webContents.send('desk:winState', { max: win.isMaximized(), full: win.isFullScreen() }); };
+    for (const ev of ['maximize', 'unmaximize', 'enter-full-screen', 'leave-full-screen']) win.on(ev, state);
+    /* без меню горячие клавиши меню перехватываем сами: во весь экран, начальный экран, масштаб страницы, для разработчика перезагрузка */
+    win.webContents.on('before-input-event', (e, input) => {
+      if (input.type !== 'keyDown') return;
+      const mod = input.control || input.meta, k = String(input.key || '');
+      const zoom = d => { const wc = win.webContents; wc.setZoomLevel(d === 0 ? 0 : Math.max(-3, Math.min(5, wc.getZoomLevel() + d))); };
+      if (k === 'F11') { e.preventDefault(); win.setFullScreen(!win.isFullScreen()); }
+      else if (mod && input.shift && /^h$/i.test(k)) { e.preventDefault(); send('launcher'); }
+      else if (mod && (k === '=' || k === '+')) { e.preventDefault(); zoom(0.5); }
+      else if (mod && k === '-') { e.preventDefault(); zoom(-0.5); }
+      else if (mod && k === '0') { e.preventDefault(); zoom(0); }
+      else if (DEV && (k === 'F12' || (mod && input.shift && /^i$/i.test(k)))) { e.preventDefault(); win.webContents.toggleDevTools(); }
+      else if (DEV && mod && /^r$/i.test(k)) { e.preventDefault(); win.webContents.reload(); }
+    });
+  }
   if (s.max) win.maximize();
   win.once('ready-to-show', () => win.show());
   win.webContents.setWindowOpenHandler(({ url }) => { try { const u = new URL(url); if (u.protocol === 'https:' || u.protocol === 'http:') shell.openExternal(u.href); } catch (e) { /* нет */ } return { action: 'deny' }; });

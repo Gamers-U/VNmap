@@ -117,11 +117,13 @@ function toggleTheme() {
 function applyTheme() {
   document.documentElement.setAttribute('data-theme', S.theme);
   document.documentElement.lang = S.lang;
+  if (typeof winbarSync === 'function') winbarSync();
 }
 function setLang(l) {
   if (l === S.lang) return;
   S.lang = l; saveSettings(); applyTheme(); closePopover();
   if (DESK) DESK.setLang(l).catch(() => { });
+  if (typeof winbarTitle === 'function') winbarTitle();
   MODALS.slice().forEach(m => { if (!NMODAL || m !== NMODAL.m) m.close(); });
   clearMeasure(); reindex(); buildChrome(); renderAll(); refreshNodeModal();
 }

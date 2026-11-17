@@ -4,15 +4,24 @@
 const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
 const call = (ch, ...a) => ipcRenderer.invoke(ch, ...a);
-const listeners = { cmd: new Set(), open: new Set(), rp: new Set(), su: new Set() };
+const listeners = { cmd: new Set(), open: new Set(), rp: new Set(), su: new Set(), win: new Set() };
 ipcRenderer.on('desk:cmd', (e, cmd, arg) => listeners.cmd.forEach(fn => { try { fn(cmd, arg); } catch (x) { console.error(x); } }));
 ipcRenderer.on('desk:open', (e, file) => listeners.open.forEach(fn => { try { fn(file); } catch (x) { console.error(x); } }));
 ipcRenderer.on('rp:evt', (e, ev) => listeners.rp.forEach(fn => { try { fn(ev); } catch (x) { console.error(x); } }));
+ipcRenderer.on('desk:winState', (e, st) => listeners.win.forEach(fn => { try { fn(st); } catch (x) { console.error(x); } }));
 ipcRenderer.on('su:evt', (e, ev) => listeners.su.forEach(fn => { try { fn(ev); } catch (x) { console.error(x); } }));
 const sub = (set, fn) => { set.add(fn); return () => set.delete(fn); };
 
 contextBridge.exposeInMainWorld('vnDesktop', {
   isDesktop: true,
+  platform: process.platform,
+  frameless: process.argv.includes('--vn-frameless=1'),
+  win: {
+    info: () => call('desk:winInfo'),
+    action: a => ipcRenderer.send('desk:win', String(a)),
+    chrome: c => ipcRenderer.send('desk:chrome', { color: String((c && c.color) || ''), symbolColor: String((c && c.symbolColor) || '') }),
+    onState: fn => sub(listeners.win, fn),
+  },
   ready: () => call('desk:ready'),
   setLang: l => call('desk:setLang', l),
   setState: st => call('desk:setState', st),

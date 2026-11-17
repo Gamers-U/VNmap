@@ -18,7 +18,7 @@ const projectAssetBytes = () => P.assets.reduce((s, a) => s + Object.values(a.fi
 function deskPush(force) {
   if (!DESK || !P) return;
   const sig = [P.name, DS.dirty, !!DS.path].join('|'), ssig = [DS.dirty, DS.path, DS.saving].join('|');
-  if (sig !== DS.sig || force) { DS.sig = sig; DESK.setState({ name: P.name, dirty: DS.dirty, bound: !!DS.path }).catch(() => { }); }
+  if (sig !== DS.sig || force) { if (typeof winbarTitle === 'function') winbarTitle(); DS.sig = sig; DESK.setState({ name: P.name, dirty: DS.dirty, bound: !!DS.path }).catch(() => { }); }
   if (ssig !== DS.ssig || force) { DS.ssig = ssig; updateStatus(); }
 }
 /** Вызывается при каждом изменении проекта. */
@@ -144,6 +144,7 @@ async function bldWriteFolder(st) {
 function deskInit() {
   if (!DESK) return;
   document.documentElement.classList.add('desktop');
+  if (typeof winbarInit === 'function') winbarInit();
   DESK.onCommand(deskCommand);
   if (typeof driveInit === 'function') driveInit();
   if (typeof updAutoStart === 'function') updAutoStart();
