@@ -32,10 +32,16 @@ function barBuilders() {
       { label: t('exp.map'), icon: 'rows', onClick: exportMap }]), 'file-btn')),
   };
 }
+/** Кнопка закреплённой функции: значок и название, как у «Запуск» и «Реестр»; у пункта с подменю («Команда») открывается меню. */
+function pinButton(id) {
+  const it = TOOL_ITEMS.find(x => x.id === id); if (!it) return null;
+  const b = tbtn(it.ic, pinLabel(it), pinLabel(it) + (it.kbd ? ' (' + it.kbd + ')' : ''), el => (it.sub ? menuAt(el, it.sub()) : it.run(el)), 'pin-btn');
+  b.dataset.pin = id; return b;
+}
 /** Правая часть верхней панели: зависит от режима интерфейса и настройки «Панель» (uimode.js). */
 function topRight(langSeg) {
   const B = barBuilders(), out = [];
-  for (const id of barIds('main')) { const b = B[id] && B[id](); if (b) out.push(b); }
+  for (const id of barIds('main')) { const b = id.startsWith('pin:') ? pinButton(id.slice(4)) : B[id] && B[id](); if (b) out.push(b); }
   out.push(h('div', { class: 'tsep' }), tbtn('sliders', '', t('top.settings'), () => openSettingsWindow()));
   if (uiShow('bar.theme')) out.push(BTN.theme = tbtn(S.theme === 'dark' ? 'sun' : 'moon', '', t('top.theme'), () => toggleTheme()));
   else BTN.theme = null;

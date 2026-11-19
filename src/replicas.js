@@ -333,7 +333,7 @@ function openReplicaTable(opts) {
     }
   });
 }
-TOOL_ITEMS.push({ id: 'replicas', group: 'story', ic: 'chat', key: 'rt.btn', kw: 'replicas lines dialogue table csv excel xlsx реплики диалоги таблица текст выгрузка', run: () => openReplicaTable() });
+TOOL_ITEMS.push({ id: 'replicas', group: 'story', ic: 'table', key: 'rt.btn', kw: 'replicas lines dialogue table csv excel xlsx реплики диалоги таблица текст выгрузка', run: () => openReplicaTable() });
 
 /* ---------- XLSX без библиотек: минимальный Open XML в архиве без сжатия ---------- */
 const xlsxEsc = s => String(s == null ? '' : s).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');

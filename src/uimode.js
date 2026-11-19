@@ -33,13 +33,18 @@ Object.assign(D, {
   'ui.bar.p.touch': ['Отметьте, какие кнопки показывать на панели. Спрятанное всё равно можно найти через поиск Ctrl+K. Настройка своя для простого и для профессионального режима.', 'Tick which buttons to show on the toolbar. Hidden ones can still be found through the Ctrl+K search. The setting is separate for Simple and Professional mode.'],
   'ui.bar.main': ['Кнопки панели', 'Toolbar buttons'], 'ui.bar.strip': ['Разделы под панелью', 'Sections under the toolbar'],
   'ui.bar.fixed': ['Всегда на панели: Блок, Поиск, Настройки, Справка (в простом режиме ещё «Ещё», в профессиональном «Инструменты»).', 'Always on the toolbar: Block, Search, Settings, Help (plus “More” in Simple mode and “Tools” in Professional).'],
+  'ui.pin.tip': ['Закрепить на панели', 'Pin to the toolbar'], 'ui.pin.off': ['Открепить от панели', 'Unpin from the toolbar'],
+  'ui.pin.add': ['Закрепить функцию…', 'Pin a function…'], 'ui.pin.rm': ['Открепить', 'Unpin'],
+  'ui.pin.h': ['Любую функцию программы можно вынести кнопкой на панель, например «Перевод» или «Проверки». Закрепить можно и значком-кнопкой справа от пункта в меню «Инструменты» (или «Ещё»).', 'Any function can get its own button on the toolbar, for example Translate or Checks. You can also pin from the pin icon at the right of an item in the Tools (or More) menu.'],
+  'ui.pin.done': ['«{0}» закреплено на панели', '“{0}” is pinned to the toolbar'], 'ui.pin.gone': ['«{0}» откреплено', '“{0}” unpinned'],
+  'ui.pin.all': ['Все функции уже на панели', 'Every function is already on the toolbar'],
   'ui.bar.drag': ['Перетащите, чтобы поменять порядок', 'Drag to reorder'],
   'ui.bar.reset': ['Вернуть панель по умолчанию', 'Restore the default toolbar'],
   'ui.g.map': ['Карта', 'Map'], 'ui.g.text': ['Тексты', 'Texts'], 'ui.g.check': ['Проверки', 'Checks'], 'ui.g.play': ['Игра', 'Play'], 'ui.g.team': ['Работа команды', 'Teamwork'],
   'ui.g.map.tip': ['Расстановка блоков, карта в PDF, заметки', 'Arranging blocks, map PDF, notes'],
   'ui.g.text.tip': ['Импорт, вычитка, таблица реплик, переименование, лист озвучки, перевод (редактор текста: кнопка «Текст» справа)', 'Import, proofreading digest, replica table, renaming, voice sheet, translation (the text editor: the "Text" button on the right)'],
   'ui.g.code': ['Код', 'Code'], 'ui.g.code.tip': ['Свой код проекта, сниппеты, рецепты Ren\'Py, интерфейс игры', 'Your project code, snippets, Ren\'Py recipes, the game interface'],
-  'ui.g.check.tip': ['Проверка сюжета, недостающие файлы, переменные, статистика, ветки и время, журнал прохождений и тепловая карта, гайд по концовкам, вес и список ресурсов', 'Plot check, missing files, variables, statistics, branches and time, playthrough log and heat map, endings guide, asset weight and list'],
+  'ui.g.check.tip': ['Проверка сюжета, недостающие файлы, переменные, статистика, ветки и время, журнал прохождений и тепловая карта, гайд по концовкам, вес и сводка ресурсов', 'Plot check, missing files, variables, statistics, branches and time, playthrough log and heat map, endings guide, asset weight and list'],
   'ui.g.play.tip': ['Плеер, автопрогон, HTML-игра для тестеров, запуск в Ren\'Py', 'Player, auto-run, HTML game for testers, run in Ren\'Py'],
   'ui.g.team.tip': ['Команда и роли, «кто я», задачи и сроки, кто что сделал, проверка правок', 'Team and roles, “who am I”, tasks and deadlines, who did what, review of changes'],
   'ui.more': ['Ещё', 'More'], 'ui.more.tip': ['Все возможности по разделам: карта, тексты, код, проверки, игра, команда', 'All features by section: map, texts, code, checks, play, team'],
@@ -63,18 +68,19 @@ Object.assign(D, {
   'ui.mods.p': ['Выключенный модуль прячет свои кнопки и пункты меню (в простом режиме тоже). Сами данные проекта не трогаются, вернуть модуль можно в любой момент.', 'A switched-off module hides its buttons and menu items. The project data is untouched and you can bring a module back at any time.'],
   'ui.mods.only': ['Модули настраиваются в профессиональном режиме.', 'Modules are configured in the professional mode.'],
   'ui.mod.analysis': ['Анализ и статистика', 'Analysis and statistics'], 'ui.mod.analysis.h': ['Статистика, ветки и время, автопрогон, журнал прохождений, переменные в блоках.', 'Statistics, branches and time, auto-run, playthrough log, variables in blocks.'],
-  'ui.mod.text': ['Тонкая работа с текстом', 'Fine text work'], 'ui.mod.text.h': ['Таблица реплик, переименование везде, страница персонажа, список ресурсов, импорт .rpy.', 'The replica table, rename everywhere, the character page, the resource list, .rpy import.'],
+  'ui.mod.text': ['Тонкая работа с текстом', 'Fine text work'], 'ui.mod.text.h': ['Таблица реплик, переименование везде, страница персонажа, импорт .rpy.', 'The replica table, rename everywhere, the character page, the .rpy import.'],
   'ui.mod.team': ['Команда и совместная работа', 'Team and collaboration'], 'ui.mod.team.h': ['Участники и роли, задачи и сроки, «кто что сделал», проверка правок авторов, работа в реальном времени (карточка в «Настройки → Подключения»). Раздел «Работа команды». До 1.7.8 это были два модуля.', 'Members and roles, tasks and deadlines, “who did what”, review of the authors\' changes, real-time work (a card in “Settings → Connections”). The “Teamwork” section. Before 1.7.8 these were two modules.'],
+  'ui.mod.code': ['Код', 'Code'], 'ui.mod.code.h': ['Редактор кода, «Свой код», сниппеты и рецепты Ren\'Py. Выключите, если код не пишете: пункты пропадут из меню и из раздела «Код». Сам код в проекте остаётся нетронутым и по-прежнему попадает в игру.', 'The code editor, Custom code, snippets and Ren\'Py recipes. Switch it off if you do not write code: the items disappear from the menus and the Code section. The code in the project stays untouched and still goes into the game.'],
   'ui.mod.translate': ['Переводы', 'Translations'], 'ui.mod.translate.h': ['Языки игры: перевод реплик и озвучка на каждом языке. Пункт «Перевод» в разделе «Тексты».', 'Game languages: dialogue translation and voice per language. The “Translate” item in the “Texts” section.'],
 });
 
-const UI_MODS = ['analysis', 'text', 'team', 'translate'];      // «Совместная работа» с 1.7.8 слита с «Командой» (старая отметка `off.collab` при чтении настроек отбрасывается)
+const UI_MODS = ['analysis', 'text', 'code', 'team', 'translate'];      // «Совместная работа» с 1.7.8 слита с «Командой» (старая отметка `off.collab` при чтении настроек отбрасывается)
 /** Профессиональный режим: строка разделов под верхней панелью (инструменты на виду). Пункты берутся из TOOL_ITEMS по id и фильтруются uiShow. */
 const UI_STRIP = [
   { id: 'map', ic: 'fit', items: ['layout', 'mappdf', 'notes'] },
   { id: 'text', ic: 'docLines', items: ['docimport', 'digest', 'replicas', 'rename', 'voicesheet', 'translate'] },
   { id: 'code', ic: 'code', items: ['ide', 'customcode', 'snippets', 'recipes', 'gui'] },
-  { id: 'check', ic: 'check', items: ['checks', 'missingfiles', 'varstates', 'stats', 'branchstats', 'testlog', 'endguide', 'weight', 'resources'] },
+  { id: 'check', ic: 'check', items: ['checks', 'missingfiles', 'varstates', 'stats', 'branchstats', 'testlog', 'endguide', 'weight'] },
   { id: 'play', ic: 'play', items: ['player', 'autorun', 'htmlgame', 'renpy', 'ctrlcheck'] },
   { id: 'team', ic: 'users', items: ['team', 'tasks', 'whodid', 'review'] },
 ];
@@ -98,7 +104,7 @@ function stripGroups() {
 }
 /** Все доступные сейчас id кнопок вида kind ('main' — правая часть панели, 'strip' — разделы) в порядке пользователя; скрытые тоже. */
 function barAll(kind) {
-  const ids = kind === 'strip' ? (uiPro() ? stripGroups().map(x => x.g.id) : []) : BAR_MAIN[uiPro() ? 'pro' : 'simple'].slice();
+  const ids = kind === 'strip' ? (uiPro() ? stripGroups().map(x => x.g.id) : []) : BAR_MAIN[uiPro() ? 'pro' : 'simple'].concat(barPins().map(x => 'pin:' + x));
   const ord = barCfg().order[barMk() + kind]; if (!Array.isArray(ord)) return ids;
   const rank = id => { const i = ord.indexOf(id); return i < 0 ? 1e6 : i; };
   return ids.map((id, i) => [id, i]).sort((a, b) => (rank(a[0]) - rank(b[0])) || a[1] - b[1]).map(x => x[0]);
@@ -109,9 +115,44 @@ function barMove(kind, from, to) {
   const ids = barAll(kind); if (from === to || from < 0 || to < 0 || from >= ids.length || to >= ids.length) return;
   const [x] = ids.splice(from, 1); ids.splice(to, 0, x); barCfg().order[barMk() + kind] = ids; saveSettings(); buildChrome();
 }
+/** Закреплённые функции (1.7.12): любой пункт TOOL_ITEMS можно вынести отдельной кнопкой на панель. Список общий для обоих режимов, порядок и скрытие хранятся, как у остальных кнопок (id вида `pin:translate`). */
+const PIN_SKIP = ['player', 'texted', 'collab'];                 // эти и так есть на панели (Запуск, Текст) или не пункты меню
+const barPinnable = it => !!it && !PIN_SKIP.includes(it.id) && it.menu !== false && uiShow(it.id);
+function barPins() {
+  const c = barCfg(); if (!Array.isArray(c.pins)) c.pins = [];
+  return c.pins.filter(id => barPinnable(TOOL_ITEMS.find(x => x.id === id)));
+}
+const barPinned = id => barPins().includes(id);
+const pinLabel = it => t(it.key).replace(/[….]+$/, '').trim();               // «Проверка сюжета…» на кнопке без многоточия
+function barPinToggle(id) {
+  const it = TOOL_ITEMS.find(x => x.id === id); if (!it) return;
+  const c = barCfg(), on = !barPinned(id), name = pinLabel(it);
+  c.pins = (Array.isArray(c.pins) ? c.pins : []).filter(x => x !== id);
+  if (on) { c.pins.push(id); for (const m of ['s', 'p']) delete c.hide[m + 'main:pin:' + id]; }                 // закрепили заново: сразу видна
+  saveSettings(); buildChrome(); toast(t(on ? 'ui.pin.done' : 'ui.pin.gone', name));
+}
+/** Значок и подпись кнопки панели (для вкладки «Панель»). */
+function barMeta(kind, id) {
+  if (kind === 'strip') { const g = UI_STRIP.find(x => x.id === id); return [g.ic, t('ui.g.' + id)]; }
+  if (id.startsWith('pin:')) { const it = TOOL_ITEMS.find(x => x.id === id.slice(4)); return it ? [it.ic, pinLabel(it)] : ['pin', id]; }
+  return [BAR_META[id][0], t(BAR_META[id][1])];
+}
+/** Окно выбора: что закрепить (все доступные функции по разделам, ещё не закреплённые). */
+function barPinPicker(anchor, render) {
+  const by = new Map(), items = [];
+  for (const x of TOOL_ITEMS) { if (!barPinnable(x) || barPinned(x.id)) continue; const g = uiHome(x.id) || 'other'; if (!by.has(g)) by.set(g, []); by.get(g).push(x); }
+  for (const g of [...UI_STRIP.map(x => x.id), 'other']) {
+    const L = by.get(g); if (!L) continue;
+    if (items.length) items.push({ sep: true });
+    items.push({ header: g === 'other' ? t('help.other') : t('ui.g.' + g) }, ...L.map(it => ({ label: t(it.key), icon: it.ic, onClick: () => { barPinToggle(it.id); render && render(); } })));
+  }
+  if (!items.length) items.push({ label: t('ui.pin.all'), disabled: true });
+  return popover(anchor, menuBox(items), { cls: 'menu-pop more-pop' });
+}
 function barReset() { const c = uiCfg(); delete c.bar; delete c.dock; saveSettings(); buildChrome(); }
 /** Пункт меню из TOOL_ITEMS: обычный, а у пункта с `sub` (например «Команда») раскрывается сбоку подменю, а не заменяет меню. */
-const toolEntry = (it, anchor) => it.sub ? { label: t(it.key), icon: it.ic, sub: it.sub } : { label: t(it.key), icon: it.ic, kbd: it.kbd, onClick: () => setTimeout(() => it.run(anchor), 0) };
+const toolPin = it => barPinnable(it) ? { on: barPinned(it.id), tip: t(barPinned(it.id) ? 'ui.pin.off' : 'ui.pin.tip'), toggle: () => setTimeout(() => barPinToggle(it.id), 0) } : null;
+const toolEntry = (it, anchor) => it.sub ? { label: t(it.key), icon: it.ic, sub: it.sub, pin: toolPin(it) } : { label: t(it.key), icon: it.ic, kbd: it.kbd, onClick: () => setTimeout(() => it.run(anchor), 0), pin: toolPin(it) };
 /** Строка разделов для профессионального режима; в простом её нет. Раздел без доступных пунктов (выключен модуль) или скрытый в «Панели» не рисуется. */
 function uiStrip() {
   if (!uiPro()) return null;
@@ -128,7 +169,7 @@ function uiStrip() {
    Идентификаторы совпадают с пунктами меню «Инструменты» (TOOL_ITEMS) и с кнопками верхней панели. Незнакомое видно всегда. */
 const UI_LVL = {
   layout: ['s'], mappdf: ['s'], notes: ['s'], texted: ['s'], docimport: ['s'], digest: ['s'], checks: ['s'], missingfiles: ['s'], htmlgame: ['s'], renpy: ['s'], player: ['s'], stats: ['s'],
-  replicas: ['p', 'text'], rename: ['p', 'text'], charpage: ['p', 'text'], resources: ['p', 'text'], weight: ['s'], snippets: ['s'], endguide: ['p', 'analysis'], voicesheet: ['p', 'text'], recipes: ['s'], customcode: ['p'], ide: ['p'], rpyimport: ['p', 'text'],
+  replicas: ['p', 'text'], rename: ['p', 'text'], charpage: ['p', 'text'], resources: ['p', 'text'], weight: ['s'], snippets: ['s', 'code'], endguide: ['p', 'analysis'], voicesheet: ['p', 'text'], recipes: ['s', 'code'], customcode: ['p', 'code'], ide: ['p', 'code'], rpyimport: ['p', 'text'],
   varstates: ['p', 'analysis'], branchstats: ['p', 'analysis'], autorun: ['p', 'analysis'], testlog: ['p', 'analysis'],
   whoami: ['p', 'team'], tasks: ['p', 'team'], whodid: ['p', 'team'], notify: ['x'], review: ['p', 'team'], team: ['p', 'team'], translate: ['p', 'translate'], collab: ['x'], gui: ['s'],
   ghopen: ['x'], snapshots: ['s'],
@@ -355,11 +396,12 @@ function setBar(st, render) {
     const ids = barAll(kind); if (!ids.length) return;
     const rows = h('div', { class: 'bar-rows', 'data-kind': kind });
     ids.forEach((id, i) => {
-      const meta = kind === 'strip' ? [UI_STRIP.find(g => g.id === id).ic, 'ui.g.' + id] : BAR_META[id];
+      const meta = barMeta(kind, id), pinId = id.startsWith('pin:') ? id.slice(4) : '';
       const row = h('div', { class: 'bar-row', 'data-id': id, 'data-idx': String(i) },
         touch ? null : h('span', { class: 'bar-grip', 'data-tip': t('ui.bar.drag') }, icon('grip', 14)),
         h('span', { class: 'bar-ic' }, icon(meta[0], 16)),
-        switchEl(!barCfg().hide[barMk() + kind + ':' + id], v => barSetOn(kind, id, v), t(meta[1])));
+        switchEl(!barCfg().hide[barMk() + kind + ':' + id], v => barSetOn(kind, id, v), meta[1]),
+        pinId ? h('button', { class: 'bar-del', type: 'button', 'data-tip': t('ui.pin.rm'), 'aria-label': t('ui.pin.rm'), onclick: () => { barPinToggle(pinId); render(); } }, icon('x', 14)) : null);
       if (!touch) {
         row.draggable = true;
         row.addEventListener('dragstart', ev => { row.classList.add('dragging'); ev.dataTransfer.effectAllowed = 'move'; ev.dataTransfer.setData('text/plain', kind + ':' + i); });
@@ -374,7 +416,7 @@ function setBar(st, render) {
       }
       rows.append(row);
     });
-    box.append(setCard(title, rows));
+    box.append(setCard(title, rows, ...(kind === 'main' ? [h('div', { class: 'hint' }, t('ui.pin.h')), h('div', { class: 'nt-btns' }, h('button', { class: 'btn sm', id: 'bar-pin-add', onclick: ev => barPinPicker(ev.currentTarget, render) }, icon('pin', 15), t('ui.pin.add')))] : [])));
   };
   list('main', t('ui.bar.main'));
   list('strip', t('ui.bar.strip'));

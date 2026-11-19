@@ -204,13 +204,26 @@ function aiCard(p, repaint) {
   return card;
 }
 
+Object.assign(D, {
+  'ai.grp.online': ['Онлайн (нужен ключ)', 'Online (a key is needed)'],
+  'ai.grp.online.h': ['Запросы уходят через интернет в выбранную службу; ключ вы получаете у неё. Есть бесплатные уровни.', 'Requests go over the internet to the service you pick; you get the key from it. Some have free tiers.'],
+  'ai.grp.local': ['Локальные (на вашем компьютере)', 'Local (on your computer)'],
+  'ai.grp.local.h': ['Модель работает у вас, ключ не нужен, текст никуда не уходит. Нужна программа Ollama или LM Studio и достаточно мощный компьютер.', 'The model runs on your machine, no key is needed and nothing leaves it. You need Ollama or LM Studio and a powerful enough computer.'],
+  'ai.grp.local.web': ['Локальные модели работают только в программе для компьютера: в браузере доступны одни онлайн-службы.', 'Local models work only in the desktop app: the browser can use online services only.'],
+});
 function setAi(st, render) {
   const box = h('div', { class: 'nt-list ai-set', id: 'ai-set' }), sup = aiSupport();
   box.append(h('div', { class: 'hint' }, t('ai.intro')), h('div', { class: 'hint' }, t('ai.priv')));
   if (sup === 'oldshell') { box.append(h('div', { class: 'hint warn-t', id: 'ai-oldshell' }, t('ai.oldshell')), ghShellButtons()); return box; }
   const where = h('div', { class: 'hint ai-where' }, icon('lock', 14), h('span', aiWhereText()));
   const list = h('div', { class: 'ai-list' });
-  const paint = () => { const y = st && st.body ? st.body.scrollTop : 0; list.replaceChildren(...AI_PROV.map(p => aiCard(p, paint))); if (st && st.body) st.body.scrollTop = y; };
+  /* два списка (1.7.13): «Онлайн» (нужен ключ) и «Локальные» (на этом компьютере; только в программе, в браузере их нет) */
+  const grp = (id, cards, note) => [h('div', { class: 'ai-grp', id: 'ai-grp-' + id }, h('b', {}, t('ai.grp.' + id)), h('span', { class: 'hint' }, t('ai.grp.' + id + '.h'))), ...cards, note ? h('div', { class: 'hint ai-grp-note' }, note) : null];
+  const paint = () => {
+    const y = st && st.body ? st.body.scrollTop : 0, loc = AI_PROV.filter(p => p.tag === 'local'), onl = AI_PROV.filter(p => p.tag !== 'local');
+    list.replaceChildren(...grp('online', onl.map(p => aiCard(p, paint))), ...grp('local', DESK ? loc.map(p => aiCard(p, paint)) : [], DESK ? '' : t('ai.grp.local.web')));
+    if (st && st.body) st.body.scrollTop = y;
+  };
   paint();
   aiRefresh().then(() => { if (list.isConnected) { where.lastChild.textContent = aiWhereText(); paint(); } });
   box.append(where, list);

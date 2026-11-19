@@ -113,4 +113,4 @@ function openWhoDid(per) {
     },
   });
 }
-TOOL_ITEMS.push({ id: 'whodid', group: 'team', ic: 'users', key: 'wd.menu', kw: 'who did what activity team summary report contributions history кто что сделал активность команда сводка отчёт вклад правки', run: () => openWhoDid() });
+TOOL_ITEMS.push({ id: 'whodid', group: 'team', ic: 'userCheck', key: 'wd.menu', kw: 'who did what activity team summary report contributions history кто что сделал активность команда сводка отчёт вклад правки', run: () => openWhoDid() });

@@ -283,4 +283,4 @@ function openDigest(opts = {}) {
     }
   });
 }
-TOOL_ITEMS.push({ id: 'digest', group: 'story', ic: 'rows', key: 'dg.btn', kw: 'digest proofreading proofread corrector word docx print pdf script text выжимка вычитка корректор сценарий текст реплики ворд', run: () => openDigest() });
+TOOL_ITEMS.push({ id: 'digest', group: 'story', ic: 'docSearch', key: 'dg.btn', kw: 'digest proofreading proofread corrector word docx print pdf script text выжимка вычитка корректор сценарий текст реплики ворд', run: () => openDigest() });

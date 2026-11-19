@@ -237,4 +237,4 @@ function openCtrlCheck() {
     }
   });
 }
-TOOL_ITEMS.push({ id: 'ctrlcheck', group: 'play', ic: 'check', key: 'cc.btn', kw: 'renpy test check novel control lint report проверка контрольная новелла ренпай чек-лист отчёт', run: () => openCtrlCheck() });
+TOOL_ITEMS.push({ id: 'ctrlcheck', group: 'play', ic: 'bug', key: 'cc.btn', kw: 'renpy test check novel control lint report проверка контрольная новелла ренпай чек-лист отчёт', run: () => openCtrlCheck() });

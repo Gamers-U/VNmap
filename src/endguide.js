@@ -33,7 +33,7 @@ Object.assign(D, {
   'eg.md.gen': ['Составлено в «Карте новеллы» {0}.', 'Made in Story Map on {0}.'],
 });
 
-TOOL_ITEMS.push({ id: 'endguide', group: 'play', ic: 'flag', key: 'eg.btn', kw: 'endings guide walkthrough route how to get ending choices values markdown spoilers guide wiki концовки гайд прохождение как получить концовку путь выборы значения шпаргалка вики', run: () => openEndGuide() });
+TOOL_ITEMS.push({ id: 'endguide', group: 'play', ic: 'signpost', key: 'eg.btn', kw: 'endings guide walkthrough route how to get ending choices values markdown spoilers guide wiki концовки гайд прохождение как получить концовку путь выборы значения шпаргалка вики', run: () => openEndGuide() });
 
 let EG_LAST = null;                           // { ver, res }
 const egBlockTitle = (res, r) => { const b = r.block ? res.blocks.find(x => x.id === r.block) : null; return b ? b.title : ''; };

@@ -2,7 +2,7 @@
 /* ====== Глобальный реестр: персонажи, фоны, спрайты, аудио, эффекты, файлы ====== */
 let REG = null;
 const REG_TABS = [
-  { id: 'chars', icon: 'users' }, { id: 'team', icon: 'badge' }, { id: 'bg', icon: 'image' }, { id: 'sprite', icon: 'user' },
+  { id: 'sum', icon: 'stack' }, { id: 'chars', icon: 'users' }, { id: 'team', icon: 'badge' }, { id: 'bg', icon: 'image' }, { id: 'sprite', icon: 'user' },
   { id: 'audio', icon: 'music' }, { id: 'fx', icon: 'sparkles' }, { id: 'tf', icon: 'motion' }, { id: 'font', icon: 'type' }, { id: 'video', icon: 'film' }, { id: 'gui', icon: 'palette' }, { id: 'ach', icon: 'trophy' }, { id: 'vars', icon: 'code' }, { id: 'files', icon: 'file' }
 ];
 const AUDIO_KINDS = ['music', 'sfx', 'voice'];
@@ -22,6 +22,7 @@ function openRegistry(tab) {
   });
 }
 function regCount(id) {
+  if (id === 'sum') return typeof rsMissingCount === 'function' ? rsMissingCount() : 0;
   if (id === 'chars') return P.characters.length;
   if (id === 'audio') return P.assets.filter(a => AUDIO_KINDS.includes(a.kind)).length;
   if (id === 'files') return allFiles().length;
@@ -35,7 +36,7 @@ function renderReg() {
   const st = REG; if (!st) return;
   st.side.replaceChildren(h('div', { class: 'side-h' }, t('reg.sections')));
   REG_TABS.forEach(tb => st.side.append(h('div', { class: 'fitem top' + (st.tab === tb.id ? ' on' : ''), onclick: () => { st.tab = tb.id; st.q = ''; renderReg(); } },
-    icon(tb.icon, 16), h('span', { class: 'fn' }, t('reg.tab.' + tb.id)), h('span', { class: 'count' }, regCount(tb.id)))));
+    icon(tb.icon, 16), h('span', { class: 'fn' }, t('reg.tab.' + tb.id)), h('span', { class: 'count' + (tb.id === 'sum' && regCount('sum') ? ' warn' : ''), 'data-tip': tb.id === 'sum' ? t('reg.sum.cnt') : null }, regCount(tb.id)))));
   const keep = st.main.scrollTop;
   st.main.replaceChildren(regView(st));
   st.main.scrollTop = keep;
@@ -54,6 +55,7 @@ function usageMap() {
   return map;
 }
 function regView(st) {
+  if (st.tab === 'sum') return rsSummaryView();
   const root = h('div', { class: 'view' });
   const q = h('input', { class: 'inp', type: 'search', placeholder: t('c.search'), id: 'reg-q' });
   q.value = st.q;

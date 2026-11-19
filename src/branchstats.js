@@ -286,4 +286,4 @@ function bsNodeField(n, closeWin) {
   }
   return field(t('bs.nm'), box);
 }
-TOOL_ITEMS.push({ id: 'branchstats', group: 'story', ic: 'chart', key: 'bs.btn', kw: 'time reading branches endings forks balance length words minutes speed время чтения ветки концовки развилки баланс длина слова минуты скорость', run: () => openBranchStats() });
+TOOL_ITEMS.push({ id: 'branchstats', group: 'story', ic: 'gantt', key: 'bs.btn', kw: 'time reading branches endings forks balance length words minutes speed время чтения ветки концовки развилки баланс длина слова минуты скорость', run: () => openBranchStats() });

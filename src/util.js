@@ -127,7 +127,32 @@ const ICONS = {
   alert: '<path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0zM12 9v4M12 17h.01"/>',
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/>',
   xcircle: '<circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/>',
-  folder: '<path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/>'
+  folder: '<path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/>',
+  pin: '<path d="M9 3h6l-.8 6.2L17.5 13h-11l3.3-3.8L9 3z"/><path d="M12 13v8"/>',
+  flame: '<path d="M12 3c.6 3.6 5 5 5 10a5 5 0 01-10 0c0-2 .9-3.4 2.2-4.6.2 1.7 1 2.4 1.9 2.4C11.3 8.6 11.2 5.6 12 3z"/>',
+  gantt: '<path d="M4 6h8M8 12h12M6 18h9"/><path d="M4 3v18"/>',
+  browser: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M6.5 6.5h.01M9.5 6.5h.01"/>',
+  stack: '<rect x="3" y="8" width="13" height="12" rx="2"/><path d="M8 8V6a2 2 0 012-2h9a2 2 0 012 2v9a2 2 0 01-2 2h-3"/>',
+  scale: '<path d="M12 3v18M7 21h10M5 7h14"/><path d="M5 7l-3 7a3.5 3.5 0 006 0L5 7zM19 7l-3 7a3.5 3.5 0 006 0l-3-7z"/>',
+  diff: '<path d="M12 4v10M7 9h10M7 19h10"/>',
+  bug: '<path d="M8 9h8v6a4 4 0 01-8 0V9z"/><path d="M9 9a3 3 0 016 0M3.5 13H8M16 13h4.5M5 7l3 2M19 7l-3 2M5 20l3-3M19 20l-3-3"/>',
+  braces: '<path d="M8 4c-2 0-3 1-3 3v2c0 1.5-1 2.5-2 3 1 .5 2 1.5 2 3v2c0 2 1 3 3 3M16 4c2 0 3 1 3 3v2c0 1.5 1 2.5 2 3-1 .5-2 1.5-2 3v2c0 2-1 3-3 3"/>',
+  fileCode: '<path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8l-5-5z"/><path d="M14 3v5h5M10 13l-2 2 2 2M14 13l2 2-2 2"/>',
+  fastfwd: '<path d="M3 6l8 6-8 6V6zM13 6l8 6-8 6V6z"/>',
+  signpost: '<path d="M12 3v18M8 21h8"/><path d="M12 5h7l2 2.5-2 2.5h-7M12 12H5l-2 2.5L5 17h7"/>',
+  checklist: '<path d="M9 6h11M9 12h11M9 18h11"/><path d="M3.5 6l1.5 1.5L7.5 5M3.5 12l1.5 1.5 2.5-2.5M3.5 18l1.5 1.5 2.5-2.5"/>',
+  idcard: '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2.2"/><path d="M5.8 16.5c.7-1.6 1.9-2.4 3.2-2.4s2.5.8 3.2 2.4M15 10h3M15 14h3"/>',
+  flask: '<path d="M9 3h6M10 3v6l-5.5 9A2 2 0 006.2 21h11.6a2 2 0 001.7-3L14 9V3"/><path d="M7.5 15h9"/>',
+  table: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M9 10v9"/>',
+  bell: '<path d="M6 8a6 6 0 1112 0c0 7 3 9 3 9H3s3-2 3-9M10 21a2 2 0 004 0"/>',
+  signin: '<path d="M3 12h10M9 8l4 4-4 4"/><path d="M13 5h6a2 2 0 012 2v10a2 2 0 01-2 2h-6"/>',
+  userCheck: '<circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M16 11l2 2 4-4"/>',
+  docSearch: '<path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h5M14 3v5h5M19 8v3"/><circle cx="16.5" cy="17" r="2.6"/><path d="M18.5 19l2.5 2.5"/>',
+  fileX: '<path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8l-5-5z"/><path d="M14 3v5h5M9.5 13.5l5 5M14.5 13.5l-5 5"/>',
+  history: '<path d="M3 12a9 9 0 103-6.7L3 8"/><path d="M3 3v5h5M12 7.5V12l3 2"/>',
+  github: '<path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 00-1.3-3.2 4.2 4.2 0 00-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3 0 00-6.2 0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2 0 00-.1 3.2A4.6 4.6 0 004 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/>',
+  variable: '<path d="M8 4c-2.2 3-2.2 13 0 16M16 4c2.2 3 2.2 13 0 16M9.5 9.5l5 5M14.5 9.5l-5 5"/>',
+  printer: '<path d="M7 9V3h10v6"/><path d="M7 17H5a2 2 0 01-2-2v-4a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2h-2"/><rect x="7" y="14" width="10" height="7" rx="1"/>'
 };
 function icon(name, size = 18, sw = 1.8) {
   const el = document.createElementNS(SVGNS, 'svg');
@@ -350,14 +375,19 @@ function menuBox(items, inSub) {
     if (it.swatches) { box.append(swatchRow(it.swatches.value, c => { closePopover(); it.swatches.onPick(c); }, it.swatches.none)); continue; }
     if (it.sub && !inSub) {
       const row = h('div', { class: 'mi has-sub' + (it.disabled ? ' off' : ''), onclick: () => { if (!it.disabled) openSub(row, it.sub); }, onmouseenter: () => { if (!it.disabled) openSub(row, it.sub); } },
-        it.icon ? icon(it.icon, 16) : h('span', { class: 'mi-sp' }), h('span', { class: 'mi-l' }, it.label), icon('chevR', 14));
+        it.icon ? icon(it.icon, 16) : h('span', { class: 'mi-sp' }), h('span', { class: 'mi-l' }, it.label), menuPin(it), icon('chevR', 14));
       box.append(row); continue;
     }
     box.append(h('div', { class: 'mi' + (it.danger ? ' danger' : '') + (it.disabled ? ' off' : ''), onclick: () => { if (it.disabled) return; closePopover(); it.onClick && it.onClick(); },
       onmouseenter: inSub ? null : () => { if (SUBPOP) { clearTimeout(SUBT); SUBT = setTimeout(closeSub, 220); } } },
-      it.icon ? icon(it.icon, 16) : h('span', { class: 'mi-sp' }), h('span', { class: 'mi-l' }, it.label), it.kbd ? h('span', { class: 'mi-k' }, it.kbd) : null));
+      it.icon ? icon(it.icon, 16) : h('span', { class: 'mi-sp' }), h('span', { class: 'mi-l' }, it.label), it.kbd ? h('span', { class: 'mi-k' }, it.kbd) : null, menuPin(it)));
   }
   return box;
+}
+/** Кнопка-кнопка «закрепить на панели» в конце пункта меню (если у пункта есть `pin`: { on, tip, toggle }). Видна при наведении, у закреплённого горит всегда. */
+function menuPin(it) {
+  if (!it.pin) return null;
+  return h('button', { class: 'mi-pin' + (it.pin.on ? ' on' : ''), type: 'button', 'data-tip': it.pin.tip, 'aria-label': it.pin.tip, onclick: ev => { ev.stopPropagation(); closePopover(); it.pin.toggle(); } }, icon('pin', 14));
 }
 function swatchRow(value, onPick, none) {
   const row = h('div', { class: 'swatches' });

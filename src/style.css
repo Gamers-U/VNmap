@@ -1109,6 +1109,9 @@ td.editing{background:var(--accent-soft)}
 .rs-row1 .lab{font-weight:650}
 .rs-row1 select{min-width:200px;max-width:320px}
 .rs-body{padding-top:4px}
+.rs-view .rs-top,.rs-view .rs-ctl{padding-left:0;padding-right:0}      /* в реестре отступ даёт сама вкладка */
+.view:has(.rs-view){max-width:1100px}
+.fitem:not(.on) .count.warn{background:color-mix(in srgb,var(--warn,#d9930d) 24%,transparent);color:var(--warn,#d9930d)}
 .rs-list{display:flex;flex-direction:column}
 .rs-nh{display:flex;gap:9px;align-items:center;margin-top:14px;padding:6px 4px;border-bottom:1px solid var(--border)}
 .rs-nh .t{font-size:14.5px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -1830,6 +1833,17 @@ body.game-mode{background:var(--bg)}
 .bar-row .switch-row{margin:0;flex:1}
 .bar-row .bar-ic{color:var(--text2);display:grid;place-items:center}
 .bar-row .bar-grip{cursor:grab;color:var(--text3);display:grid;place-items:center}
+.bar-row .bar-del{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;color:var(--text3);flex:none;border:0;background:transparent;padding:0;cursor:pointer}
+.bar-row .bar-del:hover{background:var(--surface2);color:var(--danger,#e5484d)}
+/* кнопка «закрепить» в пункте меню: видна при наведении, у закреплённого горит всегда */
+.menu .mi .mi-pin{margin-left:auto;width:24px;height:24px;border-radius:7px;display:grid;place-items:center;flex:none;color:var(--text3);opacity:0;transition:opacity .1s;border:0;background:transparent;padding:0;cursor:pointer}
+.menu .mi .mi-k+.mi-pin,.menu .mi .mi-l+.mi-pin{margin-left:8px}
+.menu .mi:hover .mi-pin,.menu .mi .mi-pin:focus-visible,.menu .mi .mi-pin.on{opacity:1}
+.menu .mi .mi-pin.on{color:var(--accent)}
+.menu .mi:hover .mi-pin{color:var(--accent-text);opacity:.8}                 /* на подсвеченной строке значок белый */
+.menu .mi:hover .mi-pin.on{opacity:1}
+.menu .mi:hover .mi-pin:hover{background:rgba(255,255,255,.22);opacity:1}
+@media (pointer:coarse){.menu .mi .mi-pin{opacity:.7}}
 .bar-row.dragging{opacity:.4}
 .bar-row.over{border-color:var(--accent);background:var(--accent-soft)}
 .bar-row .switch:not(.on){background:var(--border-strong)}
@@ -2521,3 +2535,7 @@ html.has-winbar.wb-auto.wb-peek{--winbar-h:15px!important}
 html.has-winbar .backdrop,html.has-winbar .tour-block,html.has-winbar #dock-zones{transition:top .16s ease}
 .wb-hot{position:fixed;top:0;left:0;right:0;height:4px;z-index:950;display:none;-webkit-app-region:no-drag}
 html.has-winbar.wb-auto:not(.wb-peek) .wb-hot{display:block}
+
+.ai-set .ai-grp{display:flex;flex-direction:column;gap:2px;margin:14px 0 2px}
+.ai-set .ai-grp b{font-size:14px}
+.ai-set .ai-grp-note{margin:2px 0 6px}

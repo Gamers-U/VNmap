@@ -210,4 +210,4 @@ function ghOpenFromUrl() {
   setTimeout(() => openFromGithub({ link: s, auto: true }), 400);
 }
 
-TOOL_ITEMS.push({ id: 'ghopen', group: 'files', ic: 'fork', key: 'gho.menu', kw: 'github open link repository novel открыть гитхаб ссылка репозиторий новелла', run: () => openFromGithub() });
+TOOL_ITEMS.push({ id: 'ghopen', group: 'files', ic: 'github', key: 'gho.menu', kw: 'github open link repository novel открыть гитхаб ссылка репозиторий новелла', run: () => openFromGithub() });

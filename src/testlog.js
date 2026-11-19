@@ -29,7 +29,7 @@ Object.assign(D, {
   'lg.pct': ['{0}%', '{0}%'], 'lg.of': ['{0} из {1}', '{0} of {1}'],
 });
 
-TOOL_ITEMS.push({ id: 'testlog', group: 'play', ic: 'chart', key: 'lg.btn', kw: 'log heat map heatmap testers playthrough statistics drop analytics журнал тепловая карта тестеры прохождения статистика бросили', run: () => openTestLog() });
+TOOL_ITEMS.push({ id: 'testlog', group: 'play', ic: 'flame', key: 'lg.btn', kw: 'log heat map heatmap testers playthrough statistics drop analytics журнал тепловая карта тестеры прохождения статистика бросили', run: () => openTestLog() });
 
 TOOL_ITEMS.push({ id: 'whoami', group: 'team', ic: 'user', key: 'me.pick', kw: 'me who am i identity member author mine my blocks я кто я участник мои блоки авторство', run: () => openSettingsWindow('team'), menu: false });
 

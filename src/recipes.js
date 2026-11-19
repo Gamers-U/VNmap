@@ -177,4 +177,4 @@ function openRecipes() {
     }
   });
 }
-TOOL_ITEMS.push({ id: 'recipes', group: 'story', ic: 'wand', key: 'rc.btn', kw: 'recipes mechanics affection stats inventory phone chat messenger nvl relationship points items rpg dice рецепты механики шкала симпатии симпатия характеристики статы инвентарь предметы переписка телефон мессенджер очки отношения заготовки', run: () => openRecipes() });
+TOOL_ITEMS.push({ id: 'recipes', group: 'story', ic: 'flask', key: 'rc.btn', kw: 'recipes mechanics affection stats inventory phone chat messenger nvl relationship points items rpg dice рецепты механики шкала симпатии симпатия характеристики статы инвентарь предметы переписка телефон мессенджер очки отношения заготовки', run: () => openRecipes() });

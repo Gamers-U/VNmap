@@ -4,9 +4,11 @@
    и сверяем с реестром: есть ли такой ресурс, есть ли у него загруженный файл. Получается рабочий список для художника и композитора:
    на экране, чек-листом в буфер обмена и таблицей CSV/XLSX. */
 Object.assign(D, {
-  'rs.btn': ['Список ресурсов…', 'Resource list…'],
+  'rs.btn': ['Сводка ресурсов…', 'Resource summary…'],
+  'reg.sum.cnt': ['Сколько ресурсов ещё не готово', 'How many resources are not ready yet'],
+  'reg.tab.sum': ['Сводка', 'Summary'], 'reg.hint.sum': ['Какие фоны, спрайты, музыка, звуки и голоса нужны сюжету и чего из них ещё нет в реестре или нет файла', 'Which backgrounds, sprites, music, sounds and voices the story needs, and which of them are still missing from the registry or have no file'],
   'rs.title': ['Ресурсы: что нужно нарисовать и записать', 'Resources: what to draw and record'],
-  'rs.open': ['Список ресурсов…', 'Resource list…'], 'rs.open.t': ['Список ресурсов этого блока и их готовность', 'Resources of this block and how ready they are'],
+  'rs.open': ['Сводка ресурсов…', 'Resource summary…'], 'rs.open.t': ['Сводка ресурсов этого блока и их готовность', 'Resource summary of this block and how ready they are'],
   'rs.empty': ['На карте пока нет блоков.', 'There are no blocks on the map yet.'],
   'rs.none': ['В скриптах пока нет команд scene, show и play, и ничего не отмечено вручную. Список появится, когда в блоках будут фоны, спрайты и звуки.', 'The scripts have no scene, show or play commands yet and nothing is marked by hand. The list appears once blocks use backgrounds, sprites and sounds.'],
   'rs.prog': ['Готово {0} из {1}', 'Ready {0} of {1}'],
@@ -151,14 +153,28 @@ function rsFillRegistry(items) {
   return [na, ne];
 }
 
+/** С 1.7.13 список ресурсов живёт в «Реестре» вкладкой «Сводка» (что нужно и чего не хватает); окно открывается там же, область можно задать блоком. */
 function openResources(opts) {
   opts = opts || {}; closePopover();
   if (opts.nodeId !== undefined) { RS_ST.scope = opts.nodeId || ''; RS_ST.more = 40; }
+  openRegistry('sum');
+}
+let RS_CNT = { ver: -1, n: 0 };
+/** Сколько разных ресурсов ещё не готово (для числа у вкладки «Сводка»); считается заново только после правок проекта. */
+function rsMissingCount() {
+  if (RS_CNT.ver !== DATA_VER) { let n = 0; try { n = rsUnique(rsItems()).filter(u => u.status !== 'ok').length; } catch (e) { n = 0; } RS_CNT = { ver: DATA_VER, n }; }
+  return RS_CNT.n;
+}
+/** Вид «Сводка» для вкладки реестра: заголовок и сама панель. */
+function rsSummaryView() {
+  return h('div', { class: 'view rs-view' }, h('div', { class: 'reg-top' }, h('div', { class: 'reg-h' }, t('reg.tab.sum'), h('span', { class: 'hint' }, t('reg.hint.sum')))), rsPanel());
+}
+function rsPanel() {
   let seenVer = DATA_VER, timer = 0;
-  openModal({
-    cls: 'rs-m', onClose: () => clearInterval(timer), build: m => {
-      const top = h('div', { class: 'rs-top' }), ctl = h('div', { class: 'rs-ctl' }), body = h('div', { class: 'cp-body scroll rs-body' });
-      const close = () => m.close();
+  {
+    {
+      const top = h('div', { class: 'rs-top' }), ctl = h('div', { class: 'rs-ctl' }), body = h('div', { class: 'rs-body' });
+      const close = () => { if (typeof REG !== 'undefined' && REG && REG.m && !REG.m.closed) REG.m.close(); };
 
       const actFor = u => {
         const a = u.a, out = [];
@@ -247,7 +263,7 @@ function openResources(opts) {
 
       const paint = () => {
         seenVer = DATA_VER;
-        const keep = body.scrollTop; body.replaceChildren();
+        const sc = body.closest('.m-main'), keep = sc ? sc.scrollTop : 0; body.replaceChildren();
         if (!P.nodes.some(n => n.type !== 'note')) { top.replaceChildren(); ctl.replaceChildren(); body.append(h('div', { class: 'empty' }, t('rs.empty'))); return; }
         const all = rsItems(), nodesWith = rsNodes().filter(n => all.some(it => it.n === n) || n.id === RS_ST.scope);
         if (RS_ST.scope && !P.nodes.some(n => n.id === RS_ST.scope)) RS_ST.scope = '';
@@ -256,12 +272,12 @@ function openResources(opts) {
         paintTop(all, scopeItems);
         const list = rsFilter(all);
         body.append(list.length ? (RS_ST.group === 'res' ? viewRes(list) : viewBlocks(list)) : h('div', { class: 'empty' }, t('rs.nofilter')), h('div', { class: 'bs-foot' }, t('rs.foot')));
-        body.scrollTop = keep;
+        if (sc) sc.scrollTop = keep;
       };
-      timer = setInterval(() => { if (m.closed) { clearInterval(timer); return; } if (DATA_VER !== seenVer && !document.activeElement?.matches?.('#rs-scope')) paint(); }, 1200);
+      timer = setInterval(() => { if (!body.isConnected) { clearInterval(timer); return; } if (DATA_VER !== seenVer && !document.activeElement?.matches?.('#rs-scope')) paint(); }, 1200);
       paint();
-      return h('div', { class: 'm-wrap bs-wrap' }, modalHead(t('rs.title'), m), top, ctl, body);
+      return h('div', { class: 'rs-pane' }, top, ctl, body);
     }
-  });
+  }
 }
-TOOL_ITEMS.push({ id: 'resources', group: 'story', ic: 'box', key: 'rs.btn', kw: 'resources assets backgrounds sprites music sounds checklist artist composer todo ресурсы ассеты фоны спрайты музыка звуки чек-лист художник композитор список', run: () => openResources({ nodeId: '' }) });
+TOOL_ITEMS.push({ id: 'resources', group: 'story', ic: 'stack', key: 'rs.btn', kw: 'resources assets backgrounds sprites music sounds checklist artist composer todo ресурсы ассеты фоны спрайты музыка звуки чек-лист художник композитор список сводка summary', menu: false, run: () => openResources({ nodeId: '' }) });

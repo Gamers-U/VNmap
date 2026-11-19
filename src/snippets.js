@@ -253,4 +253,4 @@ function openSnippets() {
     }
   });
 }
-TOOL_ITEMS.push({ id: 'snippets', group: 'story', ic: 'code', key: 'sp.btn', kw: 'snippets library templates code reuse insert macro presets сниппеты шаблоны кусок кода библиотека вставить повторяющийся код заготовки', run: () => openSnippets() });
+TOOL_ITEMS.push({ id: 'snippets', group: 'story', ic: 'braces', key: 'sp.btn', kw: 'snippets library templates code reuse insert macro presets сниппеты шаблоны кусок кода библиотека вставить повторяющийся код заготовки', run: () => openSnippets() });
