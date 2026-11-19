@@ -1,0 +1,46 @@
+name: Библиотека редактора кода (CodeMirror)
+
+# Собирает cm/dist/cm6.js (CodeMirror 6 одним файлом) и кладёт его обратно в main. Нужна, потому что у Claude в среде нет установки пакетов.
+# Запускается сама, когда меняются файлы в cm/ (кроме cm/dist), и вручную: Actions → эта запись → Run workflow.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'cm/package.json'
+      - 'cm/entry.js'
+      - 'cm/build.mjs'
+      - '.github/workflows/cm.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cm6
+  cancel-in-progress: false
+
+jobs:
+  bundle:
+    name: Собрать cm6.js
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Установить пакеты
+        working-directory: cm
+        run: npm install --no-audit --no-fund --legacy-peer-deps
+      - name: Собрать
+        working-directory: cm
+        run: node build.mjs
+      - name: Положить в main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f cm/dist/cm6.js cm/dist/versions.json cm/package-lock.json
+          if git diff --cached --quiet; then echo "Без изменений"; else
+            git commit -m "cm6: сборка библиотеки редактора кода [skip ci]"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
