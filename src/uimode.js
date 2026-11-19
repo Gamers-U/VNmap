@@ -279,7 +279,8 @@ function setView(st, render) {
   sel.addEventListener('change', () => { S.transition = sel.value; saveSettings(); });
   box.append(setCard(t('ui.look'),
     field(t('ui.theme'), segmented([{ value: 'dark', label: t('ui.theme.dark') }, { value: 'light', label: t('ui.theme.light') }], S.theme, v => { if (v !== S.theme) toggleTheme(); })),
-    field(t('ui.lang'), segmented([{ value: 'ru', label: 'Русский' }, { value: 'en', label: 'English' }], S.lang, v => { if (v === S.lang) return; setLang(v); setTimeout(() => openSettingsWindow(st.tab), 60); }))));
+    field(t('ui.lang'), segmented([{ value: 'ru', label: 'Русский' }, { value: 'en', label: 'English' }], S.lang, v => { if (v === S.lang) return; setLang(v); setTimeout(() => openSettingsWindow(st.tab), 60); })),
+    typeof winbarOn === 'function' && winbarOn() ? h('div', { class: 'set-winauto' }, switchEl(S.winAuto !== false, v => { S.winAuto = v; saveSettings(); winbarApply(); }, t('set.winauto')), h('div', { class: 'hint' }, t('set.winauto.h'))) : null));
   box.append(setCard(t('ui.mapset'),
     field(t('set.grid'), segmented([{ value: 'dots', label: t('set.grid.dots') }, { value: 'lines', label: t('set.grid.lines') }, { value: 'off', label: t('set.grid.off') }], S.grid, v => { S.grid = v; saveSettings(); applyGrid(); })),
     switchEl(S.snap, v => { S.snap = v; saveSettings(); }, t('set.snap')),

@@ -2224,17 +2224,19 @@ body.dock-edit [data-dock].dock-lifted{opacity:.28}
 .pal-tips b{color:var(--text)}
 
 /* ---- тонкая полоска сверху окна (Windows и Linux, winbar.js) ---- */
-html.has-winbar{--winbar-h:20px}
+html.has-winbar{--winbar-h:15px}
 html.has-winbar body{display:flex;flex-direction:column}
 html.has-winbar #app{height:auto;flex:1 1 0;min-height:0}
 html.has-winbar .backdrop,html.has-winbar .tour-block,html.has-winbar #dock-zones{top:var(--winbar-h)}
-.winbar{flex:none;position:relative;z-index:900;height:var(--winbar-h,20px);display:flex;align-items:center;gap:4px;padding:0 0 0 4px;padding-right:calc(100vw - env(titlebar-area-x,0px) - env(titlebar-area-width,100vw));background:var(--surface2);color:var(--text2);font-size:11px;line-height:1;-webkit-app-region:drag;user-select:none}
+.winbar{flex:none;position:relative;z-index:900;height:var(--winbar-h,15px);overflow:hidden;transition:height .16s ease;display:flex;align-items:center;gap:4px;padding:0 0 0 4px;padding-right:calc(100vw - env(titlebar-area-x,0px) - env(titlebar-area-width,100vw));background:var(--surface2);color:var(--text2);font-size:11px;line-height:1;-webkit-app-region:drag;user-select:none}
 .winbar .grow{flex:1 1 auto}
 .winbar .wb-title{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;pointer-events:none}
-.winbar .wb-btn{-webkit-app-region:no-drag;height:calc(var(--winbar-h,20px) - 2px);min-width:24px;padding:0 5px;border:0;border-radius:5px;background:transparent;color:inherit;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.winbar .wb-btn{-webkit-app-region:no-drag;height:var(--winbar-h,15px);min-width:30px;padding:0 6px;border:0;border-radius:0;background:transparent;color:inherit;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
 .winbar .wb-btn:hover{background:color-mix(in srgb,var(--text) 12%,transparent);color:var(--text)}
 .winbar .wb-menu{color:var(--accent)}
-.winbar .wb-ctl{display:flex;gap:2px;-webkit-app-region:no-drag;padding-right:3px}
+.winbar .wb-ctl{display:flex;gap:0;-webkit-app-region:no-drag;padding-right:0;align-self:stretch}
+.winbar .wb-menu{min-width:26px}
+.winbar .wb-btn svg{width:11px;height:11px}
 .winbar .wb-close:hover{background:#e5484d;color:#fff}
 .winbar [data-tip]:hover::after{top:calc(100% + 4px)}
 
@@ -2512,3 +2514,10 @@ html.sat-win .modal.win-free{position:relative}
 .help-z:hover:not(:disabled){background:var(--hover);color:var(--text)}
 .help-z:disabled{opacity:.35;cursor:default}
 @media (max-width:760px){.help-view{padding:16px 14px 22px}.help-p.help-tool{grid-template-columns:1fr}.help-tic{width:36px;height:36px}.help-card{max-width:none}.help-pn{flex-wrap:wrap}}
+
+/* ---- верхняя полоска 1.7.12: 15 px, автоскрытие в развёрнутом окне ---- */
+html.has-winbar.wb-auto{--winbar-h:0px!important}
+html.has-winbar.wb-auto.wb-peek{--winbar-h:15px!important}
+html.has-winbar .backdrop,html.has-winbar .tour-block,html.has-winbar #dock-zones{transition:top .16s ease}
+.wb-hot{position:fixed;top:0;left:0;right:0;height:4px;z-index:950;display:none;-webkit-app-region:no-drag}
+html.has-winbar.wb-auto:not(.wb-peek) .wb-hot{display:block}

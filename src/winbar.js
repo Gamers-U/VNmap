@@ -1,9 +1,10 @@
 'use strict';
 /* ====== Тонкая полоска сверху окна (программа для Windows и Linux) ======
-   У окна нет системной рамки и меню «Файл, Правка, Вид, Справка». Вместо них сверху узкая полоска цвета кнопок (20 пикселей, примерно 5 мм):
-   слева значок (нажмите: меню «Файл, Вид, Справка»), название проекта, справа родные кнопки «свернуть, развернуть, закрыть» (их рисует
-   система поверх полоски и подгоняет под цвет темы). Окно тянется за полоску. Во весь экран: F11 или пункт меню.
-   Если система не умеет рисовать кнопки поверх страницы (или включён полный экран), полоска показывает свои маленькие кнопки.
+   У окна нет системной рамки и меню «Файл, Правка, Вид, Справка». Вместо них сверху узкая полоска цвета кнопок (15 пикселей, около 4 мм):
+   слева значок (нажмите: меню «Файл, Вид, Справка»), название проекта, справа свои кнопки «свернуть, развернуть, закрыть» (с 1.7.12 их рисует
+   сама страница, а не система). Окно тянется за полоску. Во весь экран: F11 или пункт меню.
+   Автоскрытие (с 1.7.12, настройка «Вид», по умолчанию включено): когда окно развёрнуто или в полном экране, полоска прячется; стоит подвести мышь
+   к верхнему краю, она выдвигается и сдвигает интерфейс вниз, мышь ушла, снова прячется. В обычном (не развёрнутом) окне полоска видна всегда.
    На macOS и в браузере полоски нет: там остаётся как было. */
 
 Object.assign(D, {
@@ -18,11 +19,14 @@ Object.assign(D, {
   'wb.quit': ['Выход', 'Quit'], 'wb.settings': ['Настройки…', 'Settings…'], 'wb.web.save': ['Сохранить файл проекта', 'Save the project file'],
   'wb.min': ['Свернуть', 'Minimize'], 'wb.max': ['Развернуть', 'Maximize'], 'wb.restore': ['Восстановить', 'Restore'], 'wb.close': ['Закрыть', 'Close'], 'wb.exitfull': ['Выйти из полного экрана', 'Exit full screen'],
   'wb.app': ['Карта новеллы', 'Story Map'],
+  'set.winauto': ['Прятать верхнюю полоску окна, когда окно развёрнуто на весь экран', 'Hide the top strip when the window is maximized'],
+  'set.winauto.h': ['Подведите мышь к верхнему краю: полоска выдвинется и сдвинет интерфейс вниз. В обычном окне полоска видна всегда.', 'Move the mouse to the top edge: the strip slides in and pushes the interface down. In a normal window the strip is always visible.'],
 });
 
 let WB = null;
 const winbarOn = () => typeof DESK !== 'undefined' && !!DESK && DESK.frameless === true && !!DESK.win && ['onState', 'info', 'action', 'chrome'].every(k => typeof DESK.win[k] === 'function');
-const winbarOverlay = () => { try { return !!(navigator.windowControlsOverlay && navigator.windowControlsOverlay.visible); } catch (e) { return false; } };
+const winbarOverlay = () => { try { return !!(navigator.windowControlsOverlay && navigator.windowControlsOverlay.visible); } catch (e) { return false; } };   // старая оболочка (до 1.7.12) ещё рисует системные кнопки
+const winbarAutoOn = () => S.winAuto !== false;
 
 /** Цвета для системных кнопок: фон как у полоски (цвет кнопок), значки как у вторичного текста. */
 function winbarColors() {
@@ -97,9 +101,33 @@ function winbarPaint() {
   document.documentElement.classList.toggle('wb-full', full);
   WB.ctl.replaceChildren();
   if (!own) return;
-  const b = (ic, tip, act, cls = '') => h('button', { class: 'wb-btn ' + cls, 'data-tip': tip, 'aria-label': tip, onclick: () => DESK.win.action(act) }, icon(ic, 13, 2));
+  const b = (ic, tip, act, cls = '') => h('button', { class: 'wb-btn ' + cls, 'data-tip': tip, 'aria-label': tip, onclick: () => DESK.win.action(act) }, icon(ic, 11, 2));
   if (full) WB.ctl.append(b('fit', t('wb.exitfull'), 'fullscreen'), b('x', t('wb.close'), 'close', 'wb-close'));
   else WB.ctl.append(b('minus', t('wb.min'), 'minimize'), b(WB.st.max ? 'copy' : 'fit', t(WB.st.max ? 'wb.restore' : 'wb.max'), 'maximize'), b('x', t('wb.close'), 'close', 'wb-close'));
+}
+
+/** Автоскрытие: в развёрнутом окне и в полном экране полоска прячется (высота 0), у верхнего края выдвигается. */
+function winbarApply() {
+  if (!WB) return;
+  const root = document.documentElement, on = winbarAutoOn() && !!(WB.st.max || WB.st.full);
+  root.classList.toggle('wb-auto', on);
+  if (!on) { root.classList.remove('wb-peek'); clearTimeout(WB.hideT); }
+}
+function winbarPeek() {
+  if (!WB || !document.documentElement.classList.contains('wb-auto')) return;
+  document.documentElement.classList.add('wb-peek'); winbarHideSoon();
+}
+/** Через полсекунды после ухода мыши полоска прячется снова, пока открыто её меню или мышь над ней, ждёт. */
+function winbarHideSoon() {
+  if (!WB) return;
+  clearTimeout(WB.hideT);
+  const chk = () => {
+    const root = document.documentElement; if (!root.classList.contains('wb-auto')) return;
+    const menuOpen = typeof POP !== 'undefined' && POP && POP.anchor && WB.bar.contains(POP.anchor);
+    if (WB.bar.matches(':hover') || WB.hot.matches(':hover') || menuOpen) { WB.hideT = setTimeout(chk, 400); return; }
+    root.classList.remove('wb-peek');
+  };
+  WB.hideT = setTimeout(chk, 500);
 }
 
 function winbarInit() {
@@ -111,9 +139,13 @@ function winbarInit() {
   const ctl = h('div', { class: 'wb-ctl', id: 'wb-ctl' });
   const bar = h('div', { class: 'winbar', id: 'winbar' }, typeof SAT !== 'undefined' && SAT.tool ? null : menuB, title, h('div', { class: 'grow' }), ctl);
   document.body.insertBefore(bar, document.body.firstChild);
-  WB = { bar, title, ctl, st: { max: false, full: false } };
-  DESK.win.onState(st => { WB.st = st || WB.st; winbarPaint(); });
-  DESK.win.info().then(i => { if (i) { WB.st = { max: !!i.max, full: !!i.full }; if (i.h > 0) root.style.setProperty('--winbar-h', i.h + 'px'); } winbarPaint(); }).catch(() => { });
+  const hot = h('div', { class: 'wb-hot', id: 'wb-hot' });
+  document.body.insertBefore(hot, document.body.firstChild);
+  WB = { bar, hot, title, ctl, st: { max: false, full: false }, hideT: 0 };
+  hot.addEventListener('mouseenter', winbarPeek);
+  bar.addEventListener('mouseleave', winbarHideSoon);
+  DESK.win.onState(st => { WB.st = st || WB.st; winbarPaint(); winbarApply(); });
+  DESK.win.info().then(i => { if (i) { WB.st = { max: !!i.max, full: !!i.full }; if (i.h > 0) root.style.setProperty('--winbar-h', i.h + 'px'); } winbarPaint(); winbarApply(); }).catch(() => { });
   try { if (navigator.windowControlsOverlay) navigator.windowControlsOverlay.addEventListener('geometrychange', winbarPaint); } catch (e) { /* нет API */ }
   winbarTitle(); winbarPaint(); winbarSync();
 }
