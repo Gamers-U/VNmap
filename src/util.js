@@ -152,7 +152,10 @@ const ICONS = {
   history: '<path d="M3 12a9 9 0 103-6.7L3 8"/><path d="M3 3v5h5M12 7.5V12l3 2"/>',
   github: '<path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 00-1.3-3.2 4.2 4.2 0 00-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3 0 00-6.2 0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2 0 00-.1 3.2A4.6 4.6 0 004 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/>',
   variable: '<path d="M8 4c-2.2 3-2.2 13 0 16M16 4c2.2 3 2.2 13 0 16M9.5 9.5l5 5M14.5 9.5l-5 5"/>',
-  printer: '<path d="M7 9V3h10v6"/><path d="M7 17H5a2 2 0 01-2-2v-4a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2h-2"/><rect x="7" y="14" width="10" height="7" rx="1"/>'
+  printer: '<path d="M7 9V3h10v6"/><path d="M7 17H5a2 2 0 01-2-2v-4a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2h-2"/><rect x="7" y="14" width="10" height="7" rx="1"/>',
+  wrap: '<path d="M3 6h18M3 12h13a3 3 0 010 6h-4"/><path d="M14 15l-2 3 2 3"/><path d="M3 18h4"/>',
+  minimap: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M14 3v18"/><path d="M7 8h4M7 12h4M7 16h4"/>',
+  fold: '<path d="M7 4l5 5 5-5"/><path d="M7 20l5-5 5 5"/><path d="M4 12h16"/>'
 };
 function icon(name, size = 18, sw = 1.8) {
   const el = document.createElementNS(SVGNS, 'svg');

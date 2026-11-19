@@ -8,7 +8,7 @@ DIST = os.path.join(ROOT, 'dist')
 os.makedirs(DIST, exist_ok=True)
 
 JS_ORDER = ['util.js', 'merge.js', 'i18n.js', 'model.js', 'geom.js', 'canvas.js', 'modal.js', 'nodemodal.js',
-            'script.js', 'text.js', 'effects.js', 'flags.js', 'jumps.js', 'condbuilder.js', 'members.js', 'files.js', 'registry.js', 'compiler.js', 'extras.js', 'guireg.js', 'translate.js', 'tlui.js', 'build.js', 'tools.js', 'toolsmenu.js', 'playeng.js', 'player.js', 'autorun.js', 'endguide.js','voicesheet.js', 'testlog.js', 'gamemode.js', 'analysis.js', 'layout.js', 'mappdf.js', 'notes.js', 'palette.js','palintent.js','replicas.js','rename.js','checks.js','branchstats.js','varstate.js','charpage.js','resources.js', 'weight.js', 'assetprod.js', 'recipes.js', 'snippets.js', 'customcode.js', 'codeedit.js', 'codelang.js', 'codehint.js', 'ide.js', 'digest.js', 'prose.js','branches.js','brlink.js','texted.js','docimport.js','winctl.js','docedit.js','pull.js','lazyfiles.js','ghopen.js', 'helptools.js', 'desktop.js', 'rpsdk.js','rpyimport.js', 'launcher.js', 'shellupd.js', 'drive.js', 'collab.js', 'sharefile.js', 'github.js', 'review.js', 'acl.js', 'tasks.js', 'whodid.js', 'notify.js', 'aicore.js', 'aiset.js', 'aichat.js', 'aiask.js', 'diag.js', 'metrics.js', 'minilint.js', 'filenames.js', 'fitbox.js', 'ctrlproj.js', 'statshub.js', 'syncchip.js', 'uimode.js', 'dock.js', 'winbar.js', 'satellite.js', 'uipresets.js', 'lessons.js', 'tour.js', 'walks.js', 'snapshots.js', 'app.js']
+            'script.js', 'text.js', 'effects.js', 'flags.js', 'jumps.js', 'condbuilder.js', 'members.js', 'files.js', 'registry.js', 'compiler.js', 'extras.js', 'guireg.js', 'translate.js', 'tlui.js', 'build.js', 'tools.js', 'toolsmenu.js', 'playeng.js', 'player.js', 'autorun.js', 'endguide.js','voicesheet.js', 'testlog.js', 'gamemode.js', 'analysis.js', 'layout.js', 'mappdf.js', 'notes.js', 'palette.js','palintent.js','replicas.js','rename.js','checks.js','branchstats.js','varstate.js','charpage.js','resources.js', 'weight.js', 'assetprod.js', 'recipes.js', 'snippets.js', 'customcode.js', 'codeedit.js', 'cmedit.js', 'codelang.js', 'codehint.js', 'ide.js', 'digest.js', 'prose.js','branches.js','brlink.js','texted.js','docimport.js','winctl.js','docedit.js','pull.js','lazyfiles.js','ghopen.js', 'helptools.js', 'desktop.js', 'rpsdk.js','rpyimport.js', 'launcher.js', 'shellupd.js', 'drive.js', 'collab.js', 'sharefile.js', 'github.js', 'review.js', 'acl.js', 'tasks.js', 'whodid.js', 'notify.js', 'aicore.js', 'aiset.js', 'aichat.js', 'aiask.js', 'diag.js', 'metrics.js', 'minilint.js', 'filenames.js', 'fitbox.js', 'ctrlproj.js', 'statshub.js', 'syncchip.js', 'uimode.js', 'dock.js', 'winbar.js', 'satellite.js', 'uipresets.js', 'lessons.js', 'tour.js', 'walks.js', 'snapshots.js', 'app.js']
 
 def kebab(s):
     return re.sub(r'([A-Z])', lambda m: '-' + m.group(1).lower(), s)
@@ -94,9 +94,18 @@ fonts = ('<link rel="preconnect" href="https://fonts.googleapis.com">'
          '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
          '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">')
 
+# Библиотека редактора кода (CodeMirror 6): собирает GitHub Actions в cm/dist/cm6.js; идёт отдельным <script> перед программой
+# (так 'use strict' программы остаётся первым оператором своего скрипта). Нет файла: страница работает с прежним редактором кода.
+_CM = os.path.join(ROOT, 'cm', 'dist', 'cm6.js')
+if os.path.exists(_CM):
+    CM_TAG = '\n<script>\n' + open(_CM, encoding='utf-8').read().replace('</script', '<\\/script') + '\n</script>'
+else:
+    CM_TAG = ''
+    print('Предупреждение: cm/dist/cm6.js нет, редактор кода останется прежним', file=sys.stderr)
+
 def make_fragment(js_text):
     return (
-        '<title>Карта новеллы</title>\n' + fonts + '\n<style>\n' + css + '\n</style>\n' + body +
+        '<title>Карта новеллы</title>\n' + fonts + '\n<style>\n' + css + '\n</style>\n' + body + CM_TAG +
         '\n<script>\n' + js_text + '\n</script>\n'
     )
 
@@ -105,7 +114,7 @@ def make_standalone(js_text):
     return (
         '<!doctype html>\n<html lang="ru" data-theme="dark">\n<head>\n<meta charset="utf-8">\n' + STAMP +
         '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n'
-        '<title>Карта новеллы</title>\n' + fonts + '\n<style>\n' + css + '\n</style>\n</head>\n<body>\n' + body +
+        '<title>Карта новеллы</title>\n' + fonts + '\n<style>\n' + css + '\n</style>\n</head>\n<body>\n' + body + CM_TAG +
         '\n<script>\n' + js_text + '\n</script>\n</body>\n</html>\n'
     )
 

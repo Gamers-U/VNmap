@@ -77,9 +77,9 @@ function openIde(opts) {
   closePopover();
   if (IDEW && !IDEW.m.closed) { IDEW.focus(opts); return IDEW.m; }
   const api = ideDiskApi(), key = typeof rpKey === 'function' ? rpKey() : String((P && (P.uid || P.name)) || 'x');
-  const S_ = { fs: +(S.ide && S.ide.fs) || 0, root: null, dirs: new Map([['', { items: null, open: true }]]), tabs: [], active: null, sel: '', hidden: !!(S.ide && S.ide.hidden), side: !(S.ide && S.ide.side === false), secVirt: true, secDisk: true, filter: '', files: null, ol: !(S.ide && S.ide.ol === false), ai: !!(S.ide && S.ide.ai), nav: [], status: null, poll: 0, dead: false };
+  const S_ = { fs: +(S.ide && S.ide.fs) || 0, root: null, dirs: new Map([['', { items: null, open: true }]]), tabs: [], active: null, sel: '', hidden: !!(S.ide && S.ide.hidden), side: !(S.ide && S.ide.side === false), secVirt: true, secDisk: true, filter: '', files: null, ol: !(S.ide && S.ide.ol === false), ai: !!(S.ide && S.ide.ai), wrapLines: !(S.ide && S.ide.wrap === false), map: !!(S.ide && S.ide.map), nav: [], status: null, poll: 0, dead: false };
   let tree, tabsEl, host, emptyEl, statusL, statusR, banner, qEl, sideEl, mhead, rootChip, aiSideEl, aiSplitEl, aiBtn;
-  const saveS = () => { S.ide = { hidden: S_.hidden, side: S_.side, sw: S_.sw || (S.ide && S.ide.sw) || 264, fs: S_.fs || 0, ol: S_.ol, ai: S_.ai, aw: S_.aw || (S.ide && S.ide.aw) || 360 }; saveSettings(); };
+  const saveS = () => { S.ide = { hidden: S_.hidden, side: S_.side, sw: S_.sw || (S.ide && S.ide.sw) || 264, fs: S_.fs || 0, ol: S_.ol, ai: S_.ai, aw: S_.aw || (S.ide && S.ide.aw) || 360, engine: (S.ide && S.ide.engine) || '', wrap: S_.wrapLines, map: S_.map }; saveSettings(); };
 
   /* ---------- сервис ---------- */
   const tabById = id => S_.tabs.find(x => x.id === id) || null;
@@ -393,13 +393,14 @@ function openIde(opts) {
     if (api && api.reveal) api.reveal(key, rel).catch(() => { });
   }
   function makeEditor(tab, text) {
-    const ed = ceCreate({
+    const ed = (cmEngineWanted() === 'cm' ? cmCreate : ceCreate)({
       text, lang: tab.lang, label: tab.name,
-      fontSize: S_.fs,
+      fontSize: S_.fs, wrap: S_.wrapLines, minimap: S_.map,
       hint: ctx => chHint(ctx, hintEnv), onDefinition: info => defineAt(tab, info),
       onChange: v => onEdit(tab, v), onCursor: c => { if (S_.active === tab.id) paintStatus(c); }, onSave: () => saveTab(tab),
       onFont: v => { if (S_.fs === v) return; S_.fs = v; saveS(); for (const tb of S_.tabs) if (tb.ed && tb.ed.fs !== v) tb.ed.setFont(v); },
     });
+    if (ed.engine === 'cm') { ed.onWrap = v => { S_.wrapLines = v; saveS(); for (const tb of S_.tabs) if (tb.ed !== ed && tb.ed.setWrap) tb.ed.setWrap(v); paintStatus(); }; ed.onProblems = () => { if (S_.active === tab.id) paintProblems(); }; }
     ed.el.classList.add('hide'); host.append(ed.el);
     return ed;
   }
@@ -500,8 +501,34 @@ function openIde(opts) {
     const cc = c || S_.lastCur || { line: 1, col: 1, len: 0 }; S_.lastCur = cc;
     statusL.textContent = t('ce.line', cc.line, cc.col) + (cc.len ? ' · ' + t('ce.sel', cc.len) : '');
     markOutline(cc.line - 1); if (aiP) aiP.touch();
+    const cmTab = tab.ed.engine === 'cm';
     statusR.replaceChildren(h('span', tab.kind === 'virt' ? t('ide.sec.virt') : tab.path),
-      h('button', { class: 'ide-sbtn ide-lang', id: 'ide-lang', 'data-tip': t('ide.lang.pick'), onclick: ev => langMenu(ev.currentTarget) }, t('ide.lang.' + tab.lang)), h('span', 'UTF-8'), h('span', tab.eol === 'crlf' ? 'CRLF' : 'LF'));
+      cmTab ? h('button', { class: 'ide-sbtn ide-probs', id: 'ide-probs', 'data-tip': t('cm.diag'), onclick: () => { tab.ed.focus(); try { CM6.lint.openLintPanel(tab.ed.view); } catch (e) { /* нет панели */ } } }) : null,
+      cmTab ? h('button', { class: 'ide-sbtn' + (tab.ed.wrap ? ' on' : ''), id: 'ide-wrap', 'data-tip': t('cm.wrap'), 'aria-pressed': String(!!tab.ed.wrap), onclick: () => { tab.ed.setWrap(!tab.ed.wrap); S_.wrapLines = tab.ed.wrap; saveS(); for (const tb of S_.tabs) if (tb.ed.setWrap) tb.ed.setWrap(S_.wrapLines); paintStatus(); } }, icon('wrap', 14)) : null,
+      cmTab ? h('button', { class: 'ide-sbtn' + (tab.ed.map ? ' on' : ''), id: 'ide-map', 'data-tip': t('cm.map'), 'aria-pressed': String(!!tab.ed.map), onclick: () => { S_.map = !tab.ed.map; saveS(); for (const tb of S_.tabs) if (tb.ed.setMinimap) tb.ed.setMinimap(S_.map); paintStatus(); } }, icon('minimap', 14)) : null,
+      cmTab ? h('button', { class: 'ide-sbtn', id: 'ide-fold', 'data-tip': t('cm.sbtn.fold'), onclick: ev => menuAt(ev.currentTarget, [{ label: t('cm.fold.all'), icon: 'fold', onClick: () => tab.ed.foldAll() }, { label: t('cm.unfold.all'), icon: 'chevD', onClick: () => tab.ed.unfoldAll() }]) }, icon('fold', 14)) : null,
+      h('button', { class: 'ide-sbtn ide-lang', id: 'ide-lang', 'data-tip': t('ide.lang.pick'), onclick: ev => langMenu(ev.currentTarget) }, t('ide.lang.' + tab.lang)), h('span', 'UTF-8'), h('span', tab.eol === 'crlf' ? 'CRLF' : 'LF'),
+      cmReady() ? h('button', { class: 'ide-sbtn ide-eng', id: 'ide-engine', 'data-tip': t('cm.engine'), onclick: ev => engineMenu(ev.currentTarget) }, cmTab ? 'CM6' : 'old') : null);
+    if (cmTab) paintProblems();
+  }
+  function paintProblems() {
+    const b = statusR && statusR.querySelector('#ide-probs'), tab = cur(); if (!b || !tab || !tab.ed.view) return;
+    const n = tab.ed.problems(); b.replaceChildren(icon(n ? 'alert' : 'check', 14)); if (n) b.append(h('span', { class: 'ide-probn' }, String(n)));
+    b.classList.toggle('bad', n > 0); b.dataset.n = String(n);
+  }
+  function engineMenu(anchor) {
+    const cur_ = cmEngineWanted();
+    menuAt(anchor, [{ label: t('cm.engine.cm'), icon: cur_ === 'cm' ? 'check' : null, onClick: () => switchEngine('cm') }, { label: t('cm.engine.classic'), icon: cur_ === 'classic' ? 'check' : null, onClick: () => switchEngine('classic') }]);
+  }
+  /** Переключение движка у всех открытых вкладок: текст, место и прокрутка сохраняются, история отмены начинается заново. */
+  function switchEngine(kind) {
+    if (kind === 'cm' && !cmReady()) { toast(t('cm.engine.nolib'), 3500); return; }
+    S.ide = Object.assign({}, S.ide, { engine: kind }); saveS();
+    for (const tb of S_.tabs) {
+      const st = tb.ed.state(), text = tb.ed.get(), hid = tb.ed.el.classList.contains('hide'); tb.ed.destroy(); tb.ed.el.remove();
+      tb.ed = makeEditor(tb, text); tb.ed.el.classList.toggle('hide', hid); tb.ed.restore(st);
+    }
+    activate(S_.active, true);
   }
   function langMenu(anchor) {
     const tab = cur(); if (!tab) return;
@@ -829,7 +856,7 @@ function openIde(opts) {
     }
   });
   function onKeys(ev) {
-    const mod = ev.ctrlKey || ev.metaKey, k = ev.key.toLowerCase(), inEd = !!(ev.target.classList && ev.target.classList.contains('ce-ta'));
+    const mod = ev.ctrlKey || ev.metaKey, k = ev.key.toLowerCase(), inEd = !!(ev.target.classList && (ev.target.classList.contains('ce-ta') || ev.target.classList.contains('cm-content')));
     /* Ctrl+S, Ctrl+Shift+S, Ctrl+B в этом окне значат своё (файл, все файлы, проводник), а не «сохранить проект» и «собрать игру» главного окна: дальше событие не пускаем.
        Файл «Кода внутри проекта» часть проекта: для него Ctrl+S ещё и сохраняет проект, как в других окнах. */
     if (mod && k === 'p' && !ev.shiftKey) { ev.preventDefault(); ev.stopPropagation(); quickOpen(); }
