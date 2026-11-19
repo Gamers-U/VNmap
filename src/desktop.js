@@ -1,6 +1,7 @@
 'use strict';
 /* ====== Десктопная версия: связь с оболочкой Electron (в браузере всё это молчит) ====== */
 const APP_BUILD = '/*BUILD*/', APP_VERSION = '/*VERSION*/';      // подставляет build.py
+const SHELL_REV = Number('/*SHELLREV*/') || 0;        // с какого выпуска (номер после второй точки) оболочка подходит этой странице; из version.json, поле shell
 const DESK = (typeof window !== 'undefined' && window.vnDesktop && window.vnDesktop.isDesktop) ? window.vnDesktop : null;
 const DS = { path: '', dirty: false, saving: false, again: false, rev: 0, savedAt: 0, timer: null, last: {}, sig: '', ssig: '' };
 const DESK_AUTOSAVE_MAX = 80 * 1048576;       // проекты тяжелее сохраняются в файл только вручную

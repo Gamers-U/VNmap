@@ -4,7 +4,7 @@
    слева значок (нажмите: меню «Файл, Вид, Справка»), название проекта, справа свои кнопки «свернуть, развернуть, закрыть» (с 1.7.12 их рисует
    сама страница, а не система). Окно тянется за полоску. Во весь экран: F11 или пункт меню.
    Автоскрытие (с 1.7.12, настройка «Вид», по умолчанию включено): когда окно развёрнуто или в полном экране, полоска прячется; стоит подвести мышь
-   к верхнему краю, она выдвигается и сдвигает интерфейс вниз, мышь ушла, снова прячется. В обычном (не развёрнутом) окне полоска видна всегда.
+   к верхнему краю, она выезжает поверх интерфейса (с 1.7.15 ничего не сдвигая), мышь ушла, снова прячется. Если оболочка старая и рисует системные кнопки сама, полоска не прячется. В обычном (не развёрнутом) окне полоска видна всегда.
    На macOS и в браузере полоски нет: там остаётся как было. */
 
 Object.assign(D, {
@@ -20,7 +20,7 @@ Object.assign(D, {
   'wb.min': ['Свернуть', 'Minimize'], 'wb.max': ['Развернуть', 'Maximize'], 'wb.restore': ['Восстановить', 'Restore'], 'wb.close': ['Закрыть', 'Close'], 'wb.exitfull': ['Выйти из полного экрана', 'Exit full screen'],
   'wb.app': ['Карта новеллы', 'Story Map'],
   'set.winauto': ['Прятать верхнюю полоску окна, когда окно развёрнуто на весь экран', 'Hide the top strip when the window is maximized'],
-  'set.winauto.h': ['Подведите мышь к верхнему краю: полоска выдвинется и сдвинет интерфейс вниз. В обычном окне полоска видна всегда.', 'Move the mouse to the top edge: the strip slides in and pushes the interface down. In a normal window the strip is always visible.'],
+  'set.winauto.h': ['Подведите мышь к верхнему краю: полоска выедет поверх интерфейса, ничего не сдвигая. В обычном окне полоска видна всегда.', 'Move the mouse to the top edge: the strip slides in over the interface without moving anything. In a normal window the strip is always visible.'],
 });
 
 let WB = null;
@@ -109,7 +109,7 @@ function winbarPaint() {
 /** Автоскрытие: в развёрнутом окне и в полном экране полоска прячется (высота 0), у верхнего края выдвигается. */
 function winbarApply() {
   if (!WB) return;
-  const root = document.documentElement, on = winbarAutoOn() && !!(WB.st.max || WB.st.full);
+  const root = document.documentElement, on = winbarAutoOn() && !winbarOverlay() && !!(WB.st.max || WB.st.full);      // старая оболочка рисует системные кнопки поверх окна и спрятать их не может: тогда полоска остаётся на месте
   root.classList.toggle('wb-auto', on);
   if (!on) { root.classList.remove('wb-peek'); clearTimeout(WB.hideT); }
 }
@@ -145,7 +145,7 @@ function winbarInit() {
   hot.addEventListener('mouseenter', winbarPeek);
   bar.addEventListener('mouseleave', winbarHideSoon);
   DESK.win.onState(st => { WB.st = st || WB.st; winbarPaint(); winbarApply(); });
-  DESK.win.info().then(i => { if (i) { WB.st = { max: !!i.max, full: !!i.full }; if (i.h > 0) root.style.setProperty('--winbar-h', i.h + 'px'); } winbarPaint(); winbarApply(); }).catch(() => { });
-  try { if (navigator.windowControlsOverlay) navigator.windowControlsOverlay.addEventListener('geometrychange', winbarPaint); } catch (e) { /* нет API */ }
+  DESK.win.info().then(i => { if (i) { WB.st = { max: !!i.max, full: !!i.full }; if (i.h > 0) { root.style.setProperty('--winbar-h', i.h + 'px'); root.style.setProperty('--wb-bar', i.h + 'px'); } } winbarPaint(); winbarApply(); }).catch(() => { });
+  try { if (navigator.windowControlsOverlay) navigator.windowControlsOverlay.addEventListener('geometrychange', () => { winbarPaint(); winbarApply(); }); } catch (e) { /* нет API */ }
   winbarTitle(); winbarPaint(); winbarSync();
 }

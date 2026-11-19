@@ -29,6 +29,8 @@ Object.assign(D, {
   'upd.su.release': ['Страница выпуска', 'Release page'],
   'upd.su.old': ['Эта оболочка ещё не умеет обновляться сама. Один раз скачайте установщик и поставьте поверх: дальше обновления пойдут кнопкой.', 'This shell cannot update itself yet. Download the installer once and install it over the old one: after that updates come with a button.'],
   'upd.su.chip': ['Оболочка {0}', 'Shell {0}'],
+  'upd.su.stale': ['Окно вашей программы старее страницы: кнопка «Обновить версию» меняет только страницу, а окно с системными кнопками остаётся от первой установки. Один раз обновите оболочку, и верхняя полоска заработает как задумано.', 'The window of your installed program is older than the page: the "Update the version" button changes only the page, while the window with its system buttons stays as it was installed. Update the shell once and the top strip works as designed.'],
+  'upd.su.stale.toast': ['Оболочка программы старая ({0}): окно показывает системные кнопки и полоска не прячется. Нажмите на значок обновления внизу и «Обновить оболочку».', 'The program shell is old ({0}): the window shows system buttons and the strip does not hide. Click the update badge at the bottom and "Update the shell".'],
   'upd.su.toast': ['Вышла новая оболочка {0}: нажмите на значок обновления внизу и «Обновить оболочку».', 'A new shell {0} is out: click the update badge at the bottom and “Update the shell”.'],
   'su.e.su-net': ['Нет связи с GitHub. Проверьте интернет.', 'Cannot reach GitHub. Check your internet.'],
   'su.e.su-http': ['GitHub не отдал файл. Попробуйте позже.', 'GitHub did not return the file. Try again later.'],
@@ -41,6 +43,17 @@ Object.assign(D, {
   'su.e.su-busy': ['Скачивание уже идёт.', 'A download is already running.'],
   'su.e.su-badfile': ['Недопустимый файл. Установка отменена.', 'Invalid file. Installation cancelled.'],
 });
+
+/** Оболочка старее, чем нужно странице. Кнопка «Обновить версию» меняет только страницу, поэтому правки окна внутри одной линии (1.7.x) без этой проверки до пользователя не доходили. */
+function shellStale(cur) {
+  const m = /^(\d+)\.(\d+)\.(\d+)/.exec(String(cur || '')), v = /^(\d+)\.(\d+)\.(\d+)/.exec(typeof APP_VERSION === 'string' ? APP_VERSION : '');
+  if (!m || !v || !SHELL_REV) return false;
+  if (+m[1] !== +v[1]) return +m[1] < +v[1];
+  if (+m[2] !== +v[2]) return +m[2] < +v[2];
+  return +m[3] < SHELL_REV;
+}
+/** Есть ли что предложить для оболочки: новая линия или оболочка старее, чем нужно странице. */
+const suNew = c => !!c && !!(c.newLine || (c.newer && shellStale(c.current)));
 
 const suErr = e => {
   const m = String((e && e.message) || e || '').replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
@@ -58,19 +71,20 @@ function updShellSection(st, guard, render) {
   const how = c ? t('upd.su.how.' + (c.mode === 'none' ? 'none' : c.mode === 'portable' || c.mode === 'dmg' || c.mode === 'installer' || c.mode === 'appimage' ? c.mode : 'manual')) : '';
   const auto = c && (c.mode === 'installer' || c.mode === 'appimage');
   if (c) {
-    if (c.newLine) {
+    if (suNew(c)) {
       box.append(h('div', { class: 'upd-row' }, h('b', t('upd.su.new', c.latest)), h('span', { class: 'upd-badge on' }, t('upd.su.cur', c.current))),
+        !c.newLine ? h('div', { class: 'upd-err' }, icon('alert', 16), h('span', t('upd.su.stale'))) : null,
         h('div', { class: 'hint' }, how));
     } else box.append(h('div', { class: 'hint upd-ok' }, icon('check', 14), ' ', c.newer ? t('upd.su.pageonly', c.latest) : t('upd.su.latest')));
   } else box.append(h('div', { class: 'hint' }, t('upd.su.cur', st.info && st.info.shell || '?')));
   if (st.suProg) box.append(h('div', { class: 'upd-busy' }, h('span', { class: 'spin' }), t('upd.su.dl', fmtBytes(st.suProg.got), st.suProg.total ? fmtBytes(st.suProg.total) : '?')));
   if (st.suMsg) box.append(h('div', { class: 'hint upd-ok' }, icon('check', 14), ' ', st.suMsg));
   const acts = h('div', { class: 'row-actions left' });
-  if (c && c.newLine && c.mode !== 'none') acts.append(h('button', { class: 'btn primary', disabled: st.busy, id: 'upd-su-go', onclick: () => updShellInstall(st, guard, render) }, icon('download', 16), auto ? t('upd.su.btn.auto') : t('upd.su.btn.manual')));
-  acts.append(h('button', { class: 'btn', disabled: st.busy, id: 'upd-su-check', onclick: () => guard(async () => { st.suMsg = ''; st.su = await DESK.shellUpdate.check(); UPD.shell = st.su.newLine ? st.su : null; if (typeof updateStatus === 'function') updateStatus(); }) }, icon('refresh', 16), t('upd.su.check')));
+  if (suNew(c) && c.mode !== 'none') acts.append(h('button', { class: 'btn primary', disabled: st.busy, id: 'upd-su-go', onclick: () => updShellInstall(st, guard, render) }, icon('download', 16), auto ? t('upd.su.btn.auto') : t('upd.su.btn.manual')));
+  acts.append(h('button', { class: 'btn', disabled: st.busy, id: 'upd-su-check', onclick: () => guard(async () => { st.suMsg = ''; st.su = await DESK.shellUpdate.check(); UPD.shell = suNew(st.su) ? st.su : null; if (typeof updateStatus === 'function') updateStatus(); }) }, icon('refresh', 16), t('upd.su.check')));
   if (c && c.htmlUrl) acts.append(h('a', { class: 'btn', href: c.htmlUrl, target: '_blank', rel: 'noopener' }, icon('open', 15), t('upd.su.release')));
   box.append(acts);
-  if (c && c.newLine && c.mode === 'none' && typeof ghShellButtons === 'function') box.append(ghShellButtons());
+  if (suNew(c) && c.mode === 'none' && typeof ghShellButtons === 'function') box.append(ghShellButtons());
   return box;
 }
 async function updShellInstall(st, guard, render) {
@@ -94,10 +108,10 @@ function updShellAuto() {
   if (!DESK || !DESK.shellUpdate || S.updAuto === false) return;
   setTimeout(() => {
     DESK.shellUpdate.check().then(c => {
-      if (!c.newLine) return;
+      if (!suNew(c)) return;
       UPD.shell = c;
       if (typeof updateStatus === 'function') updateStatus();
-      if (S.shSeen !== c.latest) { S.shSeen = c.latest; saveSettings(); toast(t('upd.su.toast', c.latest), 9000); }
+      if (S.shSeen !== c.latest) { S.shSeen = c.latest; saveSettings(); toast(c.newLine ? t('upd.su.toast', c.latest) : t('upd.su.stale.toast', c.current), 12000); }
     }).catch(() => { });
   }, 9000);
 }

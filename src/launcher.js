@@ -250,7 +250,7 @@ function openUpdateDialog() {
         if (!(await confirmDlg({ title: t('upd.reset.q'), text: t('upd.reset.t'), ok: t('upd.reset') }))) return;
         guard(async () => { flushHistory(); saveNow(); if (DS.path && DS.dirty) await deskSave({ silent: true }); await DESK.update.reset(); });
       };
-      DESK.update.info().then(i => { st.info = i; render(); if (UPD.avail && updRepo()) checkGh(); if (DESK.shellUpdate) DESK.shellUpdate.check().then(c => { st.su = c; UPD.shell = c.newLine ? c : null; render(); }).catch(() => { }); }).catch(e => { st.err = deskErr(e); st.info = { active: null, shell: '?', electron: '?', url: '' }; render(); });
+      DESK.update.info().then(i => { st.info = i; render(); if (UPD.avail && updRepo()) checkGh(); if (DESK.shellUpdate) DESK.shellUpdate.check().then(c => { st.su = c; UPD.shell = suNew(c) ? c : null; render(); }).catch(() => { }); }).catch(e => { st.err = deskErr(e); st.info = { active: null, shell: '?', electron: '?', url: '' }; render(); });
       render();
       return h('div', { class: 'm-wrap' }, modalHead(t('upd.title'), m), body);
     }

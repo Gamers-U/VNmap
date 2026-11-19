@@ -85,7 +85,7 @@ _pk = open(_PKG, encoding='utf-8').read()
 _pk2 = re.sub(r'("version"\s*:\s*")[^"]*(")', lambda m: m.group(1) + APP_VERSION + m.group(2), _pk, count=1)
 if _pk2 != _pk: open(_PKG, 'w', encoding='utf-8').write(_pk2)    # оболочка и установщики несут тот же номер
 SHELL_NEEDS = 1          # какой версии оболочки (bridge) нужна эта страница; растёт, только если без новой оболочки не обойтись
-js = js.replace("'/*BUILD*/'", json.dumps(BUILD_ID)).replace("'/*VERSION*/'", json.dumps(APP_VERSION))
+js = js.replace("'/*BUILD*/'", json.dumps(BUILD_ID)).replace("'/*VERSION*/'", json.dumps(APP_VERSION)).replace("'/*SHELLREV*/'", json.dumps(str(_V.get('shell', 0))))
 STAMP = f'<meta name="vnmap-build" content="{BUILD_ID}" data-version="{APP_VERSION}" data-needs="{SHELL_NEEDS}">\n'
 
 body = open(os.path.join(SRC, 'body.html'), encoding='utf-8').read()
