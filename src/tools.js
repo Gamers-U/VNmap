@@ -192,6 +192,36 @@ function helpSplit(text) {
   if (m) return { title: m[1].trim(), ver: '', sep: '.', rest: m[2] };
   return { title: '', ver: '', sep: '', rest: s };
 }
+Object.assign(D, {
+  'help.zo': ['Мельче текст', 'Smaller text'], 'help.zi': ['Крупнее текст', 'Larger text'],
+  'help.where': ['Где на экране', 'Where on screen'], 'help.where.tip': ['Подсветить на экране, где лежит эта функция', 'Highlight on the screen where this function lives'],
+});
+/** Функция «Инструментов», о которой абзац справки: ищется по названию в начале («Таблица реплик…», «Свой код проекта (1.6.9): …»). */
+const HELP_ALIAS = [['импорт сценария', 'rpyimport'], ['заметки', 'notes'], ['уведомления', 'notify'], ['интерфейс игры', 'gui'], ['notes', 'notes'], ['notifications', 'notify'], ['game interface', 'gui']];
+function helpToolOf(text) {
+  if (typeof TOOL_ITEMS === 'undefined') return null;
+  const s = String(text).trim();
+  const m = s.match(/^[«"“]([^»"”\n]{3,60})[»"”]/) || s.match(/^([^.:(«»`\n]{3,50}?)\s*(?:\(|:|\.\s)/);
+  if (!m) return null;
+  const lead = m[1].replace(/…$/, '').trim().toLowerCase();
+  if (lead.length < 5) return null;
+  const al = HELP_ALIAS.find(a => lead.startsWith(a[0]));
+  if (al) return TOOL_ITEMS.find(it => it.id === al[1]) || null;
+  return TOOL_ITEMS.find(it => { const n = String(t(it.key)).replace(/…$/, '').trim().toLowerCase(); return n === lead || (lead.length >= 8 && n.startsWith(lead)) || (n.length >= 6 && lead.startsWith(n)); }) || null;
+}
+const helpToolName = it => String(t(it.key)).replace(/…$/, '');
+/** Урок «Обучения» для функции: по нему показывается, где она лежит на экране, и ведётся практика. */
+const helpLessonOf = it => (it && typeof TOUR_LESSONS !== 'undefined' && TOUR_LESSONS.find(l => l.tool === it.id)) || null;
+/** Крупность текста справки и обучения: кнопки «A−» и «A+» в шапке, выбор помнится. */
+const HELP_Z_LS = 'vnmap.help.z', HELP_Z = [0.92, 1, 1.15, 1.3, 1.5];
+function helpZoomCtl(host) {
+  let z = parseInt(lsGet(HELP_Z_LS), 10); if (!(z >= 0 && z < HELP_Z.length)) z = 1;
+  const apply = () => { host.style.setProperty('--hz', String(HELP_Z[z])); lsSet(HELP_Z_LS, String(z)); out.disabled = z === 0; big.disabled = z === HELP_Z.length - 1; };
+  const out = h('button', { class: 'icon-btn help-z', id: 'help-zo', type: 'button', 'data-tip': t('help.zo'), onclick: () => { if (z > 0) { z--; apply(); } } }, h('span', { class: 'help-za' }, 'A\u2212'));
+  const big = h('button', { class: 'icon-btn help-z big', id: 'help-zi', type: 'button', 'data-tip': t('help.zi'), onclick: () => { if (z < HELP_Z.length - 1) { z++; apply(); } } }, h('span', { class: 'help-za' }, 'A+'));
+  apply();
+  return h('div', { class: 'help-zs' }, out, big);
+}
 function openHelp(focus) {
   closePopover();
   const secs = tx('help.sections'), keys = tx('help.keys'), L = S.lang === 'en' ? 1 : 0;
@@ -229,13 +259,29 @@ function openHelp(focus) {
     view.append(h('div', { class: 'help-card' }, h('div', { class: 'help-h' }, h('span', { class: 'help-ic' }, icon(x.ic, 20)), h('h2', helpRich(x.h, st.q)))));
     const card = view.firstChild;
     if (x.items) {
-      const parts = x.items.map(helpSplit);
-      const ps = parts.map((pt, i) => h('p', { class: 'help-p', id: 'help-p-' + i },
-        pt.title ? [h('b', { class: 'help-lead' }, helpRich(pt.title, st.q), pt.sep), pt.ver ? h('span', { class: 'help-ver' }, 'v' + pt.ver) : null, ' '] : null, helpSteps(pt.rest, st.q)));
-      const heads = parts.map((pt, i) => ({ i, title: pt.title })).filter(z => z.title);
-      if (parts.length >= 6 && heads.length >= 4) {                                    // длинный раздел: оглавление, чтобы не листать всё подряд
+      const parts = x.items.map(helpSplit), tools = x.items.map(helpToolOf);
+      const ps = parts.map((pt, i) => {
+        const it = tools[i], body = [];
+        if (pt.title) body.push(h('b', { class: 'help-lead' }, helpRich(pt.title, st.q), pt.sep), pt.ver ? h('span', { class: 'help-ver' }, 'v' + pt.ver) : null, ' ', helpSteps(pt.rest, st.q));
+        else {
+          const q = it && pt.rest.match(/^([«"“][^»"”\n]{3,60}[»"”])([\s\S]*)$/);                 // «Название…» в начале абзаца: выделяем как заголовок
+          const q2 = it && !q && pt.rest.match(/^([^.:(«»`\n]{3,50}?)(\s*[(:][\s\S]*)$/);          // «Статистика (кнопка …)»: название функции тоже заголовок
+          if (q) body.push(h('b', { class: 'help-lead' }, helpRich(q[1], st.q)), helpSteps(q[2], st.q));
+          else if (q2) body.push(h('b', { class: 'help-lead' }, helpRich(q2[1], st.q)), helpSteps(q2[2], st.q));
+          else body.push(helpSteps(pt.rest, st.q));
+        }
+        if (!it) return h('p', { class: 'help-p', id: 'help-p-' + i }, body);
+        const l = helpLessonOf(it), back = () => { lsSet(HELP_TAB_LS, st.cur); setTimeout(() => openHelp(), 0); };
+        const acts = h('div', { class: 'help-acts' },
+          l ? h('button', { class: 'btn sm help-where', type: 'button', 'data-tool': it.id, 'data-tip': t('help.where.tip'), onclick: () => { st.m.close(); setTimeout(() => tlSpotlight(l, back), 80); } }, icon('target', 14), t('help.where')) : null,
+          h('button', { class: 'btn sm help-open', type: 'button', 'data-tool': it.id, onclick: () => { st.m.close(); tlOpen(l || { tool: it.id }); } }, icon('play', 14), t('tour.open')),
+          l && typeof tlWalkOf === 'function' && tlWalkOf(l) ? h('button', { class: 'btn sm help-walk', type: 'button', 'data-tool': it.id, 'data-tip': t('tour.walk.tip'), onclick: () => { st.m.close(); setTimeout(() => tlWalkRun(l), 120); } }, icon('target', 14), t('tour.walk')) : null);
+        return h('div', { class: 'help-p help-tool', id: 'help-p-' + i, 'data-tool': it.id }, h('span', { class: 'help-tic' }, icon(it.ic || 'help', 20)), h('div', { class: 'help-tbody' }, h('p', { class: 'help-tp' }, body), acts));
+      });
+      const heads = parts.map((pt, i) => ({ i, it: tools[i], title: tools[i] ? helpToolName(tools[i]) : pt.title })).filter(z => z.title);
+      if (parts.length >= 6 && heads.length >= 4) {                                    // длинный раздел: оглавление со значками, чтобы не листать всё подряд
         card.append(h('div', { class: 'help-toc' }, h('div', { class: 'help-toc-h' }, t('help.toc')),
-          h('div', { class: 'help-toc-l' }, heads.map(z => h('button', { class: 'help-toc-b', type: 'button', onclick: () => { const el = view.querySelector('#help-p-' + z.i); if (el) { el.scrollIntoView({ block: 'start', behavior: 'smooth' }); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 1500); } } }, z.title)))));
+          h('div', { class: 'help-toc-l' }, heads.map(z => h('button', { class: 'help-toc-b', type: 'button', onclick: () => { const el = view.querySelector('#help-p-' + z.i); if (el) { el.scrollIntoView({ block: 'start', behavior: 'smooth' }); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 1500); } } }, icon(z.it ? (z.it.ic || 'help') : 'chevR', 15), z.title)))));
       }
       card.append(...ps);
     }
@@ -251,7 +297,8 @@ function openHelp(focus) {
     cls: 'help-m', build: m => {
       st.m = m; paint();
       setTimeout(() => { if (window.matchMedia && matchMedia('(pointer:fine)').matches) search.focus(); }, 60);
-      return h('div', { class: 'm-wrap' }, modalHead(t('help.title'), m, h('div', { class: 'help-sw' }, icon('search', 15), search, cnt)), h('div', { class: 'help-body' }, nav, view));
+      const body = h('div', { class: 'help-body' }, nav, view);
+      return h('div', { class: 'm-wrap' }, modalHead(t('help.title'), m, [h('div', { class: 'help-sw' }, icon('search', 15), search, cnt), helpZoomCtl(body)]), body);
     }
   });
 }
