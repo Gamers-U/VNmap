@@ -7,7 +7,7 @@
    (настоящий размер Ollama называет при скачивании), правила подбора ориентировочные: это подсказка, а не гарантия. */
 
 const AIHD = DESK && DESK.hw && DESK.ol ? { hw: DESK.hw, ol: DESK.ol } : null;
-const AIHW = { hw: null, ol: null, load: false, pull: null, err: '', all: false, timer: null, note: '', paint: null };
+const AIHW = { hw: null, ol: null, load: false, pull: null, err: '', all: false, timer: null, note: '', paint: null, guide: null, poll: null };
 
 /** Каталог: тег в Ollama, примерный размер файла (ГБ), вид (код или общий), «моё» (MoE: работает на процессоре заметно быстрее), подсказка. */
 const AI_CAT = [
@@ -59,7 +59,7 @@ const AIHW_STR = {
   'ai.hw.old': ['Чтобы подобрать модель, обновите оболочку программы (Настройки → кнопка «Обновить оболочку»).', 'To pick a model, update the program shell (Settings, the Update shell button).'],
   'ai.hw.load': ['Определяю железо…', 'Checking your hardware…'],
   'ai.hw.ram': ['Память: {0} ГБ', 'Memory: {0} GB'],
-  'ai.hw.cpu': ['Процессор: {0} ({1} ядер)', 'Processor: {0} ({1} cores)'],
+  'ai.hw.cpu': ['Процессор: {0}, ядер: {1}', 'Processor: {0}, cores: {1}'],
   'ai.hw.gpu': ['Видеокарта: {0}, {1} ГБ видеопамяти', 'Graphics card: {0}, {1} GB of video memory'],
   'ai.hw.gpu.nov': ['Видеокарта: {0} (объём видеопамяти определить не удалось)', 'Graphics card: {0} (video memory size could not be found)'],
   'ai.hw.gpu.none': ['Видеокарта: не найдена или встроенная. Модели будут работать на процессоре, это заметно медленнее.', 'Graphics card: none found or built in. Models will run on the processor, which is noticeably slower.'],
@@ -109,6 +109,20 @@ const AIHW_STR = {
   'ai.ol.e.cut': ['Связь оборвалась до конца скачивания. Нажмите «Скачать» ещё раз, докачка продолжится.', 'The connection broke before the download finished. Press Download again, it will resume.'],
   'ai.ol.e.busy': ['Уже идёт другое скачивание.', 'Another download is already running.'],
   'ai.ol.e.fail': ['Не удалось начать скачивание.', 'Could not start the download.'],
+  'ai.ins.h': ['Как установить Ollama', 'How to install Ollama'],
+  'ai.ins.what': ['Ollama — бесплатная программа, которая запускает нейросеть прямо на вашем компьютере. Окна у неё нет: она работает в фоне, её значок виден около часов (Windows) или в строке меню сверху (Mac).', 'Ollama is a free program that runs a neural network right on your computer. It has no window: it works in the background, its icon sits near the clock (Windows) or in the menu bar at the top (Mac).'],
+  'ai.ins.win.1': ['Нажмите «Установить Ollama»: откроется официальная страница ollama.com. Скачайте установщик для Windows (файл OllamaSetup.exe).', 'Press Install Ollama: the official ollama.com page opens. Download the Windows installer (the OllamaSetup.exe file).'],
+  'ai.ins.win.2': ['Запустите скачанный файл и нажмите «Install». Права администратора не нужны. Когда установка закончится, Ollama запустится сама, и около часов появится её значок.', 'Run the downloaded file and press Install. Administrator rights are not needed. When the installation ends, Ollama starts by itself and its icon appears near the clock.'],
+  'ai.ins.mac.1': ['Нажмите «Установить Ollama» и скачайте версию для macOS.', 'Press Install Ollama and download the macOS version.'],
+  'ai.ins.mac.2': ['Откройте скачанный файл, перетащите Ollama в «Программы» и запустите её. Значок появится в строке меню сверху.', 'Open the downloaded file, drag Ollama to Applications and start it. The icon appears in the menu bar at the top.'],
+  'ai.ins.lin.1': ['Откройте терминал и выполните команду с официального сайта (кнопка ниже копирует её).', 'Open a terminal and run the command from the official site (the button below copies it).'],
+  'ai.ins.lin.2': ['Установщик сам запустит Ollama как службу. Если спросит пароль, это нормально: он нужен для установки службы.', 'The installer starts Ollama as a service by itself. If it asks for a password, that is normal: it is needed to install the service.'],
+  'ai.ins.3': ['Вернитесь сюда: программа сама заметит Ollama через несколько секунд (или нажмите «Проверить снова»). Должно появиться «Ollama запущена».', 'Come back here: the program notices Ollama by itself within a few seconds (or press Check again). It should say Ollama is running.'],
+  'ai.ins.4': ['Нажмите «Скачать» у рекомендованной модели. Файл большой (несколько гигабайт): нужны интернет и свободное место на диске. Пока идёт скачивание, программой можно пользоваться.', 'Press Download next to the recommended model. The file is big (several gigabytes): you need internet and free disk space. You can keep using the program while it downloads.'],
+  'ai.ins.trouble': ['Не видит Ollama? Запустите её из меню «Пуск» (Windows) или из «Программ» (Mac). Антивирус и брандмауэр иногда блокируют её. Адрес по умолчанию: http://localhost:11434.', 'Does not see Ollama? Start it from the Start menu (Windows) or from Applications (Mac). Antivirus and firewall sometimes block it. The default address is http://localhost:11434.'],
+  'ai.ins.copy': ['Скопировать команду', 'Copy the command'],
+  'ai.ins.copied': ['Команда скопирована', 'Command copied'],
+  'ai.ol.btnhint': ['Кнопки «Скачать» включатся, когда Ollama будет установлена и запущена.', 'The Download buttons turn on once Ollama is installed and running.'],
   'ai.lm.hint': ['Для LM Studio те же названия найдите в поиске самой программы (вкладка поиска) и скачайте там.', 'For LM Studio look up the same names in the program search tab and download them there.'],
 };
 Object.assign(D, AIHW_STR);
@@ -182,6 +196,32 @@ function aiHwRow(r, plan) {
     h('div', { class: 'ai-hw-n hint' }, t(r.note)),
     h('div', { class: 'ai-hw-f' }, h('span', { class: 'ai-fit ' + fit, 'data-tip': t('ai.fit.' + (fit === 'unified' ? 'gpu' : fit) + '.h') }, t('ai.fit.' + fit)), act));
 }
+const AI_OL_LINUX = 'curl -fsSL https://ollama.com/install.sh | sh';
+/** Пошаговая инструкция по установке Ollama для неподготовленного человека; шаги по системе (Windows, Mac, Linux). Раскрыта, пока Ollama не найдена. */
+function aiHwGuide(plat) {
+  const os = plat === 'darwin' ? 'mac' : plat === 'linux' ? 'lin' : 'win';
+  const steps = [t('ai.ins.' + os + '.1')];
+  const list = h('ol', { class: 'ai-ins-l' });
+  list.append(h('li', {}, steps[0]));
+  if (os === 'lin') list.append(h('li', {}, h('div', { class: 'ai-ins-cmd' }, h('code', { class: 'mono', id: 'ai-ins-cmd' }, AI_OL_LINUX), h('button', { class: 'btn sm', type: 'button', id: 'ai-ins-copy', onclick: async () => { await copyText(AI_OL_LINUX); toast(t('ai.ins.copied'), 2500); } }, icon('copy', 13), t('ai.ins.copy')))));
+  list.append(h('li', {}, t('ai.ins.' + os + '.2')), h('li', {}, t('ai.ins.3')), h('li', {}, t('ai.ins.4')));
+  const d = h('details', { class: 'ai-ins', id: 'ai-ins' }, h('summary', {}, t('ai.ins.h')), h('div', { class: 'hint' }, t('ai.ins.what')), list, h('div', { class: 'hint' }, t('ai.ins.trouble')));
+  d.open = AIHW.guide == null ? true : !!AIHW.guide;
+  d.addEventListener('toggle', () => { AIHW.guide = d.open; });
+  return d;
+}
+/** Пока Ollama не найдена и карточка на экране, раз в 4 секунды тихо спрашиваем снова: поставили и запустили — карточка сама включит «Скачать». */
+function aiHwAutoPoll() {
+  clearTimeout(AIHW.poll); AIHW.poll = null;
+  const el = document.getElementById('ai-hw'); if (!el || !el.isConnected || !AIHW.ol || AIHW.ol.running || AIHD === null) return;
+  AIHW.poll = setTimeout(async () => {
+    AIHW.poll = null;
+    if (!document.getElementById('ai-hw') || (AIHW.ol && AIHW.ol.running)) return;
+    const was = !!(AIHW.ol && AIHW.ol.running);
+    await aiHwRefreshOl();
+    if (!!(AIHW.ol && AIHW.ol.running) !== was) aiHwRepaint(); else aiHwAutoPoll();
+  }, 4000);
+}
 /** Карточка «Подбор модели под ваш компьютер». Перерисовывает сама себя (#ai-hw). */
 function aiHwCard() {
   const card = h('div', { class: 'ai-card ai-hw', id: 'ai-hw' });
@@ -194,8 +234,9 @@ function aiHwCard() {
   /* Ollama */
   if (ol.running) card.append(h('div', { class: 'hint', id: 'ai-ol-st' }, icon('check', 13), ' ', t('ai.ol.on', ol.version || '?', (ol.models || []).length)));
   else card.append(h('div', { class: 'hint warn-t', id: 'ai-ol-st' }, icon('alert', 13), ' ', t('ai.ol.off')),
-    h('div', { class: 'nt-btns' }, h('button', { class: 'btn sm', type: 'button', id: 'ai-ol-install', onclick: () => aiExt('https://ollama.com/download') }, icon('open', 13), t('ai.ol.install')),
-      h('button', { class: 'btn sm', type: 'button', id: 'ai-ol-recheck', onclick: async () => { await aiHwRefreshOl(); aiHwRepaint(); } }, icon('refresh', 13), t('ai.ol.recheck'))));
+    h('div', { class: 'nt-btns' }, h('button', { class: 'btn sm primary', type: 'button', id: 'ai-ol-install', onclick: () => aiExt('https://ollama.com/download') }, icon('open', 13), t('ai.ol.install')),
+      h('button', { class: 'btn sm', type: 'button', id: 'ai-ol-recheck', onclick: async () => { await aiHwRefreshOl(); aiHwRepaint(); } }, icon('refresh', 13), t('ai.ol.recheck'))),
+    aiHwGuide(AIHW.hw.platform));
   /* скачивание */
   if (AIHW.pull) {
     const p = AIHW.pull;
@@ -207,10 +248,12 @@ function aiHwCard() {
   else if (AIHW.note) card.append(h('div', { class: 'hint', id: 'ai-hw-note' }, icon('check', 13), ' ', AIHW.note));
   /* модели: рекомендованная всегда, остальные по кнопке */
   const rows = AIHW.all ? plan.rows : plan.rows.filter(r => plan.rec && r.id === plan.rec.id);
+  if (!ol.running) card.append(h('div', { class: 'hint', id: 'ai-hw-btnhint' }, t('ai.ol.btnhint')));
   card.append(h('div', { class: 'ai-hw-list', id: 'ai-hw-list' }, ...rows.map(r => aiHwRow(r, plan))));
   card.append(h('div', { class: 'nt-btns' },
     h('button', { class: 'btn sm', type: 'button', id: 'ai-hw-all', onclick: () => { AIHW.all = !AIHW.all; aiHwRepaint(); } }, t(AIHW.all ? 'ai.hw.table.hide' : 'ai.hw.table')),
     h('button', { class: 'btn sm', type: 'button', id: 'ai-hw-reload', 'data-tip': t('ai.ol.recheck'), onclick: () => { AIHW.hw = null; AIHW.err = ''; AIHW.note = ''; aiHwRepaint(); } }, icon('refresh', 13))));
   card.append(h('div', { class: 'hint' }, t('ai.ol.warn.big')), h('div', { class: 'hint' }, t('ai.lm.hint')));
+  if (!ol.running) setTimeout(aiHwAutoPoll, 0);
   return card;
 }

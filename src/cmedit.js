@@ -87,10 +87,11 @@ function cmFindings(E, state, view) {
 }
 
 /** Поле кода на CodeMirror вместо <textarea> (вкладка «Скрипт» главы, «Свой код», «Сниппеты»). Элемент-хозяин отвечает как textarea: value, selectionStart/End, setSelectionRange, focus,
-    а событие 'input' (всплывает) приходит при каждой правке, 'blur' при уходе фокуса: прежний код вокруг поля остаётся как был. o: {text, lang, id, height, grow, placeholder, label, wrap}. */
+    а событие 'input' (всплывает) приходит при каждой правке, 'blur' при уходе фокуса: прежний код вокруг поля остаётся как был. o: {text, lang, id, height, grow, placeholder, label, wrap, hint (по умолчанию общая подсказка имён проекта, false отключает)}. */
 function cmField(o) {
   o = o || {}; let el = null;
   const ed = cmCreate({ text: o.text || '', lang: o.lang || 'renpy', label: o.label || '', placeholder: o.placeholder || '', wrap: o.wrap !== false, grow: !!o.grow, autoDestroy: true,
+    hint: o.hint === false ? null : (o.hint || chFieldHint),                  // подсказки имён: те же, что в окне «Редактор кода» (hintenv.js)
     fontSize: S.ide && S.ide.fs, onChange: () => { if (el) el.dispatchEvent(new Event('input', { bubbles: true })); } });
   el = ed.el; if (o.id) el.id = o.id;
   el.classList.add('cmx-field'); if (o.height && !o.grow) el.style.height = o.height + 'px';
