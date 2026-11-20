@@ -198,8 +198,10 @@ function openSnippets() {
         const name = h('input', { class: 'inp', id: 'sp-f-name', type: 'text', value: cur.name, maxlength: '80', placeholder: t('sp.f.name.ph') });
         const grp = h('input', { class: 'inp', id: 'sp-f-group', type: 'text', value: cur.group, maxlength: '40', placeholder: t('sp.f.group.ph'), list: 'sp-groups' });
         const dl = h('datalist', { id: 'sp-groups' }, ...groupsOf().map(g => h('option', { value: g })));
-        const code = h('textarea', { class: 'ta mono sp-code', id: 'sp-f-code', rows: 10, spellcheck: 'false', placeholder: 'scene black with fade' });
-        code.value = cur.code;
+        const useCm = typeof cmEngineWanted === 'function' && cmEngineWanted() === 'cm';
+        const code = useCm ? cmField({ text: cur.code, lang: 'renpy', id: 'sp-f-code', label: t('sp.f.code'), placeholder: 'scene black with fade', height: 240 }).el
+          : h('textarea', { class: 'ta mono sp-code', id: 'sp-f-code', rows: 10, spellcheck: 'false', placeholder: 'scene black with fade' });
+        if (!useCm) code.value = cur.code;
         const note = h('input', { class: 'inp', id: 'sp-f-note', type: 'text', value: cur.note, maxlength: '300' });
         const params = h('div', { class: 'hint', id: 'sp-f-params' });
         const upd = () => { const ps = spParams(code.value); params.textContent = ps.length ? t('sp.f.params', ps.map(p => p.name).join(', ')) : ''; };

@@ -86,6 +86,23 @@ function cmFindings(E, state, view) {
   return out;
 }
 
+/** Поле кода на CodeMirror вместо <textarea> (вкладка «Скрипт» главы, «Свой код», «Сниппеты»). Элемент-хозяин отвечает как textarea: value, selectionStart/End, setSelectionRange, focus,
+    а событие 'input' (всплывает) приходит при каждой правке, 'blur' при уходе фокуса: прежний код вокруг поля остаётся как был. o: {text, lang, id, height, grow, placeholder, label, wrap}. */
+function cmField(o) {
+  o = o || {}; let el = null;
+  const ed = cmCreate({ text: o.text || '', lang: o.lang || 'renpy', label: o.label || '', placeholder: o.placeholder || '', wrap: o.wrap !== false, grow: !!o.grow, autoDestroy: true,
+    fontSize: S.ide && S.ide.fs, onChange: () => { if (el) el.dispatchEvent(new Event('input', { bubbles: true })); } });
+  el = ed.el; if (o.id) el.id = o.id;
+  el.classList.add('cmx-field'); if (o.height && !o.grow) el.style.height = o.height + 'px';
+  Object.defineProperties(el, {
+    value: { get: () => ed.get(), set: v => { ed.set(v); } },
+    selectionStart: { get: () => ed.state().s }, selectionEnd: { get: () => ed.state().e },
+  });
+  el.setSelectionRange = (a, b) => ed.select(a, b); el.focus = () => ed.focus(); el.vnEd = ed;
+  el.addEventListener('focusout', ev => { if (!el.contains(ev.relatedTarget)) el.dispatchEvent(new Event('blur')); });
+  setTimeout(() => ed.measure(), 0);
+  return { el, ed };
+}
 /** Редакторы без хозяина, который закрыл бы их сам (вкладка «Скрипт» главы, «Свой код», «Сниппеты»): при создании нового закрываем те, чей элемент давно убран со страницы. */
 const CM_AUTO = new Set();
 function cmSweep() { const now = Date.now(); for (const e of [...CM_AUTO]) if (e.el && !e.el.isConnected && now - e.born > 3000) e.destroy(); }

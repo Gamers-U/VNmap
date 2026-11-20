@@ -250,8 +250,10 @@ function openCustomCode(selId) {
           if (nn !== c.name) { c.name = nn; commit(true); }
           nameInp.value = c.name; pathHint.textContent = t('cu.f.name.h', c.name); paintListOnly();
         });
-        const ta = h('textarea', { class: 'ta mono cu-code', id: 'cu-f-code', rows: 18, spellcheck: 'false', wrap: 'off', autocapitalize: 'off', autocomplete: 'off' });
-        ta.value = c.text;
+        const useCm = typeof cmEngineWanted === 'function' && cmEngineWanted() === 'cm';
+        const ta = useCm ? cmField({ text: c.text, lang: 'renpy', id: 'cu-f-code', label: t('cu.f.code'), height: 420, wrap: false }).el
+          : h('textarea', { class: 'ta mono cu-code', id: 'cu-f-code', rows: 18, spellcheck: 'false', wrap: 'off', autocapitalize: 'off', autocomplete: 'off' });
+        if (!useCm) ta.value = c.text;
         const stat = h('div', { class: 'hint', id: 'cu-stat' }), found = h('div', { class: 'hint', id: 'cu-found' });
         const upd = () => {
           const sc = ccScan(ta.value);
@@ -260,7 +262,7 @@ function openCustomCode(selId) {
         };
         ta.addEventListener('input', () => { c.text = ta.value.slice(0, CC_MAX_LEN); upd(); clearTimeout(pend); pend = setTimeout(() => { pend = null; commit(true); paintListOnly(); }, 500); });
         ta.addEventListener('blur', () => { flush(); });
-        ta.addEventListener('keydown', ev => {
+        if (!useCm) ta.addEventListener('keydown', ev => {          // CodeMirror ставит и убирает отступ сам
           if (ev.key !== 'Tab' || ev.ctrlKey || ev.metaKey || ev.altKey) return;
           ev.preventDefault();
           const s = ta.selectionStart, e = ta.selectionEnd, v = ta.value;

@@ -330,18 +330,9 @@ function tabAssets(st, n, f) {
 /* ---------- вкладка «Скрипт» ---------- */
 /** Поле скрипта главы на CodeMirror 6: волна под ошибками, сворачивание блоков, несколько курсоров. Снаружи ведёт себя как прежнее поле (value, selectionStart, setSelectionRange, focus), поэтому вставки, сниппеты и переход к строке из поиска работают без изменений. */
 function codeEditorCm(obj, key, onChange) {
-  const ed = cmCreate({
-    text: obj[key] || '', lang: 'renpy', label: t('code.ph'), placeholder: t('code.ph'), wrap: true, grow: true, autoDestroy: true,
-    fontSize: S.ide && S.ide.fs, onChange: v => { obj[key] = v; onChange && onChange(); },
-  });
-  const el = ed.el; el.id = 'code-ta';
-  Object.defineProperties(el, {
-    value: { get: () => ed.get(), set: v => { ed.set(v); obj[key] = String(v); onChange && onChange(); } },
-    selectionStart: { get: () => ed.state().s }, selectionEnd: { get: () => ed.state().e },
-  });
-  el.setSelectionRange = (a, b) => ed.select(a, b); el.focus = () => ed.focus(); el.vnEd = ed;
-  setTimeout(() => ed.measure(), 0);
-  return { el: h('div', { class: 'code code-cm' }, el), ta: el, ed, update: () => { } };
+  const f = cmField({ text: obj[key] || '', lang: 'renpy', id: 'code-ta', label: t('code.ph'), placeholder: t('code.ph'), grow: true });
+  f.el.addEventListener('input', () => { obj[key] = f.el.value; onChange && onChange(); });
+  return { el: h('div', { class: 'code code-cm' }, f.el), ta: f.el, ed: f.ed, update: () => { } };
 }
 function codeEditor(obj, key, tagsFn, onChange) {
   if (typeof cmEngineWanted === 'function' && cmEngineWanted() === 'cm') return codeEditorCm(obj, key, onChange);
