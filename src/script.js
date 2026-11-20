@@ -226,9 +226,10 @@ function insertSnippet(ta, text) {
   let before, after = v.slice(insAt), ins;
   if (blank) { before = v.slice(0, lineStart); ins = clean; }
   else { before = v.slice(0, insAt); ins = '\n' + clean; }
-  ta.value = before + ins + after;
   const base = before.length + (blank ? 0 : 1);
   const caret = caretMark >= 0 ? base + caretMark : base + clean.length;
+  if (ta.vnEd) { ta.vnEd.replace(blank ? lineStart : insAt, blank ? insAt : insAt, ins, caret, caret); return; }         // CodeMirror: одной правкой, отмена Ctrl+Z работает
+  ta.value = before + ins + after;
   ta.focus(); ta.setSelectionRange(caret, caret);
   ta.dispatchEvent(new Event('input', { bubbles: true }));
 }

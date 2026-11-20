@@ -86,6 +86,9 @@ function cmFindings(E, state, view) {
   return out;
 }
 
+/** Редакторы без хозяина, который закрыл бы их сам (вкладка «Скрипт» главы, «Свой код», «Сниппеты»): при создании нового закрываем те, чей элемент давно убран со страницы. */
+const CM_AUTO = new Set();
+function cmSweep() { const now = Date.now(); for (const e of [...CM_AUTO]) if (e.el && !e.el.isConnected && now - e.born > 3000) e.destroy(); }
 function cmCreate(opts) {
   opts = opts || {};
   const C = CM6, V = C.view, ST = C.state, LG = C.language, SR = C.search, AC = C.autocomplete, CMD = C.commands, LN = C.lint;
@@ -95,7 +98,7 @@ function cmCreate(opts) {
     wrap: opts.wrap !== false, map: !!opts.minimap, hlc: { st: [undefined], n: 1 }, silent: 0,
   };
   E.lh = ceLh(E.fs);
-  const root = h('div', { class: 'cmx' });
+  const root = h('div', { class: 'cmx' + (opts.grow ? ' cmx-grow' : '') });          // grow: высота по тексту, прокручивается окно вокруг (вкладка «Скрипт» главы)
   E.el = root;
   const applyFont = () => { root.style.setProperty('--ce-fs', E.fs + 'px'); root.style.setProperty('--ce-lh', E.lh + 'px'); };
   applyFont();
@@ -249,7 +252,7 @@ function cmCreate(opts) {
     highlighter,
     AC.autocompletion({ override: [hintSource], activateOnTyping: true, activateOnTypingDelay: 20, maxRenderedOptions: 80, icons: false, closeOnBlur: true,
       addToOptions: [{ position: 20, render: c => h('span', { class: 'ce-ac-k k-' + (c.type || 'word'), 'aria-hidden': 'true' }, c.mark || '') }] }),
-    lintSrc, LN.lintGutter(),
+    lintSrc, LN.lintGutter(), ...(opts.placeholder && V.placeholder ? [V.placeholder(opts.placeholder)] : []),
     ST.Prec.high(kmap.of(keys)),
     kmap.of([...AC.closeBracketsKeymap, ...CMD.defaultKeymap, ...SR.searchKeymap, ...CMD.historyKeymap, ...LG.foldKeymap, ...AC.completionKeymap, ...LN.lintKeymap]),
     V.EditorView.domEventHandlers({
@@ -329,7 +332,8 @@ function cmCreate(opts) {
   E.hints = () => { const st = AC.completionStatus(view.state), items = st === 'active' ? AC.currentCompletions(view.state).map(c => c.label) : []; return { open: st === 'active', items, idx: 0, start: 0 }; };
   E.acceptHint = () => AC.acceptCompletion(view);
   E.goDefinition = goDefinition;
-  E.destroy = () => { try { view.destroy(); } catch (e) { /* уже закрыт */ } };
+  E.destroy = () => { CM_AUTO.delete(E); try { view.destroy(); } catch (e) { /* уже закрыт */ } };
+  if (opts.autoDestroy) { cmSweep(); E.born = Date.now(); CM_AUTO.add(E); }
   if (E.map) E.setMinimap(true);
   return E;
 }
