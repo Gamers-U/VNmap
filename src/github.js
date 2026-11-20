@@ -134,7 +134,7 @@ async function ghClearToken() {
 const ghLoginOk = () => !!(GHD && typeof GHD.loginStart === 'function');
 const GHL = { state: 'idle', code: '', uri: '', left: 0, err: '', detail: '', timer: null };
 const ghMmSs = sec => Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
-function ghLoginUI() { if (GHS.panel && !GHS.panel.m.closed) renderGhPanel(GHS.panel); }
+function ghLoginUI() { if (GHS.panel && !GHS.panel.m.closed) renderGhPanel(GHS.panel); if (typeof GHS.ghoPaint === 'function') GHS.ghoPaint(); }
 function ghLoginErrText() {
   const k = { expired: 'ghl.e.expired', denied: 'ghl.e.denied', app: 'ghl.e.app', network: 'ghl.e.network', server: 'ghl.e.server', verify: 'ghl.e.verify' }[GHL.err] || 'ghl.e.other';
   return t(k, GHL.detail || GHL.err);
@@ -387,7 +387,7 @@ async function ghJoin(d) {
   const m = Object.assign({}, meta, { on: true, sha: '', etag: '', sigHash: '', lastPush: 0, priv: info.priv });
   const rem = await ghGetFile(m);
   if (!rem.exists) throw ghFail('not_found', t('gh.err.nofile', meta.path));
-  if (P.nodes.length && !(await confirmDlg({ title: t('gh.join.q'), text: t('gh.join.t'), ok: t('gh.join.ok'), danger: true }))) return false;
+  if (P.nodes.length && !(typeof ghoFromLauncher === 'function' && ghoFromLauncher()) && !(await confirmDlg({ title: t('gh.join.q'), text: t('gh.join.t'), ok: t('gh.join.ok'), danger: true }))) return false;
   await ghRun(async () => { await ghApplyText(m, rem.text, rem.sha, rem.etag, { fresh: true }); toast(t('gh.joined'), 4200); ghDone(); });
   return true;
 }

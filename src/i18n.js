@@ -147,6 +147,7 @@ const D = {
   'lc.new.title': ['Новый проект', 'New project'], 'lc.new.label': ['Название проекта', 'Project name'],
   'lc.new.unsaved': ['Проект пока хранится только внутри программы. Сохраните его в файл: Ctrl+S', 'The project is stored inside the app only for now. Save it to a file: Ctrl+S'],
   'lc.open': ['Открыть проект…', 'Open project…'], 'lc.open.h': ['Файл .vnmap, а также ZIP или JSON-копия', 'A .vnmap file, or a ZIP / JSON copy'],
+  'lc.gh': ['Открыть с GitHub…', 'Open from GitHub…'], 'lc.gh.h': ['По ссылке на репозиторий; вход в GitHub тут же', 'By a repository link; GitHub sign-in right there'],
   'lc.demo': ['Демо-проект', 'Demo project'], 'lc.demo.h': ['Пример «Осенний фестиваль»: посмотреть, как всё устроено', 'The “Autumn festival” example: see how it all works'],
   'lc.cont': ['Продолжить', 'Continue'], 'lc.cont.go': ['Продолжить работу', 'Continue working'],
   'lc.cont.file': ['Файл: {0}', 'File: {0}'], 'lc.cont.app': ['Хранится только в программе, в файл не записан', 'Stored inside the app only, not written to a file'],

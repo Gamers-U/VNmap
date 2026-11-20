@@ -16,12 +16,15 @@ Object.assign(D, {
   'gho.find': ['Найти', 'Find'],
   'gho.recent': ['Недавние', 'Recent'],
   'gho.as': ['Вы вошли как {0}: открываются и закрытые репозитории.', 'Signed in as {0}: private repositories open too.'],
-  'gho.anon': ['Вход не нужен для публичных репозиториев. Закрытый откроется после входа (панель «GitHub»).', 'No sign-in is needed for public repositories. A private one opens after signing in (the “GitHub” panel).'],
+  'gho.anon': ['Вход не нужен для публичных репозиториев. Закрытый (например, общая новелла команды) откроется после входа на GitHub.', 'No sign-in is needed for public repositories. A private one (for example the team\'s shared novel) opens after signing in to GitHub.'],
+  'gho.login.t': ['Нажмите кнопку: программа покажет код и откроет страницу GitHub. Вставьте код там и нажмите Authorize. Потом вернитесь сюда: окно само заметит вход.', 'Press the button: the app shows a code and opens a GitHub page. Paste the code there and press Authorize. Then come back here: the window notices the sign-in by itself.'],
+  'gho.login.web': ['Войти на GitHub можно в панели «GitHub» (токен доступа).', 'You can sign in to GitHub in the GitHub panel (an access token).'],
+  'gho.login.panel': ['Открыть панель GitHub', 'Open the GitHub panel'],
   'gho.err.link': ['Не похоже на ссылку на GitHub. Примеры: https://github.com/автор/новелла или автор/новелла', 'This does not look like a GitHub link. Examples: https://github.com/author/novel or author/novel'],
   'gho.err.none': ['В репозитории не нашёлся файл проекта (*.vnmap.json). Если он лежит в другой ветке, добавьте её: автор/новелла@ветка', 'No project file (*.vnmap.json) was found in the repository. If it is in another branch, add it: author/novel@branch'],
   'gho.err.trunc': ['Репозиторий очень большой, и GitHub обрезал список файлов. Вставьте ссылку прямо на файл проекта.', 'The repository is very large and GitHub cut the file list. Paste a link straight to the project file.'],
   'gho.err.big': ['Файл проекта слишком большой ({0}).', 'The project file is too big ({0}).'],
-  'gho.err.anon': ['Репозиторий не найден или закрыт. Если он закрытый, войдите на GitHub в панели «GitHub».', 'The repository was not found or is private. If it is private, sign in to GitHub in the “GitHub” panel.'],
+  'gho.err.anon': ['Репозиторий не найден или закрыт. Если он закрытый, войдите на GitHub (кнопка ниже) и нажмите «Найти» ещё раз.', 'The repository was not found or is private. If it is private, sign in to GitHub (the button below) and press Find again.'],
   'gho.err.priv': ['Репозиторий или файл не найден, либо у вас нет к ним доступа.', 'The repository or file was not found, or you have no access to it.'],
   'gho.err.empty': ['Репозиторий пуст.', 'The repository is empty.'],
   'gho.err.notproj': ['Это не файл проекта «Карты новеллы».', 'This is not a “Novel map” project file.'],
@@ -126,11 +129,14 @@ async function ghFetchProject(repo, ref, path, size) {
 const ghRecent = () => { try { const j = JSON.parse(lsGet(LS_GHR) || '[]'); return Array.isArray(j) ? j.filter(x => x && x.repo).slice(0, 5) : []; } catch (e) { return []; } };
 function ghRemember(e) { const l = [e].concat(ghRecent().filter(x => !(x.repo === e.repo && x.path === e.path && x.ref === e.ref))).slice(0, 5); lsSet(LS_GHR, JSON.stringify(l)); }
 
+const ghoFromLauncher = () => typeof LCH !== 'undefined' && !!LCH;
 /** Открыть найденный проект копией (без связи с репозиторием). */
 async function ghOpenCopy(src) {
-  if (P.nodes.length && !(await confirmDlg({ title: t('gho.replace.q'), text: t('gho.replace.t', P.name || '—'), ok: t('gho.replace.ok'), danger: true }))) return false;
+  if (ghoFromLauncher()) { if (!(await deskLeaveCurrent())) return false; }                // со стартового экрана: сначала записать или отбросить текущий проект
+  else if (P.nodes.length && !(await confirmDlg({ title: t('gho.replace.q'), text: t('gho.replace.t', P.name || '—'), ok: t('gho.replace.ok'), danger: true }))) return false;
   const np = normalize(JSON.parse(src.text));
   setProject(np); fitAll(false);
+  if (typeof closeLauncher === 'function') closeLauncher();
   toast(t('gho.opened', src.repo + '/' + src.path), 6500);
   return true;
 }
@@ -155,10 +161,22 @@ function openFromGithub(o = {}) {
         st.loading = false; paint();
       };
       const find = () => guard(async () => {
-        st.look = null; st.src = null; st.pick = '';
-        const lk = await ghLookup(st.link.trim()); st.look = lk;
+        st.look = null; st.src = null; st.pick = ''; st.needLogin = false;
+        let lk; try { lk = await ghLookup(st.link.trim()); } catch (e) { st.needLogin = !GHS.st.hasToken; throw e; }      // не нашли без входа: после входа поиск повторится сам
+        st.look = lk;
         if (lk.cands.length === 1) await choose(lk.cands[0].path, lk.cands[0].size);
       });
+      /** Вход на GitHub прямо в этом окне (стартовый экран без проекта: панели «GitHub» там не достать). */
+      const loginBlock = () => {
+        if (typeof ghLoginOk === 'function' && ghLoginOk()) {
+          if (GHL.state === 'wait') return h('div', { class: 'gho-login', id: 'gho-login' }, ghLoginCard({ draft: {}, busy: false }, guard));
+          return h('div', { class: 'gho-login', id: 'gho-login' }, h('div', { class: 'hint' }, t('gho.login.t')),
+            GHL.state === 'error' ? h('div', { class: 'hint warn-t', id: 'gho-loginerr' }, ghLoginErrText()) : null,
+            h('div', { class: 'row-actions left' }, h('button', { class: 'btn primary', id: 'gho-signin', disabled: st.busy, onclick: () => guard(async () => { try { await ghLoginStart(false); } catch (e) { ghLoginFail(e); } }) }, icon('github', 15), t('ghl.btn'))));
+        }
+        return h('div', { class: 'gho-login', id: 'gho-login' }, h('div', { class: 'hint' }, t('gho.login.web')),
+          h('div', { class: 'row-actions left' }, h('button', { class: 'btn', id: 'gho-panel', onclick: () => openGhPanel() }, icon('github', 15), t('gho.login.panel'))));
+      };
       const paint = () => {
         const inp = h('input', { class: 'inp mono', id: 'gho-link', spellcheck: 'false', autocomplete: 'off', placeholder: t('gho.ph'), value: st.link });
         inp.addEventListener('input', () => { st.link = inp.value; });
@@ -166,7 +184,8 @@ function openFromGithub(o = {}) {
         const rec = ghRecent();
         const parts = [h('h3', t('gho.title')), h('p', t('gho.lead')),
           h('div', { class: 'gho-row' }, inp, h('button', { class: 'btn primary', id: 'gho-find', disabled: st.busy || st.loading, onclick: () => find() }, icon('search', 15), t('gho.find'))),
-          h('div', { class: 'hint' }, GHS.st.hasToken ? t('gho.as', GHS.st.login || '—') : t('gho.anon'))];
+          h('div', { class: 'hint', id: 'gho-as' }, GHS.st.hasToken ? t('gho.as', GHS.st.login || '—') : t('gho.anon'))];
+        if (!GHS.st.hasToken) parts.push(loginBlock());
         if (rec.length && !st.look) parts.push(h('div', { class: 'gho-rec' }, h('span', { class: 'hint' }, t('gho.recent')), ...rec.map(r => h('button', { class: 'chip', onclick: () => { st.link = r.repo + (r.ref ? '@' + r.ref : '') + ':' + r.path; find(); } }, r.repo + ' · ' + r.path.split('/').pop()))));
         if (st.busy && !st.look) parts.push(h('div', { class: 'hint', id: 'gho-wait' }, t('drive.loading')));
         if (st.err) parts.push(h('div', { class: 'gho-err', id: 'gho-err' }, icon('alert', 15), st.err));
@@ -184,7 +203,7 @@ function openFromGithub(o = {}) {
             s.assets ? h('div', { class: 'hint' }, t('gho.sum.f', s.assets)) : null));
           const acts = [];
           acts.push(h('button', { class: 'btn primary', id: 'gho-open', 'data-tip': t('gho.open.h'), onclick: async () => { if (await ghOpenCopy(st.src)) { ghRemember({ repo: st.src.repo, ref: st.src.ref, path: st.src.path }); m.close(); } } }, icon('download', 15), t('gho.open')));
-          if (canJoin) acts.push(h('button', { class: 'btn', id: 'gho-join', 'data-tip': t('gho.join.h'), onclick: () => guard(async () => { if (await ghJoin({ repo: st.src.repo, path: st.src.path, branch: st.src.ref })) { ghRemember({ repo: st.src.repo, ref: st.src.ref, path: st.src.path }); m.close(); } }) }, icon('fork', 15), t('gho.join')));
+          if (canJoin) acts.push(h('button', { class: 'btn', id: 'gho-join', 'data-tip': t('gho.join.h'), onclick: () => guard(async () => { if (ghoFromLauncher() && !(await deskLeaveCurrent())) return; if (await ghJoin({ repo: st.src.repo, path: st.src.path, branch: st.src.ref })) { ghRemember({ repo: st.src.repo, ref: st.src.ref, path: st.src.path }); m.close(); if (typeof closeLauncher === 'function') closeLauncher(); } }) }, icon('fork', 15), t('gho.join')));
           parts.push(h('div', { class: 'row-actions left' }, ...acts));
           parts.push(h('div', { class: 'hint' }, t('gho.open.h')));
           if (!canJoin) parts.push(h('div', { class: 'hint' }, t('gho.join.no')));
@@ -195,9 +214,12 @@ function openFromGithub(o = {}) {
         const i2 = box.querySelector('#gho-link'); if (i2 && document.activeElement === document.body) i2.focus({ preventScroll: true });
       };
       paint();
+      /* после входа окно обновляется само, а поиск, не нашедший закрытый репозиторий, повторяется */
+      GHS.ghoPaint = () => { if (m.closed) { GHS.ghoPaint = null; return; } const retry = !!st.needLogin && !st.look && !!st.link.trim() && GHS.st.hasToken; paint(); if (retry && !st.busy) find(); };
       if (o.link && o.auto) find();
       return h('div', { class: 'dlg-body' }, box);
-    }
+    },
+    onClose: () => { GHS.ghoPaint = null; },
   });
 }
 

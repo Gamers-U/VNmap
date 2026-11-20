@@ -54,6 +54,7 @@ async function openLauncher() {
       if (!(await deskLeaveCurrent())) return;
       if (await deskOpenFile(f, { noConfirm: true })) closeLauncher();
     },
+    github() { openFromGithub(); },
     async demo() {
       if (!(await deskLeaveCurrent())) return;
       setProject(demoProject()); fitAll(false); closeLauncher();
@@ -113,6 +114,7 @@ async function openLauncher() {
       h('div', { class: 'lc-tiles' },
         tile('filePlus', t('lc.new'), t('lc.new.h'), act.newProject, 'primary'),
         tile('folder', t('lc.open'), t('lc.open.h'), act.open),
+        tile('github', t('lc.gh'), t('lc.gh.h'), act.github, 'lc-gh'),
         tile('book', t('lc.demo'), t('lc.demo.h'), act.demo)),
       cur),
     h('div', { class: 'lc-right' }, recentHead, recentBox),
