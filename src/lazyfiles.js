@@ -65,6 +65,8 @@ Object.assign(D, {
   'mf.lazy.h': ['Когда проект приходит с Диска, файлы не скачиваются все сразу: на их месте заглушки, а нужный файл подгружается при первом просмотре. Остальное можно докачать в «Недостающие файлы».',
     'When a project comes from Drive its files are not all downloaded at once: placeholders stand in, and a file is fetched when first viewed. The rest can be fetched in “Missing files”.'],
   'mf.more': ['…и ещё {0}', '…and {0} more'],
+  'mf.more.h': ['Другие способы: папка на компьютере, архив, ссылка', 'Other ways: a folder on this computer, an archive, a link'],
+  'mf.drive.none': ['На Диске этих файлов пока нет. Скорее всего, их добавил другой человек, и они ещё не загрузились: у него в «Настройки → Подключения → Google Диск» должна быть включена синхронизация этого проекта (и не висеть окно конфликта), потом «Синхронизировать сейчас». Когда файл появится на Диске, программа докачает его сама.', 'These files are not on Drive yet. Most likely another person added them and they have not been uploaded: in “Settings → Connections → Google Drive” sync of this project must be on (with no conflict window waiting), then “Sync now”. When a file appears on Drive the app fetches it by itself.'],
 });
 
 const MF = { items: [], at: 0, uid: '', neg: new Set(), flight: new Map(), idx: null, idxAt: 0, why: '', err: '', told: '', q: [], run: 0 };
@@ -236,7 +238,7 @@ async function openMissingFiles() {
         else if (st.drv === 'wait') msg = '…';
         else if (st.drv instanceof Map) {
           const have = st.items.filter(x => st.drv.has(x.bid)).length;
-          msg = t('mf.drive.has', have, st.items.length);
+          msg = have ? t('mf.drive.has', have, st.items.length) : t('mf.drive.none');
           if (have) btn = h('button', { class: 'btn primary', id: 'mf-drive-get', onclick: () => runDrive() }, icon('download', 15), t('mf.drive.get'));
         } else if (MF.why === 'nofolder') msg = t('mf.drive.nofolder');
         else if (MF.why === 'error') msg = t('mf.drive.error', MF.err);
@@ -252,8 +254,12 @@ async function openMissingFiles() {
       const zipCard = () => h('div', { class: 'mf-src' }, h('div', { class: 'mf-src-h' }, icon('save', 16), h('b', t('mf.zip.h'))), h('div', { class: 'hint' }, t('mf.zip.d')),
         h('div', { class: 'row-actions left' }, h('button', { class: 'btn', id: 'mf-zip', onclick: () => pickFiles('.zip,application/zip', false, fl => useZip(fl[0])) }, icon('upload', 15), t('mf.zip.pick'))));
       const paintSrc = () => {
-        if (!st.items.length) { srcBox.replaceChildren(...[st.res ? h('div', { class: 'mf-res', id: 'mf-res' }, st.res) : null].filter(Boolean)); return; }
-        srcBox.replaceChildren(...[driveCard(), folderCard(), zipCard(), st.res ? h('div', { class: 'mf-res', id: 'mf-res' }, st.res) : null].filter(Boolean));
+        if (!st.items.length) { srcBox.replaceChildren(...[st.res ? h('div', { class: 'mf-res', id: 'mf-res' }, st.res) : null, linkBox].filter(Boolean)); return; }
+        const dOk = st.drv instanceof Map && st.items.some(x => st.drv.has(x.bid));
+        const auto = !(st.drv === 'wait' || dOk);                    // Диск помог или проверяется: остальные способы свёрнуты
+        const more = h('details', { class: 'mf-more', id: 'mf-more' }, h('summary', { onclick: () => { st.moreOpen = !more.open; } }, t('mf.more.h')), folderCard(), zipCard(), linkBox);
+        more.open = st.moreOpen !== undefined ? st.moreOpen : auto;
+        srcBox.replaceChildren(...[driveCard(), st.res ? h('div', { class: 'mf-res', id: 'mf-res' }, st.res) : null, more].filter(Boolean));
       };
       /* --- ссылка на общую папку --- */
       const paintLink = () => {
@@ -325,7 +331,7 @@ async function openMissingFiles() {
       }
       paintAll();
       if (GD && mfDriveCan() && st.items.length) checkDrive();
-      return h('div', { class: 'dlg-body' }, head, srcBox, linkBox, listBox, h('div', { class: 'dlg-actions' }, h('button', { class: 'btn', id: 'mf-close', onclick: () => m.close() }, t('c.close'))));
+      return h('div', { class: 'dlg-body' }, head, srcBox, listBox, h('div', { class: 'dlg-actions' }, h('button', { class: 'btn', id: 'mf-close', onclick: () => m.close() }, t('c.close'))));
     }
   });
 }
@@ -333,6 +339,23 @@ function mfOpenUrl(u) {
   u = String(u || '').trim(); if (!mfIsHttp(u)) return;
   if (DESK && DESK.openExternal) DESK.openExternal(u); else window.open(u, '_blank', 'noopener');
 }
+
+/** Файлов нет, а Диск подключён и проект на нём включён: раз в полминуты смотрим, не появились ли они на Диске (их мог добавить другой человек), и докачиваем сами. */
+const MFA = { busy: false };
+async function mfAutoTick() {
+  if (MFA.busy || document.hidden || !mfDriveCan()) return;
+  const dm = typeof dmeta === 'function' && dmeta(); if (!dm || !dm.on || (typeof GS !== 'undefined' && GS.phase === 'syncing')) return;
+  MFA.busy = true;
+  try {
+    const items = await mfScan(); if (!items.length) return;
+    const idx = await mfDriveIndex(true); if (!idx) return;
+    let got = 0;
+    for (const it of items.filter(x => idx.has(x.bid)).slice(0, 30)) { try { if (await mfFetchOne(it.bid, it.m)) { mfGot(it.bid); got++; } } catch (e) { /* в следующий раз */ } }
+    if (got) { await mfScan(); mfRefreshUI(); toast(t('mf.drive.done', got), 4000); }
+  } catch (e) { /* не страшно */ }
+  finally { MFA.busy = false; }
+}
+setInterval(mfAutoTick, 30000);
 
 /** Плашка над списком файлов в реестре, если на этом устройстве чего-то не хватает. */
 function mfBanner() {

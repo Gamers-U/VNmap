@@ -1391,6 +1391,7 @@ mark[class*="hl-"],.te-mk{background:color-mix(in srgb,var(--hlc) 40%,transparen
 .mf-sum{display:flex;align-items:center;gap:8px;font-weight:600;margin:0 0 12px;color:var(--warn)}
 .mf-sum.ok{color:var(--c-green)}
 .mf-src{background:var(--surface2);border-radius:14px;padding:12px 14px;margin-bottom:10px}
+.mf-more{margin:4px 0 10px}.mf-more>summary{cursor:pointer;color:var(--muted);font-size:13px;padding:6px 2px}.mf-more[open]>summary{margin-bottom:8px}
 .mf-src-h{display:flex;align-items:center;gap:8px;margin-bottom:4px}
 .mf-src .row-actions{margin-top:8px}
 .mf-src .opt-row{margin-top:8px}

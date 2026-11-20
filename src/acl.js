@@ -28,8 +28,7 @@ Object.assign(D, {
   'acl.enabled': ['Права включены. Вы владелец проекта.', 'Rights are on. You are the owner of the project.'],
   'acl.off.q': ['Выключить права доступа?', 'Turn the access rights off?'], 'acl.off.t': ['Снова править проект сможет любой. Назначенные уровни и роли останутся записанными.', 'Anyone will be able to edit the project again. The assigned levels and roles stay recorded.'], 'acl.off': ['Выключить', 'Turn off'],
   'acl.denied': ['Нельзя: у вас нет прав на «{0}». Правка отменена.', 'Not allowed: you have no rights to “{0}”. The change was undone.'],
-  'acl.denied.who': ['Права выдаёт: {0}.', 'Rights are granted by: {0}.'],
-  'acl.ro.note': ['Только чтение: у вас нет прав на «{0}». {1}', 'Read only: you have no rights to “{0}”. {1}'],
+  'acl.ro.note': ['Только чтение: у вас нет прав на «{0}».', 'Read only: you have no rights to “{0}”.'],
   'acl.access': ['Уровень', 'Level'],
   'acl.owner.badge': ['Владелец проекта', 'Project owner'],
   'acl.transfer': ['Передать владение…', 'Transfer ownership…'], 'acl.transfer.q': ['Передать владение участнику «{0}»?', 'Transfer ownership to “{0}”?'],
@@ -103,8 +102,7 @@ const aclAreasText = areas => [...areas].filter(a => a !== 'cmts' && a !== 'team
 /* ---------- сообщения ---------- */
 function aclToast(areas) {
   const now = Date.now(); if (now - ACL.last < 1500) return; ACL.last = now;
-  const own = aclOwner();
-  toast(t('acl.denied', [...new Set(areas)].map(aclAreaName).join(', ')) + (own ? ' ' + t('acl.denied.who', own.name || '?') : ''), 5200);
+  toast(t('acl.denied', [...new Set(areas)].map(aclAreaName).join(', ')), 5200);
 }
 /** Для действий на карте: true — можно, иначе покажет пояснение. */
 function aclGuard(area) { if (aclCan(area)) return true; aclToast([area]); return false; }
@@ -226,8 +224,7 @@ function aclWatch(el, areaFn) {
   new MutationObserver(apply).observe(el, { childList: true, subtree: true }); apply();
 }
 function aclNote(area, extra) {
-  const own = aclOwner();
-  return h('div', { class: 'acl-note acl-keep' }, icon('lock', 15), h('span', t('acl.ro.note', aclAreaName(area), own ? t('acl.denied.who', own.name || '?') : '')), extra || null);
+  return h('div', { class: 'acl-note acl-keep' }, icon('lock', 15), h('span', t('acl.ro.note', aclAreaName(area))), extra || null);
 }
 const ACL_TAB_AREA = { chars: 'chars', bg: 'bg', sprite: 'sprite', font: 'font', video: 'video', gui: 'gui', vars: 'vars', ach: 'achs' };
 /** Вкладка реестра: карточки без прав закрываются, в шапке остаётся подсказка. */

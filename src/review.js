@@ -28,7 +28,8 @@ Object.assign(D, {
   'rv.p.notes': ['Замечаний от владельца: {0}', 'Comments from the owner: {0}'],
   'rv.p.notes.open': ['Показать все заметки…', 'Show all notes…'],
   'rv.p.open': ['Открыть ветку на GitHub', 'Open the branch on GitHub'],
-  'rv.join.author': ['Я автор: мои правки пойдут в отдельную ветку на проверку', 'I am an author: my changes go to a separate branch for review'],
+  'rv.joined.author': ['Вы присоединились к чужому проекту, поэтому ваши правки идут в вашу ветку {0}. Владелец проверит их и примет.', 'You joined someone else’s project, so your changes go into your own branch {0}. The owner will review and accept them.'],
+  'rv.new.n': ['Автор {0} прислал правки', 'Author {0} sent changes'], 'rv.new.many': ['Правки авторов: {0}', 'Changes from authors: {0}'], 'rv.new.btn': ['Проверить', 'Review'],
   'rv.started': ['Готово: вы работаете в ветке {0}', 'Done: you now work in branch {0}'],
   'rv.pulled': ['Из основной ветки подтянуто изменений: {0}', 'Changes pulled from the main branch: {0}'],
   'rv.pulled.none': ['В основной ветке новых изменений нет.', 'No new changes in the main branch.'],
@@ -181,6 +182,46 @@ async function rvStartBranch() {
   await ghRun(() => ghCycle({ manual: true }));
   return true;
 }
+/** Должен ли этот человек работать в своей ветке: он не владелец репозитория, не администратор и не владелец проекта в программе. */
+function rvShouldAuthor(info, repo) {
+  const lg = GHS.st.login; if (!lg) return false;
+  const low = x => String(x || '').toLowerCase(), own = (info && info.owner) || String(repo || '').split('/')[0];
+  if (info && info.admin) return false;
+  if (low(own) === low(lg)) return false;
+  try { if (typeof aclRights === 'function' && aclRights().kind === 'owner' && aclOn()) return false; } catch (e) { /* без прав доступа */ }
+  return true;
+}
+/** После присоединения к проекту: сразу переходим в свою ветку. Не вышло — синхронизацию выключаем, чтобы правки не ушли в основную ветку. */
+async function rvJoinAuthor(info, repo) {
+  if (!rvShouldAuthor(info, repo)) return true;
+  try { await rvStartBranch(); toast(t('rv.joined.author', (gmeta() || {}).branch || ''), 7000); return true; }
+  catch (e) { ghDisable(); throw e; }
+}
+/** Уже присоединённый проект (до этого правила): один раз за запуск проверяем права и переводим в свою ветку. */
+const RVA = { done: {}, busy: false, owner: { t: 0, busy: false } };
+async function rvAutoAuthor() {
+  const m = gmeta(); if (!m || !m.on || rvIsAuthor(m) || RVA.busy || RVA.done[P.uid] || !GHS.st.hasToken) return;
+  RVA.busy = true; RVA.done[P.uid] = true;
+  try { const info = await ghRepoCheck(m.repo); if (rvShouldAuthor(info, m.repo)) await rvJoinAuthor(info, m.repo); }
+  catch (e) { /* не получилось сейчас: человек может нажать «Работать в своей ветке» сам */ }
+  finally { RVA.busy = false; }
+}
+/** Владелец: заглядываем в ветки авторов и говорим, когда кто-то прислал правки. */
+async function rvOwnerPoll() {
+  const m = gmeta(), o = RVA.owner;
+  if (!m || !m.on || rvIsAuthor(m) || o.busy || Date.now() - o.t < 40000) return;
+  o.busy = true; o.t = Date.now();
+  try {
+    const list = await rvBranches(m), cur = {}; list.forEach(b => { cur[b.name] = b.sha; });
+    const seen = m.rvBr || null;
+    const fresh = list.filter(b => !seen || seen[b.name] !== b.sha);
+    m.rvBr = cur; gmSave();
+    if (fresh.length) {
+      toastAct(fresh.length === 1 ? t('rv.new.n', rvWho(fresh[0].login)) : t('rv.new.many', fresh.length), t('rv.new.btn'), () => openReviewList(), 12000);
+    }
+  } catch (e) { /* сеть: в следующий раз */ }
+  finally { o.busy = false; }
+}
 /** Автор: подтянуть из основной ветки то, что принял владелец (слияние «основа → моё → основная»), результат уйдёт в ветку автора. */
 function rvPullMain() {
   return ghRun(async () => {
@@ -205,7 +246,8 @@ function rvPullMain() {
 }
 /** Вызывается после каждой синхронизации: автору сообщаем о новых замечаниях владельца. */
 function rvAfterSync() {
-  const m = gmeta(); if (!rvIsAuthor(m)) return;
+  const m = gmeta();
+  if (!rvIsAuthor(m)) { rvAutoAuthor(); rvOwnerPoll(); return; }
   const n = (P.cmts || []).filter(c => c.rv && !c.done).length, seen = m.rvSeen || 0;
   if (n !== seen) { m.rvSeen = n; gmSave(); if (n > seen) toast(t('rv.returned.toast', n), 9000); }
 }
@@ -388,7 +430,7 @@ async function rvReturnNotes(m, branch, who, notes) {
       if (!nid) continue;
       p0.cmts.push({ id: uid('k'), nid, fid: '', by: String(by).slice(0, 60), to: String(who).slice(0, 60), rv: 1, t: Date.now(), text: String(nt.text).slice(0, 2000), done: false }); n++;
     }
-    try { await ghPutFile(bm, JSON.stringify(p0), t('rv.commit', P.name), cur.sha); return n; }
+    try { await ghPutFile(bm, JSON.stringify(p0), t('rv.commit', P.name), cur.sha); try { const r = await rvRef(m, branch); (m.rvBr = m.rvBr || {})[branch] = r.sha; gmSave(); } catch (e2) { /* не важно */ } return n; }
     catch (e) { if (ghErrInfo(e).code !== 'conflict') throw e; }          // автор успел записать: берём свежую версию и повторяем
   }
   throw ghFail('conflict', t('gh.err.server', 409));

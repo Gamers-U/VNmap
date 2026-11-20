@@ -35,7 +35,7 @@ Object.assign(D, {
   'gho.open': ['Открыть копию', 'Open a copy'],
   'gho.open.h': ['Проект откроется у вас как копия. Изменения в репозиторий не отправляются.', 'The project opens here as a copy. Changes are not sent to the repository.'],
   'gho.join': ['Открыть и подключить', 'Open and connect'],
-  'gho.join.h': ['Работать вместе с репозиторием: изменения будут уходить в него и приходить из него.', 'Work together with the repository: changes go to it and come from it.'],
+  'gho.join.h': ['Работать вместе с репозиторием: изменения будут уходить в него и приходить из него. Если проект чужой, ваши правки пойдут в вашу ветку author/логин, владелец проверит их и примет.', 'Work together with the repository: changes go to it and come from it. If the project is not yours, your changes go into your own branch author/login, and the owner reviews and accepts them.'],
   'gho.join.no': ['Чтобы подключиться и работать вместе, нужны вход на GitHub и право записи в репозиторий.', 'To connect and work together you need to sign in to GitHub and have write access to the repository.'],
   'gho.replace.q': ['Заменить открытый проект?', 'Replace the open project?'],
   'gho.replace.t': ['Сейчас открыт проект «{0}». Он будет заменён. Если он нужен, сначала сохраните его файлом.', 'The project “{0}” is open now. It will be replaced. If you need it, save it to a file first.'],

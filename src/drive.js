@@ -105,7 +105,7 @@ function driveDirty() {
     if (changed && GS.phase !== 'conflict') driveKick();
   }, 6000);
 }
-const driveCanAutoApply = () => !MODALS.length && Date.now() - GS.lastEdit > 8000;
+const driveCanAutoApply = () => syncCanApply(GS.lastEdit);
 
 /* ---------- раскладка папок ---------- */
 /** Чей это Диск: почта и ключ (client id). Папки, созданные одним ключом, другой ключ не видит, а у другого аккаунта их нет совсем. */
@@ -261,8 +261,8 @@ async function driveApply(m, lay, doc, opts) {
 }
 
 /** Правки с двух устройств: сливаем «основа → моё → на Диске» и отправляем результат. false — слить не удалось, нужен выбор пользователя. */
-async function driveTryMerge(m, lay0, doc0) {
-  let B = await baseLoad('dbase_' + P.uid); if (!B) return false;
+async function driveTryMerge(m, lay0, doc0, B0) {
+  let B = B0 || await baseLoad('dbase_' + P.uid); if (!B) return false;
   let lay = lay0, doc = doc0, got = 0, marked = 0;
   const uid0 = P.uid;
   for (let round = 0; round < 3; round++) {
@@ -308,7 +308,12 @@ async function driveCycle({ manual = false } = {}) {
     const doc = lay.doc;
     const contentChanged = strHash(contentJSON()) !== m.sigHash;
     const changed = contentChanged || await driveHasUnuploaded(m);
-    if (doc && !m.baseMd5) { GS.remote = { lay, doc, kind: 'exists' }; setPhase('conflict'); if (manual) driveConflictDialog(); return; }
+    if (doc && !m.baseMd5) {
+      /* тот же проект уже лежит на Диске (человек взял его через GitHub или с другого компьютера и включил Диск): сливаем сами; окно нужно только если одно и то же поле изменено по-разному */
+      let B0 = null; try { B0 = (await baseLoad('gbase_' + P.uid)) || new Map(); } catch (e) { B0 = new Map(); }
+      if (await driveTryMerge(m, lay, doc, B0)) { GS.remote = null; GS.retryN = 0; setPhase('idle'); return; }
+      GS.remote = { lay, doc, kind: 'exists' }; setPhase('conflict'); if (manual) driveConflictDialog(); return;
+    }
     if (doc && doc.md5Checksum !== m.baseMd5) {
       if (contentChanged) {
         if (await driveTryMerge(m, lay, doc)) { GS.remote = null; GS.retryN = 0; setPhase('idle'); return; }

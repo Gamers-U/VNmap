@@ -7,7 +7,7 @@
    В браузере запросы идут напрямую, токен хранится в браузере. */
 const GHD = DESK && DESK.gh ? DESK.gh : null;
 const LS_GH = 'vnmap.github.v1', LS_GHT = 'vnmap.gh.token', LS_GHL = 'vnmap.gh.login';
-const GHTIME = { push: 20000, gap: 45000, poll: 60000 };      // тишина перед отправкой, минимум между отправками, опрос репозитория (мс)
+const GHTIME = { push: 6000, gap: 12000, poll: 15000, hidden: 60000 };      // тишина перед отправкой, минимум между отправками, опрос репозитория (мс); hidden: опрос, пока окно свёрнуто или закрыто другими окнами
 const GHS = { st: { hasToken: false, login: '', encrypted: true }, phase: 'idle', err: '', progress: '', queue: Promise.resolve(), kick: false, timer: null, poll: null, retry: null, retryN: 0,
   applying: false, lastEdit: 0, remote: null, panel: null, dirtyFlag: false, newerN: 0, newerT: null };
 let GM = { projects: {} };
@@ -233,7 +233,11 @@ function ghDirty() {
   };
   GHS.timer = setTimeout(fire, GHTIME.push);
 }
-const ghCanAutoApply = () => !MODALS.length && Date.now() - GHS.lastEdit > 8000;
+/** Можно ли сейчас молча подставить чужие правки: человек не печатает. Открытые окна (блок, редактор, реестр) не мешают: они перерисовываются сами. */
+let syncKeyAt = 0;
+document.addEventListener('keydown', () => { syncKeyAt = Date.now(); }, true);
+const syncCanApply = lastEdit => Date.now() - Math.max(lastEdit || 0, syncKeyAt) >= 4000;
+const ghCanAutoApply = () => syncCanApply(GHS.lastEdit);
 
 /* ---------- отправка и получение ---------- */
 async function ghMessage(ents) {
@@ -366,7 +370,7 @@ async function ghRepoCheck(repo) {
   if (r.status !== 200) throw ghStatusErr(r);
   const j = ghParse(r.text) || {};
   if (j.permissions && j.permissions.push === false) throw ghFail('forbidden', t('gh.err.readonly'));
-  return { priv: !!j.private, branch: j.default_branch || '' };
+  return { priv: !!j.private, branch: j.default_branch || '', admin: !!(j.permissions && j.permissions.admin), owner: (j.owner && j.owner.login) || '' };
 }
 function ghDraftMeta(d) {
   const repo = ghRepoNorm(d.repo), path = ghPathNorm(d.path) || ghDefaultPath();
@@ -389,6 +393,7 @@ async function ghJoin(d) {
   if (!rem.exists) throw ghFail('not_found', t('gh.err.nofile', meta.path));
   if (P.nodes.length && !(typeof ghoFromLauncher === 'function' && ghoFromLauncher()) && !(await confirmDlg({ title: t('gh.join.q'), text: t('gh.join.t'), ok: t('gh.join.ok'), danger: true }))) return false;
   await ghRun(async () => { await ghApplyText(m, rem.text, rem.sha, rem.etag, { fresh: true }); toast(t('gh.joined'), 4200); ghDone(); });
+  if (typeof rvJoinAuthor === 'function') await rvJoinAuthor(info, meta.repo);      // присоединился к чужому проекту: правки идут в его ветку author/логин
   return true;
 }
 function ghDisable() {
@@ -450,7 +455,13 @@ function ghInit() {
   gmLoad();
   ghRefreshStatus().then(() => { ghRefreshUI(); const m = gmeta(); if (GHS.st.hasToken && m && m.on) setTimeout(ghKick, 2500); });
   clearInterval(GHS.poll);
-  GHS.poll = setInterval(() => { const m = gmeta(); if (GHS.st.hasToken && m && m.on && GHS.phase !== 'syncing' && !document.hidden) ghKick(); }, GHTIME.poll);
+  let slow = 0;
+  GHS.poll = setInterval(() => {
+    const m = gmeta(); if (!GHS.st.hasToken || !m || !m.on || GHS.phase === 'syncing') return;
+    if (document.hidden && ++slow * GHTIME.poll < GHTIME.hidden) return;     // окно свёрнуто или закрыто другими: проверяем реже, но не замолкаем
+    slow = 0; ghKick();
+  }, GHTIME.poll);
+  document.addEventListener('visibilitychange', () => { const m = gmeta(); if (!document.hidden && GHS.st.hasToken && m && m.on && GHS.phase !== 'syncing') ghKick(); });
   window.addEventListener('focus', () => { const m = gmeta(); if (GHS.st.hasToken && m && m.on && GHS.phase !== 'syncing') ghKick(); });
 }
 
@@ -530,9 +541,8 @@ function renderGhPanel(st) {
         field(t('gh.f.branch'), inp('branch', t('gh.f.branch.ph'))),
         h('div', { class: 'row-actions left' },
           h('button', { class: 'btn primary', id: 'gh-connect', disabled: st.busy, onclick: () => guard(async () => { if (await ghConnect(st.draft)) st.hist = null; }) }, icon('upload', 15), t('gh.connect')),
-          h('button', { class: 'btn', id: 'gh-join', disabled: st.busy, onclick: () => guard(async () => { if (await ghJoin(st.draft)) { st.hist = null; if (st.draft.author) await rvStartBranch(); } }) }, icon('download', 15), t('gh.join'))),
-        h('div', { class: 'hint' }, t('gh.join.h')),
-        switchEl(!!st.draft.author, v => { st.draft.author = v; }, t('rv.join.author')));
+          h('button', { class: 'btn', id: 'gh-join', disabled: st.busy, onclick: () => guard(async () => { if (await ghJoin(st.draft)) { st.hist = null; } }) }, icon('download', 15), t('gh.join'))),
+        h('div', { class: 'hint' }, t('gh.join.h')));
     } else {
       st.statusEl = h('div', { class: 'dr-status' });
       card.append(h('div', { class: 'opt-row' }, h('div', { class: 'opt-t' }, h('div', { class: 'mono' }, m.repo + ' · ' + m.path + (m.branch ? ' · ' + m.branch : '')), h('div', { class: 'hint' }, m.priv === false ? t('gh.public') : t('gh.private')))), st.statusEl,
