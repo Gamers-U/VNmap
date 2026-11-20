@@ -56,7 +56,7 @@ function aiHwPlan(hw) {
 const AIHW_STR = {
   'ai.hw.h': ['Подбор модели под ваш компьютер', 'Pick a model for your computer'],
   'ai.hw.t': ['Программа смотрит, сколько у вас памяти и какая видеокарта, и подсказывает, какие модели потянет компьютер. Это ориентир, не гарантия.', 'The program checks how much memory and which graphics card you have and suggests the models your computer can run. It is a guide, not a guarantee.'],
-  'ai.hw.old': ['Чтобы подобрать модель, обновите оболочку программы (Настройки → кнопка «Обновить оболочку»).', 'To pick a model, update the program shell (Settings, the Update shell button).'],
+  'ai.hw.old': ['Чтобы подобрать модель, обновите оболочку программы (Настройки → «Обновить программу…» → «Обновить»).', 'To pick a model, update the program shell (Settings, then “Update the app…” and “Update”).'],
   'ai.hw.load': ['Определяю железо…', 'Checking your hardware…'],
   'ai.hw.ram': ['Память: {0} ГБ', 'Memory: {0} GB'],
   'ai.hw.cpu': ['Процессор: {0}, ядер: {1}', 'Processor: {0}, cores: {1}'],

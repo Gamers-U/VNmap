@@ -95,10 +95,11 @@ function stage(buf, fileName) {
 
 /* ---------- установка, откат, защита от «не запустилось» ---------- */
 class Updater {
-  constructor({ bundledDir, userData, bridge }) {
+  constructor({ bundledDir, userData, bridge, shellVersion }) {
     this.bundledDir = bundledDir;
     this.root = path.join(userData, 'app-update');
     this.bridge = bridge;
+    this.shellVersion = String(shellVersion || '');
   }
   _stampOf(file) {
     try { const fd = fs.openSync(file, 'r'); try { const b = Buffer.alloc(12288); const n = fs.readSync(fd, b, 0, b.length, 0); return parseStamp(b.toString('utf8', 0, n)); } finally { fs.closeSync(fd); } }
@@ -126,13 +127,23 @@ class Updater {
       if (!/^(index\.html|fonts\/[\w.-]+\.woff2?)$/.test(f.rel)) continue;
       await fsp.writeFile(path.join(tmp, ...f.rel.split('/')), f.data);
     }
-    await fsp.writeFile(path.join(tmp, 'update.json'), JSON.stringify({ build: cand.build, version: cand.version, sha256: cand.sha256, source: String(source || '').slice(0, 300), time: new Date().toISOString(), booted: false }, null, 1));
+    await fsp.writeFile(path.join(tmp, 'update.json'), JSON.stringify({ build: cand.build, version: cand.version, sha256: cand.sha256, source: String(source || '').slice(0, 300), time: new Date().toISOString(), booted: false, shell: this.shellVersion }, null, 1));
     await fsp.rm(old, { recursive: true, force: true });
     if (fs.existsSync(this.root)) await fsp.rename(this.root, old);
     await fsp.rename(tmp, this.root);
     await fsp.rm(old, { recursive: true, force: true });
   }
   async reset() { await fsp.rm(this.root, { recursive: true, force: true }); }
+  /** Установленное «страничное» обновление устарело относительно встроенной страницы. Так бывает после обновления оболочки:
+      новая оболочка принесла свежую страницу, а старое обновление лежит в папке данных и перекрыло бы её.
+      Если обновление поставили под этой же оболочкой (в том числе нарочно более старое), оно остаётся. */
+  supersededByBundled() {
+    const a = this.active(), b = this.bundled();
+    if (!a || !b || !a.build || !b.build) return false;
+    const m = this._meta() || {};
+    const shellChanged = !m.shell || m.shell !== this.shellVersion;
+    return shellChanged && compareBuild(b.build, a.build) >= 0;
+  }
   /** Страница запустилась и дошла до связи с оболочкой: обновление считается рабочим. */
   markBooted() {
     const m = this._meta(); if (!m || m.booted === true) return;
@@ -146,6 +157,11 @@ class Updater {
     if (a && a.booted) return null;
     try { fs.rmSync(this.root, { recursive: true, force: true }); } catch (e) { /* ничего */ }
     return a ? { rolledBack: a.build } : null;
+  }
+  /** При запуске: если встроенная страница не старее установленного обновления и оболочка с тех пор сменилась — убираем обновление. true, если убрали. */
+  dropSuperseded() {
+    if (!this.supersededByBundled()) return false;
+    try { fs.rmSync(this.root, { recursive: true, force: true }); return true; } catch (e) { return false; }
   }
 }
 

@@ -170,7 +170,7 @@ const D = {
   'upd.found': ['Найдена версия {0}', 'Found version {0}'], 'upd.found.nov': ['Найдена сборка {0}', 'Found build {0}'],
   'upd.cmp.new': ['новее установленной', 'newer than installed'], 'upd.cmp.same': ['та же сборка', 'same build'], 'upd.cmp.old': ['старее установленной', 'older than installed'],
   'upd.cand.meta': ['{0} · источник: {1} · sha256: {2}…', '{0} · source: {1} · sha256: {2}…'],
-  'upd.needs': ['Этому обновлению нужна более новая оболочка. Нажмите «Обновить оболочку» ниже (если там пока нет такой кнопки — один раз переустановите программу установщиком с GitHub), потом снова «Обновить версию».', 'This update needs a newer shell. Press “Update the shell” below (if there is no such button yet, reinstall the app once with the installer from GitHub), then “Update the version” again.'],
+  'upd.needs': ['Этому обновлению нужна более новая оболочка. Кнопка «Обновить» поставит её сама (если такой кнопки в вашей программе ещё нет, один раз переустановите программу установщиком с GitHub).', 'This update needs a newer shell. The “Update” button installs it by itself (if your program has no such button yet, reinstall it once with the installer from GitHub).'],
   'upd.warn': ['Обновление — это код, который будет работать внутри программы с доступом к вашим проектам, Google Диску и GitHub. Устанавливайте только то, что получили от автора программы.', 'An update is code that runs inside the app with access to your projects, Google Drive and GitHub. Install only what you received from the author of the app.'],
   'upd.install': ['Установить и перезапустить', 'Install and restart'], 'upd.reinstall': ['Переустановить эту сборку', 'Reinstall this build'], 'upd.downgrade': ['Всё равно установить старую', 'Install the older one anyway'],
   'upd.restarting': ['Перезапускаю окно…', 'Restarting the window…'],
@@ -184,7 +184,6 @@ const D = {
   'upd.gh.t': ['Всё, что вы видите в окне: карта, редактор, сборка. Обновляется быстро, без установщика, проекты не затрагиваются. Версии берутся из репозитория на GitHub.', 'Everything you see in the window: map, editor, build. Updates quickly, without an installer, projects are not touched. Versions come from the GitHub repository.'],
   'upd.gh.ph': ['владелец/репозиторий', 'owner/repository'],
   'upd.gh.auto': ['Проверять при запуске (не чаще раза в 6 часов)', 'Check at startup (at most once every 6 hours)'],
-  'upd.gh.check': ['Обновить версию', 'Update the version'],
   'upd.gh.bad': ['Укажите репозиторий как владелец/название или ссылкой https://github.com/владелец/название', 'Enter the repository as owner/name or a https://github.com/owner/name link'],
   'upd.gh.latest': ['У вас последняя версия ({0}).', 'You have the latest version ({0}).'],
   'upd.gh.last': ['Последняя проверка: {0}', 'Last check: {0}'], 'upd.gh.never': ['Ещё не проверялось', 'Not checked yet'],
@@ -239,7 +238,7 @@ const D = {
   "ghl.left": ["Код действует ещё {0}", "The code is valid for {0} more"],
   "ghl.cancel": ["Отмена", "Cancel"],
   "ghl.manual": ["Войти по токену вручную", "Sign in with a token by hand"],
-  "ghl.old": ["Чтобы входить без токена, обновите оболочку программы (Настройки → кнопка «Обновить оболочку»). Вход по токену работает как раньше.", "To sign in without a token, update the program shell (Settings, the Update shell button). Signing in with a token works as before."],
+  "ghl.old": ["Чтобы входить без токена, обновите оболочку программы (Настройки → «Обновить программу…» → «Обновить»). Вход по токену работает как раньше.", "To sign in without a token, update the program shell (Settings, then “Update the app…” and “Update”). Signing in with a token works as before."],
   "ghl.e.expired": ["Время кода вышло. Нажмите «Войти через GitHub» ещё раз.", "The code has expired. Press Sign in with GitHub again."],
   "ghl.e.denied": ["Вход отклонён на сайте GitHub. Если это вышло случайно, нажмите «Войти через GitHub» ещё раз.", "The sign-in was declined on the GitHub site. If that was a mistake, press Sign in with GitHub again."],
   "ghl.e.app": ["GitHub не принял запрос программы ({0}). Если вы владелец приложения, проверьте, что в его настройках на GitHub включён Device Flow. Пока можно войти по токену.", "GitHub did not accept the program request ({0}). If you own the application, check that Device Flow is on in its settings on GitHub. You can sign in with a token meanwhile."],
@@ -930,7 +929,7 @@ HELP.ru.push(
     'После прихода чужих правок «Отменить» начинается заново, чтобы не откатывать чужую работу.'] },
   { h: 'Начальный экран и обновление программы', items: [
     'При запуске программа для компьютера показывает начальный экран: новый проект, открыть файл, пример и список недавних проектов. Вернуться к нему можно из меню «Стартовый экран…».',
-    'Две кнопки обновления («Обновить программу…» в меню или значок внизу): «Обновить версию» меняет то, что вы видите в окне (карта, редактор, сборка) — быстро, без установщика, проекты не затрагиваются. «Обновить оболочку» меняет саму установленную программу: на Windows (установщик) и Linux (AppImage) она скачает новую версию, проверит контрольную сумму, закроется, поставит её и откроется снова; в версии без установки (portable) и на macOS файл скачивается в «Загрузки» и показывается в папке. Оболочка меняется редко: если новой версии оболочки нет, достаточно «Обновить версию».',
+    'Одна кнопка «Обновить» («Обновить программу…» в меню или значок внизу): она сама проверяет, что вышло на GitHub. Если вышла новая оболочка (само окно программы), ставится она: на Windows (установщик) и Linux (AppImage) программа скачает новую версию, проверит контрольную сумму, закроется, поставит её вместе со свежей страницей и откроется снова; в версии без установки (portable) и на macOS файл скачивается в «Загрузки» и показывается в папке, а страница обновляется сразу. Если оболочка не менялась (так бывает чаще всего), обновится только то, что вы видите в окне (карта, редактор, сборка): быстро, без установщика, проекты не затрагиваются. Свой файл или ссылку можно указать в блоке «Другие способы».',
     'Обновление: меню «Обновить программу…» принимает архив vnmap-update-….zip или файл index.html (или адрес, если вы выкладываете сборки сами). Программа проверит файл, покажет сборку и применит её; встроенная версия остаётся запасной.'] }
 );
 HELP.en.push(
@@ -956,7 +955,7 @@ HELP.en.push(
     'After other people’s edits arrive, “Undo” starts over so it never rolls back someone else’s work.'] },
   { h: 'Start screen and updating the program', items: [
     'On launch the desktop app shows a start screen: new project, open a file, the example and a list of recent projects. The “Start screen…” menu item brings it back.',
-    'Two update buttons (the “Update the program…” menu or the badge at the bottom): “Update the version” changes what you see in the window (map, editor, build) — quickly, without an installer, projects are not touched. “Update the shell” changes the installed program itself: on Windows (installer) and Linux (AppImage) it downloads the new version, checks the checksum, closes, installs it and opens again; in the portable version and on macOS the file is downloaded to Downloads and shown in its folder. The shell changes rarely: if there is no new shell, “Update the version” is enough.',
+    'One “Update” button (“Update the app…” in the menu or the badge at the bottom): it checks by itself what is out on GitHub. If a new shell (the program window itself) is out, it is installed: on Windows (installer) and Linux (AppImage) the program downloads the new version, checks the checksum, closes, installs it together with the fresh page and opens again; in the portable version and on macOS the file is downloaded to Downloads and shown in its folder, while the page is updated right away. If the shell did not change (the most common case), only what you see in the window (map, editor, build) is updated: quickly, without an installer, projects are not touched. Your own file or link goes into the “Other ways” block.',
     'Updating: the “Update the program…” menu item accepts a vnmap-update-….zip archive or an index.html file (or an address, if you publish builds yourself). The app checks the file, shows its build and applies it; the built-in version stays as a fallback.'] }
 );
 HELP.ru.push(

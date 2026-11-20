@@ -38,7 +38,7 @@ app.setName('VNMap');
 app.setPath('userData', path.join(app.getPath('appData'), 'VNMap'));
 const createSat = require('./sat.js');
 const { ProjFs } = require('./projfs.js');
-const updater = new Updater({ bundledDir: APP_DIR, userData: app.getPath('userData'), bridge: BRIDGE });
+const updater = new Updater({ bundledDir: APP_DIR, userData: app.getPath('userData'), bridge: BRIDGE, shellVersion: app.getVersion() });
 let overrideDir = null;                 // папка с установленным обновлением страницы (или null — работает встроенная)
 let bootNotice = null;                // что рассказать странице после запуска: откат, обновление
 let launcherPending = !process.argv.includes('--no-launcher');   // показать стартовый экран при первом запуске окна
@@ -857,6 +857,7 @@ else {
   app.whenReady().then(async () => {
     /* прошлое обновление не запустилось — возвращаем встроенную страницу и скажем об этом */
     const rb = updater.checkBoot(); if (rb) bootNotice = rb;
+    updater.dropSuperseded();               // новая оболочка принесла страницу не старее установленного обновления: берём встроенную
     overrideDir = updater.activeDir();
     registerProtocol(); registerIpc(); ghLoad();
     const s = loadWinSettings(); if (s.lang === 'ru' || s.lang === 'en') lang = s.lang;

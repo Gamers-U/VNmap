@@ -167,7 +167,7 @@ function updChip() {
 function openUpdateDialog() {
   if (!DESK || !DESK.update) { toast(t('upd.noshell'), 5000); return; }
   MODALS.filter(m => m.tag === 'update').forEach(m => m.close());
-  const st = { info: null, cand: null, busy: false, err: '', url: '', sha: '', msg: '', su: null, suMsg: '', suProg: null };
+  const st = { info: null, cand: null, busy: false, err: '', url: '', sha: '', msg: '', plan: null, perr: '', serr: '', probing: false, going: false, stage: '', seen: '', suMsg: '', suProg: null };
   const m = openModal({
     cls: 'upd-m', build: m => {
       const body = h('div', { class: 'm-pad upd' });
@@ -181,23 +181,8 @@ function openUpdateDialog() {
           h('div', { class: 'upd-row' }, h('span', { class: 'upd-k' }, t('upd.ui')), h('b', APP_VERSION && APP_VERSION.charAt(0) !== '/' ? t('upd.build', APP_VERSION, APP_BUILD) : t('upd.build.nov', APP_BUILD)),
             h('span', { class: 'upd-badge' + (act ? ' on' : '') }, act ? t('upd.src.upd', updWhen(act.time)) : t('upd.src.bundled'))),
           h('div', { class: 'upd-row' }, h('span', { class: 'upd-k' }, t('upd.shell')), h('span', t('upd.shell.v', I.shell, I.electron)))));
-        /* обновления с GitHub */
-        body.append(h('div', { class: 'upd-sec upd-gh' },
-          h('div', { class: 'upd-h' }, t('upd.gh.h')),
-          h('div', { class: 'hint' }, t('upd.gh.t')),
-          (() => {
-            const repo = h('input', { class: 'inp mono', type: 'text', placeholder: t('upd.gh.ph'), value: S.updRepo || UPDATE_REPO_DEFAULT, spellcheck: 'false', id: 'upd-repo' });
-            repo.addEventListener('input', () => { S.updRepo = repo.value.trim(); saveSettings(); });
-            repo.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); checkGh(); } });
-            const auto = h('input', { type: 'checkbox', checked: S.updAuto !== false, id: 'upd-auto' });
-            auto.addEventListener('change', () => { S.updAuto = auto.checked; saveSettings(); });
-            return h('div', { class: 'upd-url' }, repo, h('label', { class: 'upd-chk' }, auto, h('span', t('upd.gh.auto'))),
-              h('div', { class: 'row-actions left' }, h('button', { class: 'btn primary', disabled: st.busy, onclick: checkGh, id: 'upd-check' }, icon('refresh', 16), t('upd.gh.check')),
-                h('span', { class: 'hint' }, S.updChecked ? t('upd.gh.last', fmtTime(S.updChecked)) : t('upd.gh.never'))));
-          })(),
-          st.msg ? h('div', { class: 'hint upd-ok' }, icon('check', 14), ' ', st.msg) : null));
-        /* сама программа (оболочка) */
-        body.append(updShellSection(st, guard, render));
+        /* одна кнопка «Обновить»: проверяет страницу и оболочку, ставит, что нужно */
+        body.append(updMainBlock(st, guard, render));
         /* способы обновить */
         body.append(h('details', { class: 'upd-other', open: !updRepo() }, h('summary', t('upd.other')), h('div', { class: 'upd-sec' },
           h('div', { class: 'upd-h' }, t('upd.how')),
@@ -212,7 +197,7 @@ function openUpdateDialog() {
             return h('div', { class: 'upd-url' }, url, h('details', { class: 'upd-more' }, h('summary', t('upd.sha')), sha),
               h('div', { class: 'row-actions left' }, h('button', { class: 'btn', disabled: st.busy, onclick: fromUrl }, icon('download', 16), t('upd.fetch'))));
           })())));
-        if (st.busy) body.append(h('div', { class: 'upd-busy' }, h('span', { class: 'spin' }), t('upd.busy')));
+        if (st.busy && !st.going) body.append(h('div', { class: 'upd-busy' }, h('span', { class: 'spin' }), t('upd.busy')));
         if (st.err) body.append(h('div', { class: 'upd-err' }, icon('alert', 16), h('span', st.err)));
         /* найденное обновление */
         const c = st.cand;
@@ -232,11 +217,6 @@ function openUpdateDialog() {
           h('div', { class: 'row-actions left' }, h('button', { class: 'btn', disabled: st.busy, onclick: reset }, icon('reverse', 16), t('upd.reset')))));
       };
       const guard = async fn => { st.busy = true; st.err = ''; render(); try { await fn(); } catch (e) { st.err = deskErr(e); } st.busy = false; render(); };
-      const checkGh = () => guard(async () => {
-        st.msg = '';
-        const c = await updCheck();
-        if (c.cmp > 0 || c.needsShell) st.cand = c; else { st.cand = null; st.msg = t('upd.gh.latest', APP_VERSION && APP_VERSION.charAt(0) !== '/' ? APP_VERSION : APP_BUILD); }
-      });
       const pickFile = () => guard(async () => { const c = await DESK.update.pickFile(); if (c) st.cand = c; });
       const fromUrl = () => guard(async () => { if (!st.url.trim()) throw new Error(t('upd.url.empty')); st.cand = await DESK.update.fromUrl(st.url.trim(), st.sha.trim()); });
       const apply = () => guard(async () => {
@@ -250,7 +230,7 @@ function openUpdateDialog() {
         if (!(await confirmDlg({ title: t('upd.reset.q'), text: t('upd.reset.t'), ok: t('upd.reset') }))) return;
         guard(async () => { flushHistory(); saveNow(); if (DS.path && DS.dirty) await deskSave({ silent: true }); await DESK.update.reset(); });
       };
-      DESK.update.info().then(i => { st.info = i; render(); if (UPD.avail && updRepo()) checkGh(); if (DESK.shellUpdate) DESK.shellUpdate.check().then(c => { st.su = c; UPD.shell = suNew(c) ? c : null; render(); }).catch(() => { }); }).catch(e => { st.err = deskErr(e); st.info = { active: null, shell: '?', electron: '?', url: '' }; render(); });
+      DESK.update.info().then(i => { st.info = i; render(); updProbe(st, render); }).catch(e => { st.err = deskErr(e); st.info = { active: null, shell: '?', electron: '?', url: '' }; render(); });
       render();
       return h('div', { class: 'm-wrap' }, modalHead(t('upd.title'), m), body);
     }

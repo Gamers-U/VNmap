@@ -15,7 +15,7 @@ Object.assign(D, {
   'wb.build': ['Сборка игры…', 'Build the game…'], 'wb.drive': ['Google Диск…', 'Google Drive…'],
   'wb.theme': ['Светлая / тёмная тема', 'Light / dark theme'], 'wb.lang.ru': ['Язык: русский', 'Language: Russian'], 'wb.lang.en': ['Язык: English', 'Language: English'],
   'wb.zoomin': ['Крупнее', 'Zoom in'], 'wb.zoomout': ['Мельче', 'Zoom out'], 'wb.zoom0': ['Масштаб 100%', 'Zoom 100%'], 'wb.full': ['Во весь экран', 'Full screen'],
-  'wb.helpopen': ['Справка', 'Help'], 'wb.upd': ['Обновить версию…', 'Update the app…'], 'wb.renpy': ['Сайт Ren\'Py', 'Ren\'Py website'], 'wb.about': ['О программе и версия', 'About and version'],
+  'wb.helpopen': ['Справка', 'Help'], 'wb.upd': ['Обновить программу…', 'Update the app…'], 'wb.renpy': ['Сайт Ren\'Py', 'Ren\'Py website'], 'wb.about': ['О программе и версия', 'About and version'],
   'wb.quit': ['Выход', 'Quit'], 'wb.settings': ['Настройки…', 'Settings…'], 'wb.web.save': ['Сохранить файл проекта', 'Save the project file'],
   'wb.min': ['Свернуть', 'Minimize'], 'wb.max': ['Развернуть', 'Maximize'], 'wb.restore': ['Восстановить', 'Restore'], 'wb.close': ['Закрыть', 'Close'], 'wb.exitfull': ['Выйти из полного экрана', 'Exit full screen'],
   'wb.app': ['Карта новеллы', 'Story Map'],
