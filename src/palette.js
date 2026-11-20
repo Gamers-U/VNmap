@@ -65,7 +65,7 @@ function palCommands() {
   add(t('exp.svg.light'), 'image', () => exportSVG('light'), 'svg image картинка карта');
   add(t('exp.map'), 'rows', () => exportMap(), 'markdown map описание карты');
   add(DESK ? t('desk.save') : t('exp.json'), 'save', () => { if (DESK) deskCommand('save'); else exportJSON(); }, 'save сохранить проект резервная копия', 'Ctrl+S');
-  add(t('gh.menu'), 'fork', () => openGhPanel(), 'github гитхаб репозиторий');
+  add(t('gh.menu'), 'fork', () => openGhPanel(), 'github гитхаб репозиторий войти вход без токена код login sign in device code');
   add(t('gho.menu'), 'fork', () => openFromGithub(), 'github open link repository открыть ссылка репозиторий новелла');
   if (DESK) add(t('drive.menu'), 'cloud', () => openDrivePanel(), 'drive google диск облако');
   add(t('ai.pal'), 'wand', () => openSettingsWindow('ai'), 'ai assistant helper gemini gpt claude deepseek groq ollama key api model ии нейросеть помощник ключ апи модель');

@@ -10,6 +10,7 @@ const { RenpyHost } = require('./renpy');
 const { ShellUpdater } = require('./selfupdate');
 const { Notifier } = require('./notify');
 const { AiHub } = require('./ai');
+const { GhLogin } = require('./ghlogin');
 const { spawn } = require('child_process');
 const crypto = require('crypto');
 const path = require('path');
@@ -27,7 +28,7 @@ const DEV = process.argv.includes('--dev');
 const FRAMELESS = process.platform !== 'darwin' && !process.env.VN_NATIVE_FRAME;
 const WINBAR_H = 15;
 const CHROME_DEF = { dark: { color: '#343439', symbolColor: '#a4a4ac' }, light: { color: '#f0f0f5', symbolColor: '#6a6a72' } };
-const BRIDGE = 10;                     // версия «моста» оболочки: страница может потребовать не меньше (data-needs в её отметке сборки)
+const BRIDGE = 11;                     // версия «моста» оболочки: страница может потребовать не меньше (data-needs в её отметке сборки)
 const RECENT_MAX = 12;
 
 protocol.registerSchemesAsPrivileged([{ scheme: SCHEME, privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true } }]);
@@ -222,6 +223,7 @@ async function recentInfo() {
 
 /* ---------- GitHub ---------- */
 const GH_BASE = (() => { const m = DEV && process.env.VNMAP_GITHUB_MOCK; return m && /^http:\/\/127\.0\.0\.1:\d+$/.test(m) ? m : 'https://api.github.com'; })();
+const GH_LOGIN_BASE = (() => { const m = DEV && process.env.VNMAP_GITHUB_MOCK; return m && /^http:\/\/127\.0\.0\.1:\d+$/.test(m) ? m : 'https://github.com'; })();   // сайт для входа по коду (в автотестах имитация)
 
 /* ---------- обновление страницы программы ---------- */
 const MAX_DOWNLOAD = 120 * 1048576;
@@ -315,6 +317,25 @@ async function ghRequest(o) {
     if (e && /^gh:/.test(e.message)) throw e;
     throw new Error('gh:network:' + (e && e.name === 'AbortError' ? 'сервер слишком долго не отвечает' : 'нет связи с GitHub'));
   } finally { clearTimeout(timer); }
+}
+
+/* Вход по коду (device flow, 1.7.18): токен получает и сохраняет оболочка, странице отдаются только код и состояние. */
+let ghl = null;
+function getGhl() {
+  if (!ghl) ghl = new GhLogin({
+    base: GH_LOGIN_BASE, clientId: DEV ? process.env.VNMAP_GH_CLIENT_ID : '', fetch: (u, o) => net.fetch(u, o), minInterval: DEV && process.env.VNMAP_GH_FAST ? 0.05 : 1,
+    onToken: async tok => {
+      const prev = { tok: ghTok, login: ghLogin };
+      ghTok = tok;
+      try {
+        const r = await ghRequest({ path: '/user' });
+        if (r.status !== 200) throw new Error('gh:auth:GitHub не принял токен (код ' + r.status + ')');
+        ghLogin = String((JSON.parse(r.text) || {}).login || ''); ghSave();
+        return { login: ghLogin };
+      } catch (err) { ghTok = prev.tok; ghLogin = prev.login; throw err; }
+    }
+  });
+  return ghl;
 }
 
 /* ---------- уведомления в Telegram и Discord ----------
@@ -464,6 +485,9 @@ function registerIpc() {
   });
   handle('gh:clearToken', async () => { ghTok = null; ghLogin = ''; ghSave(); return true; });
   handle('gh:request', async (e, o) => ghRequest(o));
+  handle('gh:loginStart', async (e, scope) => getGhl().start(scope));
+  handle('gh:loginStatus', async () => getGhl().status());
+  handle('gh:loginCancel', async () => getGhl().cancel());
 
   /* Уведомления */
   handle('nt:status', async () => getNt().status());

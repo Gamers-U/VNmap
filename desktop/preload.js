@@ -79,6 +79,9 @@ contextBridge.exposeInMainWorld('vnDesktop', {
     setToken: tok => call('gh:setToken', tok),
     clearToken: () => call('gh:clearToken'),
     request: o => call('gh:request', o),
+    loginStart: scope => call('gh:loginStart', scope),
+    loginStatus: () => call('gh:loginStatus'),
+    loginCancel: () => call('gh:loginCancel'),
   },
   notify: {
     status: () => call('nt:status'),

@@ -127,6 +127,63 @@ async function ghClearToken() {
   await ghRefreshStatus(); clearTimeout(GHS.timer); clearTimeout(GHS.retry); ghSetPhase('idle');
 }
 
+/* ---------- вход по коду (device flow, с 1.7.18; только программа с новой оболочкой) ----------
+   Оболочка просит у GitHub короткий код и сама опрашивает GitHub, пока вы подтверждаете его на сайте; токен получает и хранит она.
+   Страница видит только код, адрес для подтверждения, сколько осталось секунд и итог. Опрос состояния идёт здесь, а не в окне, чтобы
+   вход завершился, даже если окно «GitHub» закрыли. */
+const ghLoginOk = () => !!(GHD && typeof GHD.loginStart === 'function');
+const GHL = { state: 'idle', code: '', uri: '', left: 0, err: '', detail: '', timer: null };
+const ghMmSs = sec => Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
+function ghLoginUI() { if (GHS.panel && !GHS.panel.m.closed) renderGhPanel(GHS.panel); }
+function ghLoginErrText() {
+  const k = { expired: 'ghl.e.expired', denied: 'ghl.e.denied', app: 'ghl.e.app', network: 'ghl.e.network', server: 'ghl.e.server', verify: 'ghl.e.verify' }[GHL.err] || 'ghl.e.other';
+  return t(k, GHL.detail || GHL.err);
+}
+function ghLoginFail(e) { const g = ghErrInfo(e); Object.assign(GHL, { state: 'error', err: g.code, detail: g.msg }); toast(ghLoginErrText(), 7000); }
+async function ghLoginStart(pub) {
+  const r = await GHD.loginStart(pub ? 'public' : 'repo');
+  Object.assign(GHL, { state: 'wait', code: r.code, uri: r.uri, left: r.left, err: '', detail: '' });
+  copyText(r.code).then(ok => { if (ok) toast(t('ghl.copied'), 2500); });
+  ghOpenUrl(r.uri);
+  ghLoginWatch();
+}
+function ghLoginWatch() { clearTimeout(GHL.timer); GHL.timer = setTimeout(ghLoginTick, 2000); }
+async function ghLoginTick() {
+  if (GHL.state !== 'wait') return;
+  let r = null; try { r = await GHD.loginStatus(); } catch (e) { /* оболочка занята: спросим ещё раз */ }
+  if (GHL.state !== 'wait') return;
+  if (!r) { ghLoginWatch(); return; }
+  if (r.state === 'wait') { GHL.left = r.left; const el = document.getElementById('gh-left'); if (el) el.textContent = t('ghl.left', ghMmSs(r.left)); ghLoginWatch(); return; }
+  if (r.state === 'ok') {
+    GHL.state = 'idle'; await ghRefreshStatus();
+    toast(t('gh.signed', r.login || GHS.st.login || ''), 3500);
+    ghRefreshUI(); ghLoginUI(); const m = gmeta(); if (m && m.on) ghKick();
+    return;
+  }
+  if (r.state === 'error') Object.assign(GHL, { state: 'error', err: r.err || '', detail: r.detail || '' }); else GHL.state = 'idle';
+  if (GHL.state === 'error') toast(ghLoginErrText(), 7000);
+  ghLoginUI();
+}
+async function ghLoginCancel() { clearTimeout(GHL.timer); GHL.state = 'idle'; try { await GHD.loginCancel(); } catch (e) { /* уже остановлено */ } ghLoginUI(); }
+function ghLoginCard(st, guard) {
+  const box = h('div', { class: 'gh-login', id: 'gh-login' });
+  if (GHL.state === 'wait') {
+    box.append(h('div', { class: 'hint' }, t('ghl.code.t')),
+      h('div', { class: 'gh-code', id: 'gh-code' }, GHL.code),
+      h('div', { class: 'row-actions left' },
+        h('button', { class: 'btn primary', id: 'gh-codeopen', onclick: () => ghOpenUrl(GHL.uri) }, icon('open', 15), t('ghl.open')),
+        h('button', { class: 'btn', id: 'gh-codecopy', onclick: async () => { if (await copyText(GHL.code)) toast(t('ghl.copied'), 2000); } }, icon('copy', 15), t('ghl.copy')),
+        h('button', { class: 'btn', id: 'gh-logincancel', onclick: () => ghLoginCancel() }, t('ghl.cancel'))),
+      h('div', { class: 'hint', style: { marginTop: '6px' } }, h('span', t('ghl.wait')), ' ', h('span', { id: 'gh-left' }, t('ghl.left', ghMmSs(GHL.left)))));
+    return box;
+  }
+  box.append(h('div', { class: 'hint', style: { marginBottom: '10px' } }, t('ghl.t')));
+  if (GHL.state === 'error') box.append(h('div', { class: 'hint warn-t', id: 'gh-loginerr', style: { marginBottom: '10px' } }, ghLoginErrText()));
+  box.append(switchEl(!!st.draft.pub, v => { st.draft.pub = v; }, t('ghl.pub')), h('div', { class: 'hint', style: { margin: '4px 0 10px' } }, t('ghl.pub.h')),
+    h('div', { class: 'row-actions left' }, h('button', { class: 'btn primary', id: 'gh-login-btn', disabled: st.busy, onclick: () => guard(async () => { try { await ghLoginStart(!!st.draft.pub); } catch (e) { ghLoginFail(e); } }) }, icon('github', 15), t('ghl.btn'))));
+  return box;
+}
+
 /* ---------- состояние для плашки и окна ---------- */
 function ghState() {
   const m = gmeta(); if (!m || !m.on) return 'off';
@@ -434,7 +491,7 @@ function renderGhPanel(st) {
   const acc = h('div', { class: 'card-sec' }, h('div', { class: 'sec-head' }, icon('lock', 16), h('b', t('gh.acc'))));
   if (DESK && !GHD) acc.append(h('div', { class: 'hint warn-t' }, t('gh.oldshell')), ghShellButtons());
   else if (!GHS.st.hasToken) {
-    acc.append(h('div', { class: 'hint', style: { marginBottom: '10px' } }, t('gh.acc.t')),
+    const manual = [h('div', { class: 'hint', style: { marginBottom: '10px' } }, t('gh.acc.t')),
       h('details', { class: 'dr-steps', open: true }, h('summary', t('gh.steps.h')),
         h('ol', [1, 2, 3, 4].map(i => h('li', t('gh.step' + i)))),
         h('div', { class: 'row-actions left' },
@@ -443,7 +500,17 @@ function renderGhPanel(st) {
           h('button', { class: 'btn sm', onclick: () => ghOpenUrl('https://github.com/settings/personal-access-tokens/new') }, icon('open', 13), t('gh.link.token')),
           h('button', { class: 'btn sm', onclick: () => ghOpenUrl('https://github.com/settings/tokens/new?scopes=repo&description=VNMap') }, icon('open', 13), t('gh.link.token2')))),
       field(t('gh.f.token'), inp('token', 'github_pat_…', 'password')),
-      h('div', { class: 'row-actions left' }, h('button', { class: 'btn primary', id: 'gh-signin', disabled: st.busy, onclick: () => guard(async () => { await ghSetToken(st.draft.token); st.draft.token = ''; toast(t('gh.signed', GHS.st.login || ''), 3500); ghRefreshUI(); }) }, icon('check', 15), t('gh.signin'))));
+      h('div', { class: 'row-actions left' }, h('button', { class: 'btn primary', id: 'gh-signin', disabled: st.busy, onclick: () => guard(async () => { await ghSetToken(st.draft.token); st.draft.token = ''; toast(t('gh.signed', GHS.st.login || ''), 3500); ghRefreshUI(); }) }, icon('check', 15), t('gh.signin')))];
+    if (ghLoginOk()) {
+      acc.append(ghLoginCard(st, guard));
+      const d = h('details', { class: 'dr-manual', id: 'gh-manual' }, h('summary', t('ghl.manual')), ...manual);
+      if (st.manualOpen) d.open = true;
+      d.addEventListener('toggle', () => { st.manualOpen = d.open; });
+      acc.append(d);
+    } else {
+      if (DESK) acc.append(h('div', { class: 'hint warn-t', id: 'gh-oldlogin', style: { marginBottom: '10px' } }, t('ghl.old')));
+      acc.append(...manual);
+    }
   } else {
     acc.append(h('div', { class: 'dr-acc' }, icon('check', 16), h('span', t('gh.as', GHS.st.login || '—'))),
       h('div', { class: 'row-actions left' }, h('button', { class: 'btn', id: 'gh-signout', onclick: () => guard(async () => { await ghClearToken(); }) }, t('gh.signout'))));

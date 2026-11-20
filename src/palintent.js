@@ -56,7 +56,7 @@ const PAL_INTENT_TITLE = [
   [/справк|^help/i, 'справка помощь как пользоваться инструкция учебник help guide how to'],
   [/реестр|^registry/i, 'реестр персонажи герои фоны спрайты музыка звуки переменные участники достижения галерея registry characters backgrounds sprites music variables'],
   [/добавить блок|^add /i, 'новый блок добавить создать главу развилку концовку заметку add new block chapter fork ending note'],
-  [/github|гитхаб/i, 'гитхаб синхронизация совместная работа репозиторий токен github sync collaboration repository token'],
+  [/github|гитхаб/i, 'гитхаб синхронизация совместная работа репозиторий токен войти вход логин без токена код github sync collaboration repository token sign in login device code'],
   [/диск|drive/i, 'гугл диск файлы облако картинки синхронизация google drive files cloud sync'],
   [/svg/i, 'картинка карты экспорт svg image export map'],
   [/описание карты|markdown|^export map/i, 'описание карты текстом маркдаун markdown text map outline'],
