@@ -15,7 +15,7 @@
 
 const CLIENT_ID = 'Ov23ligenfxPCBaddY5J';
 /* GitHub App (публичные значения: Client ID и имя в адресе github.com/apps/<slug>). Пусто — режим выключен, работает обычное OAuth-приложение. */
-const APP = { clientId: '', slug: '' };
+const APP = { clientId: 'Iv23li7CXZ0zbBsxW6AC', slug: '' };   // slug (имя в адресе github.com/apps/<slug>) пока неизвестен: без него нет кнопки «Установить приложение»; страница знает его и сама (GH_APP_SLUG)
 const SLUG_RE = /^[A-Za-z0-9][A-Za-z0-9-]{0,38}$/;
 const CLIENT_RE = /^[A-Za-z0-9._-]{10,40}$/;
 const SCOPES = { repo: 'repo', public: 'public_repo' };       // repo — и закрытые репозитории, public_repo — только открытые (режим OAuth)
@@ -33,7 +33,7 @@ class GhLogin {
   constructor(o) {
     this.base = String(o.base || 'https://github.com').replace(/\/+$/, '');
     this.clientId = CLIENT_RE.test(String(o.clientId || '')) ? String(o.clientId) : CLIENT_ID;
-    const appId = CLIENT_RE.test(String(o.appId || '')) ? String(o.appId) : (CLIENT_RE.test(APP.clientId) ? APP.clientId : '');
+    const appId = o.appId === 'off' ? '' : CLIENT_RE.test(String(o.appId || '')) ? String(o.appId) : (CLIENT_RE.test(APP.clientId) ? APP.clientId : '');   // 'off' — только для автотестов: режим выключен
     const slug = SLUG_RE.test(String(o.appSlug || '')) ? String(o.appSlug) : (SLUG_RE.test(APP.slug) ? APP.slug : '');
     this.app = appId ? { clientId: appId, slug } : null;                // режим GitHub App включён, если известен его Client ID
     this.fetch = o.fetch; this.onToken = o.onToken;

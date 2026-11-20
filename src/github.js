@@ -134,7 +134,9 @@ async function ghClearToken() {
 const ghLoginOk = () => !!(GHD && typeof GHD.loginStart === 'function');
 /* Режим GitHub App (с 1.7.24): вход без выбора репозиториев; доступ только к репозиторию, где владелец установил приложение. Включается, когда в оболочке задано приложение. */
 const ghAppOn = () => !!(GHS.st && GHS.st.app && GHS.st.app.app);
-const ghAppInstallUrl = () => (GHS.st && GHS.st.app && GHS.st.app.slug) ? 'https://github.com/apps/' + encodeURIComponent(GHS.st.app.slug) + '/installations/new' : '';
+const GH_APP_SLUG = '';       // имя приложения в адресе github.com/apps/<имя>; если оболочка его не знает, берётся отсюда (страница обновляется без новой оболочки)
+const ghAppSlug = () => (GHS.st && GHS.st.app && GHS.st.app.slug) || GH_APP_SLUG;
+const ghAppInstallUrl = () => ghAppSlug() ? 'https://github.com/apps/' + encodeURIComponent(ghAppSlug()) + '/installations/new' : '';
 const ghAppInstallBtn = () => ghAppInstallUrl() ? h('button', { class: 'btn sm', id: 'gh-appinst', onclick: () => ghOpenUrl(ghAppInstallUrl()) }, icon('open', 13), t('gh.app.inst')) : null;
 const GHL = { state: 'idle', code: '', uri: '', left: 0, err: '', detail: '', timer: null };
 const ghMmSs = sec => Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
