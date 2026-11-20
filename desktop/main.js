@@ -278,22 +278,38 @@ async function downloadUpdate(url, expect) {
    Окно программы само в сеть не ходит (его защита это запрещает), поэтому все запросы к GitHub делает оболочка.
    Токен хранится только здесь (зашифрованным средствами системы, если они есть) и странице не передаётся. */
 const ghFile = () => path.join(app.getPath('userData'), 'github.json');
-const GH_PATH = /^\/(?:user|repos\/[\w.-]+\/[\w.-]+(?:\/[\w%.~!$&'()*+,;=:@/-]*)?)(?:\?[\w%.~!$&'()*+,;=:@/?-]*)?$/;
+const GH_PATH = /^\/(?:user(?:\/repos)?|repos\/[\w.-]+\/[\w.-]+(?:\/[\w%.~!$&'()*+,;=:@/-]*)?)(?:\?[\w%.~!$&'()*+,;=:@/?-]*)?$/;
 const GH_MAX = 110 * 1048576;
-let ghTok = null, ghLogin = '', ghEnc = true;
+let ghTok = null, ghLogin = '', ghEnc = true, ghKind = '', ghRef = '';      // ghKind: app (GitHub App), oauth (OAuth-приложение), pat (токен вручную); ghRef — refresh-токен GitHub App
 function ghLoad() {
-  ghTok = null; ghLogin = '';
+  ghTok = null; ghLogin = ''; ghKind = ''; ghRef = '';
   try {
     const j = JSON.parse(fs.readFileSync(ghFile(), 'utf8')), raw = Buffer.from(String(j.tok || ''), 'base64');
-    ghLogin = String(j.login || ''); ghEnc = j.enc !== false;
+    ghLogin = String(j.login || ''); ghEnc = j.enc !== false; ghKind = ['app', 'oauth', 'pat'].includes(j.kind) ? j.kind : '';
     if (raw.length) ghTok = ghEnc ? safeStorage.decryptString(raw) : raw.toString('utf8');
-  } catch (e) { ghTok = null; }
+    const rr = Buffer.from(String(j.ref || ''), 'base64');
+    if (ghTok && rr.length) ghRef = ghEnc ? safeStorage.decryptString(rr) : rr.toString('utf8');
+  } catch (e) { ghTok = null; ghRef = ''; }
 }
 function ghSave() {
   if (!ghTok) { try { fs.rmSync(ghFile(), { force: true }); } catch (e) { /* уже нет */ } return; }
   ghEnc = safeStorage.isEncryptionAvailable();
   const buf = ghEnc ? safeStorage.encryptString(ghTok) : Buffer.from(ghTok, 'utf8');
-  fs.writeFileSync(ghFile(), JSON.stringify({ tok: buf.toString('base64'), enc: ghEnc, login: ghLogin }), { mode: 0o600 });
+  const rb = ghRef ? (ghEnc ? safeStorage.encryptString(ghRef) : Buffer.from(ghRef, 'utf8')) : null;
+  fs.writeFileSync(ghFile(), JSON.stringify({ tok: buf.toString('base64'), enc: ghEnc, login: ghLogin, kind: ghKind, ref: rb ? rb.toString('base64') : '' }), { mode: 0o600 });
+}
+/* GitHub App с истечением токенов (8 часов): при 401 один раз обновляем токен по refresh-токену и повторяем запрос. Одновременные запросы ждут одно обновление
+   (refresh-токен одноразовый). Не удалось из-за сети — ничего не меняем; отказ GitHub — refresh-токен забываем, человек увидит «войдите заново». */
+let ghRefreshing = null;
+function ghRefreshToken() {
+  if (!ghRef || ghKind !== 'app' || !getGhl().app) return Promise.resolve(false);
+  if (!ghRefreshing) {
+    ghRefreshing = (async () => {
+      try { const r = await getGhl().refresh(ghRef); ghTok = r.token; ghRef = r.refresh; ghSave(); return true; }
+      catch (e) { if (e && /^gh:auth/.test(e.message)) { ghRef = ''; ghSave(); } return false; }
+    })().finally(() => { ghRefreshing = null; });
+  }
+  return ghRefreshing;
 }
 async function ghRequest(o) {
   o = o || {};
@@ -305,6 +321,7 @@ async function ghRequest(o) {
   }
   if (!(['GET', 'PUT'].includes(method) || postOk) || !GH_PATH.test(pth) || pth.includes('..')) throw new Error('gh:bad_request:запрос не разрешён');
   const headers = { Accept: o.raw ? 'application/vnd.github.raw+json' : 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28', 'User-Agent': 'VNMap', 'Cache-Control': 'no-cache', Pragma: 'no-cache' };   // GitHub разрешает кэшировать ответы на минуту: нам нужна свежая версия файла
+  const usedTok = ghTok;
   if (ghTok) headers.Authorization = 'Bearer ' + ghTok;
   if (o.etag) headers['If-None-Match'] = String(o.etag).slice(0, 200);
   let body;
@@ -314,6 +331,7 @@ async function ghRequest(o) {
     const res = await net.fetch(GH_BASE + pth, { method, headers, body, signal: ac.signal, redirect: 'follow', cache: 'no-store' });
     const text = await res.text();
     if (text.length > GH_MAX) throw new Error('gh:too_big:ответ GitHub слишком большой');
+    if (res.status === 401 && ghRef && !o.retried && (ghTok !== usedTok || await ghRefreshToken())) return ghRequest(Object.assign({}, o, { retried: true }));   // токен уже обновил соседний запрос — просто повторяем
     return { status: res.status, etag: res.headers.get('etag') || '', remaining: res.headers.get('x-ratelimit-remaining') || '', text };
   } catch (e) {
     if (e && /^gh:/.test(e.message)) throw e;
@@ -326,15 +344,16 @@ let ghl = null;
 function getGhl() {
   if (!ghl) ghl = new GhLogin({
     base: GH_LOGIN_BASE, clientId: DEV ? process.env.VNMAP_GH_CLIENT_ID : '', fetch: (u, o) => net.fetch(u, o), minInterval: DEV && process.env.VNMAP_GH_FAST ? 0.05 : 1,
-    onToken: async tok => {
-      const prev = { tok: ghTok, login: ghLogin };
-      ghTok = tok;
+    appId: DEV ? process.env.VNMAP_GH_APP_ID : '', appSlug: DEV ? process.env.VNMAP_GH_APP_SLUG : '',
+    onToken: async (tok, scope, extra) => {
+      const prev = { tok: ghTok, login: ghLogin, kind: ghKind, ref: ghRef };
+      ghTok = tok; ghRef = ''; ghKind = extra && extra.app ? 'app' : 'oauth';
       try {
-        const r = await ghRequest({ path: '/user' });
+        const r = await ghRequest({ path: '/user', retried: true });
         if (r.status !== 200) throw new Error('gh:auth:GitHub не принял токен (код ' + r.status + ')');
-        ghLogin = String((JSON.parse(r.text) || {}).login || ''); ghSave();
+        ghLogin = String((JSON.parse(r.text) || {}).login || ''); ghRef = (extra && extra.refresh) || ''; ghSave();
         return { login: ghLogin };
-      } catch (err) { ghTok = prev.tok; ghLogin = prev.login; throw err; }
+      } catch (err) { ghTok = prev.tok; ghLogin = prev.login; ghKind = prev.kind; ghRef = prev.ref; throw err; }
     }
   });
   return ghl;
@@ -487,20 +506,20 @@ function registerIpc() {
   });
 
   /* GitHub */
-  handle('gh:status', async () => ({ hasToken: !!ghTok, login: ghLogin, encrypted: ghEnc && safeStorage.isEncryptionAvailable() }));
+  handle('gh:status', async () => ({ hasToken: !!ghTok, login: ghLogin, encrypted: ghEnc && safeStorage.isEncryptionAvailable(), kind: ghKind, app: getGhl().info() }));
   handle('gh:setToken', async (e, tok) => {
     tok = String(tok || '').trim();
     if (!/^[\w-]{20,255}$/.test(tok)) throw new Error('gh:auth:Это не похоже на токен GitHub');
-    const prev = { tok: ghTok, login: ghLogin };
-    ghTok = tok;
+    const prev = { tok: ghTok, login: ghLogin, kind: ghKind, ref: ghRef };
+    ghTok = tok; ghRef = ''; ghKind = 'pat';
     try {
-      const r = await ghRequest({ path: '/user' });
+      const r = await ghRequest({ path: '/user', retried: true });
       if (r.status !== 200) throw new Error('gh:auth:GitHub не принял токен (код ' + r.status + ')');
       ghLogin = String((JSON.parse(r.text) || {}).login || ''); ghSave();
       return { login: ghLogin };
-    } catch (err) { ghTok = prev.tok; ghLogin = prev.login; throw err; }
+    } catch (err) { ghTok = prev.tok; ghLogin = prev.login; ghKind = prev.kind; ghRef = prev.ref; throw err; }
   });
-  handle('gh:clearToken', async () => { ghTok = null; ghLogin = ''; ghSave(); return true; });
+  handle('gh:clearToken', async () => { ghTok = null; ghLogin = ''; ghKind = ''; ghRef = ''; ghSave(); return true; });
   handle('gh:request', async (e, o) => ghRequest(o));
   handle('gh:loginStart', async (e, scope) => getGhl().start(scope));
   handle('gh:loginStatus', async () => getGhl().status());

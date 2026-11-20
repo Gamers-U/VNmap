@@ -474,12 +474,21 @@ function driveTakeNewer() {
 }
 
 /* ====== окно «Google Диск» ====== */
+/** Подсказка «Работа командой» (с 1.7.24): команда использует ОДИН общий аккаунт Google и один ключ доступа; как подключить второго человека. */
+function driveTeamHint(st) {
+  const d = h('details', { class: 'dr-steps dr-team', id: 'dr-team' }, h('summary', t('drive.team.h')),
+    h('div', { class: 'hint', style: { margin: '6px 0' } }, GS.st.signedIn ? t('drive.team.t', GS.st.email || '—') : t('drive.team.t0')),
+    h('ol', [1, 2, 3, 4].map(i => h('li', t('drive.team.s' + i)))));
+  d.open = !!st.teamOpen;
+  d.addEventListener('toggle', () => { st.teamOpen = d.open; });
+  return d;
+}
 function closeDrivePanel() { if (GS.panel && !GS.panel.m.closed) GS.panel.m.close(); }
-function openDrivePanel() {
+function openDrivePanel(o) {
   closePopover();
   if (!GD) return;
-  if (GS.panel && !GS.panel.m.closed) return;
-  const st = { m: null, root: h('div', { class: 'view dr-view' }), draft: { clientId: '', clientSecret: '' }, editKeys: false, projects: null, backups: null, loadingP: false, loadingB: false, statusEl: null };
+  if (GS.panel && !GS.panel.m.closed) { if (o && o.team === true) { GS.panel.teamOpen = true; renderDrivePanel(GS.panel); } return; }
+  const st = { m: null, root: h('div', { class: 'view dr-view' }), teamOpen: !!(o && o.team === true), draft: { clientId: '', clientSecret: '' }, editKeys: false, projects: null, backups: null, loadingP: false, loadingB: false, statusEl: null };
   GS.panel = st;
   st.m = openModal({
     cls: 'drive-m', onClose: () => { if (GS.panel === st) GS.panel = null; if (GS.signing && GD) GD.cancelSignIn().catch(() => { }); },
@@ -542,6 +551,7 @@ function renderDrivePanel(st) {
         h('button', { class: 'btn', onclick: () => { st.editKeys = true; st.draft.clientId = GS.cfg.clientId; renderDrivePanel(st); } }, icon('sliders', 15), t('drive.keys.edit'))));
     if (!GS.st.encrypted) acc.append(h('div', { class: 'hint warn-t', style: { marginTop: '8px' } }, t('drive.plain')));
   }
+  acc.append(driveTeamHint(st));
   parts.push(acc);
 
   /* 2. этот проект */

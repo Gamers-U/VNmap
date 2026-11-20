@@ -132,6 +132,10 @@ async function ghClearToken() {
    Страница видит только код, адрес для подтверждения, сколько осталось секунд и итог. Опрос состояния идёт здесь, а не в окне, чтобы
    вход завершился, даже если окно «GitHub» закрыли. */
 const ghLoginOk = () => !!(GHD && typeof GHD.loginStart === 'function');
+/* Режим GitHub App (с 1.7.24): вход без выбора репозиториев; доступ только к репозиторию, где владелец установил приложение. Включается, когда в оболочке задано приложение. */
+const ghAppOn = () => !!(GHS.st && GHS.st.app && GHS.st.app.app);
+const ghAppInstallUrl = () => (GHS.st && GHS.st.app && GHS.st.app.slug) ? 'https://github.com/apps/' + encodeURIComponent(GHS.st.app.slug) + '/installations/new' : '';
+const ghAppInstallBtn = () => ghAppInstallUrl() ? h('button', { class: 'btn sm', id: 'gh-appinst', onclick: () => ghOpenUrl(ghAppInstallUrl()) }, icon('open', 13), t('gh.app.inst')) : null;
 const GHL = { state: 'idle', code: '', uri: '', left: 0, err: '', detail: '', timer: null };
 const ghMmSs = sec => Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
 function ghLoginUI() { if (GHS.panel && !GHS.panel.m.closed) renderGhPanel(GHS.panel); if (typeof GHS.ghoPaint === 'function') GHS.ghoPaint(); }
@@ -177,9 +181,11 @@ function ghLoginCard(st, guard) {
       h('div', { class: 'hint', style: { marginTop: '6px' } }, h('span', t('ghl.wait')), ' ', h('span', { id: 'gh-left' }, t('ghl.left', ghMmSs(GHL.left)))));
     return box;
   }
-  box.append(h('div', { class: 'hint', style: { marginBottom: '10px' } }, t('ghl.t')));
+  const app = ghAppOn();
+  box.append(h('div', { class: 'hint', style: { marginBottom: '10px' } }, t(app ? 'ghl.t.app' : 'ghl.t')));
   if (GHL.state === 'error') box.append(h('div', { class: 'hint warn-t', id: 'gh-loginerr', style: { marginBottom: '10px' } }, ghLoginErrText()));
-  box.append(switchEl(!!st.draft.pub, v => { st.draft.pub = v; }, t('ghl.pub')), h('div', { class: 'hint', style: { margin: '4px 0 10px' } }, t('ghl.pub.h')),
+  if (!app) box.append(switchEl(!!st.draft.pub, v => { st.draft.pub = v; }, t('ghl.pub')), h('div', { class: 'hint', style: { margin: '4px 0 10px' } }, t('ghl.pub.h')));
+  box.append(
     h('div', { class: 'row-actions left' }, h('button', { class: 'btn primary', id: 'gh-login-btn', disabled: st.busy, onclick: () => guard(async () => { try { await ghLoginStart(!!st.draft.pub); } catch (e) { ghLoginFail(e); } }) }, icon('github', 15), t('ghl.btn'))));
   return box;
 }
@@ -355,6 +361,7 @@ async function ghExplain404(repo) {
   const exact = list.find(x => low(x) === low(repo));
   if (exact) return t('gh.x.case', exact);
   const sameName = list.filter(x => low(x.split('/')[1]) === low(name));
+  if (ghAppOn() && GHS.st.kind === 'app') return t('gh.x.app', repo) + (list.length ? ' ' + t('gh.x.sees.app', list.slice(0, 6).join(', ') + (list.length > 6 ? '…' : '')) : '');
   if (sameName.length) return t('gh.x.owner', sameName.join(', '), repo);
   const near = list.filter(x => { const n = low(x.split('/')[1]); return n.includes(low(name)) || low(name).includes(n); }).slice(0, 4);
   const parts = [];
@@ -369,8 +376,16 @@ async function ghRepoCheck(repo) {
   if (r.status === 404) throw ghFail('not_found', await ghExplain404(repo));
   if (r.status !== 200) throw ghStatusErr(r);
   const j = ghParse(r.text) || {};
-  if (j.permissions && j.permissions.push === false) throw ghFail('forbidden', t('gh.err.readonly'));
-  return { priv: !!j.private, branch: j.default_branch || '', admin: !!(j.permissions && j.permissions.admin), owner: (j.owner && j.owner.login) || '' };
+  let perm = j.permissions || null;
+  if (!perm && GHS.st.login) {            // токен GitHub App может не отдавать «permissions» в описании репозитория: спросим права человека отдельно
+    try {
+      const pr = await ghReq('GET', '/repos/' + repo + '/collaborators/' + encodeURIComponent(GHS.st.login) + '/permission');
+      const pj = pr.status === 200 ? ghParse(pr.text) : null, lv = pj && pj.permission;
+      if (lv) perm = { admin: lv === 'admin', push: lv === 'admin' || lv === 'write' || lv === 'maintain' };
+    } catch (e) { /* не узнали: считаем, что права обычные */ }
+  }
+  if (perm && perm.push === false) throw ghFail('forbidden', t('gh.err.readonly'));
+  return { priv: !!j.private, branch: j.default_branch || '', admin: !!(perm && perm.admin), owner: (j.owner && j.owner.login) || '' };
 }
 function ghDraftMeta(d) {
   const repo = ghRepoNorm(d.repo), path = ghPathNorm(d.path) || ghDefaultPath();
@@ -524,7 +539,9 @@ function renderGhPanel(st) {
     }
   } else {
     acc.append(h('div', { class: 'dr-acc' }, icon('check', 16), h('span', t('gh.as', GHS.st.login || '—'))),
-      h('div', { class: 'row-actions left' }, h('button', { class: 'btn', id: 'gh-signout', onclick: () => guard(async () => { await ghClearToken(); }) }, t('gh.signout'))));
+      h('div', { class: 'row-actions left' }, h('button', { class: 'btn', id: 'gh-signout', onclick: () => guard(async () => { await ghClearToken(); }) }, t('gh.signout')), GHS.st.kind === 'app' ? ghAppInstallBtn() : null));
+    if (ghAppOn() && GHS.st.kind === 'oauth') acc.append(h('div', { class: 'hint warn-t', id: 'gh-oldapp', style: { marginTop: '8px' } }, t('gh.app.old')));
+    if (GHS.st.kind === 'app') acc.append(h('div', { class: 'hint', style: { marginTop: '8px' } }, t('gh.app.inst.h')));
     if (!GHS.st.encrypted) acc.append(h('div', { class: 'hint warn-t', style: { marginTop: '8px' } }, t(DESK ? 'gh.plain' : 'gh.plain.web')));
   }
   parts.push(acc);

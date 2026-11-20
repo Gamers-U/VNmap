@@ -7,11 +7,18 @@
    сохранение так же, как у токена, введённого вручную); страница видит только «готово» и логин.
    Страница никогда не получает device_code и токен. Адреса запросов фиксированы (base + два пути), перенаправления запрещены,
    адрес страницы подтверждения должен быть на том же сайте, что и base. Client ID публичный (секрета у приложения нет:
-   для входа по коду он не нужен). */
+   для входа по коду он не нужен).
+   Два режима. Обычный (OAuth-приложение): запрашивается scope repo или public_repo, доступ ко всем репозиториям человека.
+   «GitHub App» (с 1.7.24, когда ниже в APP заполнены clientId и slug): scope не запрашивается, токен (ghu_…) видит только те
+   репозитории, куда приложение установлено владельцем и к которым есть доступ у самого человека. Если у приложения включено
+   истечение токенов (8 часов), GitHub выдаёт ещё и refresh-токен: для входа по коду его обновление секрета не требует. */
 
 const CLIENT_ID = 'Ov23ligenfxPCBaddY5J';
+/* GitHub App (публичные значения: Client ID и имя в адресе github.com/apps/<slug>). Пусто — режим выключен, работает обычное OAuth-приложение. */
+const APP = { clientId: '', slug: '' };
+const SLUG_RE = /^[A-Za-z0-9][A-Za-z0-9-]{0,38}$/;
 const CLIENT_RE = /^[A-Za-z0-9._-]{10,40}$/;
-const SCOPES = { repo: 'repo', public: 'public_repo' };       // repo — и закрытые репозитории, public_repo — только открытые
+const SCOPES = { repo: 'repo', public: 'public_repo' };       // repo — и закрытые репозитории, public_repo — только открытые (режим OAuth)
 const TOKEN_RE = /^[\w-]{20,255}$/;
 const USER_CODE_RE = /^[A-Z0-9][A-Z0-9-]{2,18}[A-Z0-9]$/;
 const GRANT = 'urn:ietf:params:oauth:grant-type:device_code';
@@ -26,6 +33,9 @@ class GhLogin {
   constructor(o) {
     this.base = String(o.base || 'https://github.com').replace(/\/+$/, '');
     this.clientId = CLIENT_RE.test(String(o.clientId || '')) ? String(o.clientId) : CLIENT_ID;
+    const appId = CLIENT_RE.test(String(o.appId || '')) ? String(o.appId) : (CLIENT_RE.test(APP.clientId) ? APP.clientId : '');
+    const slug = SLUG_RE.test(String(o.appSlug || '')) ? String(o.appSlug) : (SLUG_RE.test(APP.slug) ? APP.slug : '');
+    this.app = appId ? { clientId: appId, slug } : null;                // режим GitHub App включён, если известен его Client ID
     this.fetch = o.fetch; this.onToken = o.onToken;
     this.now = o.now || Date.now;
     this.wait = o.wait || (ms => new Promise(r => setTimeout(r, ms)));
@@ -55,16 +65,33 @@ class GhLogin {
     return out;
   }
 
+  /** Что страница вправе знать до входа: включён ли режим GitHub App и как называется приложение (для ссылки «Установить»). */
+  info() { return { app: !!this.app, slug: this.app ? this.app.slug : '' }; }
+
+  /** Обновить токен по refresh-токену (только режим GitHub App; секрет для токенов, полученных по коду, не нужен).
+      Возвращает { token, refresh }. Ошибка gh:auth — refresh-токен больше не годится (нужно войти заново), gh:network — повторить позже. */
+  async refresh(refreshToken) {
+    if (!this.app || !TOKEN_RE.test(String(refreshToken || ''))) throw err('auth', 'no_refresh');
+    let r;
+    try { r = await this._post('/login/oauth/access_token', { client_id: this.app.clientId, grant_type: 'refresh_token', refresh_token: String(refreshToken) }); }
+    catch (e) { throw err('network', 'нет связи с GitHub'); }
+    const j = r.json;
+    if (!j || r.status >= 500) throw err('network', 'http' + r.status);
+    if (!j.access_token || !TOKEN_RE.test(String(j.access_token))) throw err('auth', String(j.error || 'bad_response').slice(0, 60));
+    return { token: String(j.access_token), refresh: TOKEN_RE.test(String(j.refresh_token || '')) ? String(j.refresh_token) : '' };
+  }
+
   cancel() { this.gen++; if (this.st.state === 'wait') this.st = { state: 'idle' }; return true; }
 
   /** Запросить код. Бросает ошибку вида gh:код:текст (app — приложение GitHub настроено неверно, network — нет связи). */
   async start(scopeKey) {
-    const scope = SCOPES[scopeKey || 'repo'];
-    if (!scope) throw err('bad_request', 'scope');
+    const isApp = !!this.app, cid = isApp ? this.app.clientId : this.clientId;
+    const scope = isApp ? '' : SCOPES[scopeKey || 'repo'];                // у GitHub App прав через scope нет: они заданы в самом приложении
+    if (!isApp && !scope) throw err('bad_request', 'scope');
     this.cancel();
     const gen = ++this.gen;
     let r;
-    try { r = await this._post('/login/device/code', { client_id: this.clientId, scope }); }
+    try { r = await this._post('/login/device/code', isApp ? { client_id: cid } : { client_id: cid, scope }); }
     catch (e) { throw err('network', 'нет связи с GitHub'); }
     if (gen !== this.gen) throw err('cancelled', 'cancelled');
     const d = r.json || {};
@@ -77,21 +104,21 @@ class GhLogin {
     const code = String(d.user_code || '').toUpperCase();
     if (!uri || !USER_CODE_RE.test(code)) throw err('app', 'bad_response');
     const life = Math.min(Math.max(Number(d.expires_in) || 900, 30) * 1000, MAX_LIFE);
-    this.st = { state: 'wait', code, uri, until: this.now() + life, scopeKey: scopeKey || 'repo' };
-    this._loop(gen, String(d.device_code), Math.max(this.minInterval, Number(d.interval) || 5), this.now() + life, scope);
+    this.st = { state: 'wait', code, uri, until: this.now() + life, scopeKey: isApp ? 'app' : (scopeKey || 'repo') };
+    this._loop(gen, String(d.device_code), Math.max(this.minInterval, Number(d.interval) || 5), this.now() + life, scope, cid, isApp);
     return this.status();
   }
 
   _end(gen, state, extra) { if (gen === this.gen) this.st = Object.assign({ state }, extra || {}); }
 
-  async _loop(gen, deviceCode, interval, until, scope) {
+  async _loop(gen, deviceCode, interval, until, scope, cid, isApp) {
     let fails = 0;
     while (gen === this.gen) {
       await this.wait(interval * 1000);
       if (gen !== this.gen) return;
       if (this.now() > until) return this._end(gen, 'error', { err: 'expired' });
       let r;
-      try { r = await this._post('/login/oauth/access_token', { client_id: this.clientId, device_code: deviceCode, grant_type: GRANT }); }
+      try { r = await this._post('/login/oauth/access_token', { client_id: cid, device_code: deviceCode, grant_type: GRANT }); }
       catch (e) { if (++fails >= MAX_FAILS) return this._end(gen, 'error', { err: 'network' }); continue; }
       if (gen !== this.gen) return;
       const j = r.json;
@@ -100,7 +127,8 @@ class GhLogin {
       if (j.access_token) {
         if (!TOKEN_RE.test(String(j.access_token))) return this._end(gen, 'error', { err: 'app', detail: 'bad_token' });
         try {
-          const res = await this.onToken(String(j.access_token), String(j.scope || scope));
+          const refresh = TOKEN_RE.test(String(j.refresh_token || '')) ? String(j.refresh_token) : '';
+          const res = await this.onToken(String(j.access_token), String(j.scope || scope), { app: isApp, refresh });
           return this._end(gen, 'ok', { login: String((res && res.login) || '') });
         } catch (e) { return this._end(gen, 'error', { err: 'verify', detail: String((e && e.message) || '').slice(0, 120) }); }
       }
@@ -115,4 +143,4 @@ class GhLogin {
   }
 }
 
-module.exports = { GhLogin, CLIENT_ID, SCOPES, USER_CODE_RE };
+module.exports = { GhLogin, CLIENT_ID, SCOPES, USER_CODE_RE, APP };

@@ -20,8 +20,9 @@ Object.assign(D, {
   'mf.none': ['Все файлы на месте: докачивать нечего.', 'All files are here: nothing to fetch.'],
   'mf.drive.h': ['С Google Диска', 'From Google Drive'],
   'mf.drive.nodrive': ['Диск работает только в настольной версии программы. Здесь файлы можно взять из папки или из копии.', 'Drive works only in the desktop app. Here you can take the files from a folder or a backup.'],
-  'mf.drive.nosign': ['Войдите в Google в панели «Диск»: тогда файлы можно будет докачать.', 'Sign in to Google in the Drive panel and the files can be fetched.'],
-  'mf.drive.nofolder': ['Папка этого проекта на вашем Диске не найдена. Если файлы лежат на Диске другого человека, возьмите их из папки на компьютере.', 'This project’s folder was not found on your Drive. If the files are on someone else’s Drive, take them from a folder on your computer.'],
+  'mf.drive.nosign': ['Войдите в Google в панели «Диск», в тот же аккаунт, что и у остальных в команде: тогда файлы можно будет докачать.', 'Sign in to Google in the Drive panel, to the same account as the rest of the team: then the files can be fetched.'],
+  'mf.drive.nofolder': ['Папка этого проекта на Диске не найдена. Команда работает через один общий аккаунт Google: проверьте, что вы вошли в тот же аккаунт и вписали тот же ключ доступа, что и владелец, и что проект открыт из списка «Проекты на Диске».', 'This project’s folder was not found on Drive. The team works through one shared Google account: check that you signed in to the same account and entered the same access key as the owner, and that the project was opened from the list Projects on Drive.'],
+  'mf.drive.team': ['Как подключить второго человека', 'How to connect a second person'],
   'mf.drive.error': ['Диск сейчас недоступен: {0}', 'Drive is not available right now: {0}'],
   'mf.drive.check': ['Проверить, что есть на Диске', 'Check what is on Drive'],
   'mf.drive.has': ['На Диске найдено файлов: {0} из {1}.', 'Found on Drive: {0} of {1}.'],
@@ -66,7 +67,7 @@ Object.assign(D, {
     'When a project comes from Drive its files are not all downloaded at once: placeholders stand in, and a file is fetched when first viewed. The rest can be fetched in “Missing files”.'],
   'mf.more': ['…и ещё {0}', '…and {0} more'],
   'mf.more.h': ['Другие способы: папка на компьютере, архив, ссылка', 'Other ways: a folder on this computer, an archive, a link'],
-  'mf.drive.none': ['На Диске этих файлов пока нет. Скорее всего, их добавил другой человек, и они ещё не загрузились: у него в «Настройки → Подключения → Google Диск» должна быть включена синхронизация этого проекта (и не висеть окно конфликта), потом «Синхронизировать сейчас». Когда файл появится на Диске, программа докачает его сама.', 'These files are not on Drive yet. Most likely another person added them and they have not been uploaded: in “Settings → Connections → Google Drive” sync of this project must be on (with no conflict window waiting), then “Sync now”. When a file appears on Drive the app fetches it by itself.'],
+  'mf.drive.none': ['На Диске этих файлов пока нет. Скорее всего, их добавил другой человек, и они ещё не загрузились: у него в «Настройки → Подключения → Google Диск» должна быть включена синхронизация этого проекта, потом «Синхронизировать сейчас». Когда файл появится на Диске, программа докачает его сама. Если это не помогает, проверьте, что вы оба вошли в один и тот же аккаунт Google с одним ключом доступа.', 'These files are not on Drive yet. Most likely another person added them and they have not been uploaded: in “Settings → Connections → Google Drive” sync of this project must be on, then “Sync now”. When a file appears on Drive the app fetches it by itself. If that does not help, check that you both signed in to the same Google account with the same access key.'],
 });
 
 const MF = { items: [], at: 0, uid: '', neg: new Set(), flight: new Map(), idx: null, idxAt: 0, why: '', err: '', told: '', q: [], run: 0 };
@@ -243,8 +244,10 @@ async function openMissingFiles() {
         } else if (MF.why === 'nofolder') msg = t('mf.drive.nofolder');
         else if (MF.why === 'error') msg = t('mf.drive.error', MF.err);
         else { msg = ''; btn = h('button', { class: 'btn', id: 'mf-drive-check', onclick: () => checkDrive() }, icon('refresh', 15), t('mf.drive.check')); }
+        const team = GD && !st.busy && (!mfDriveCan() || MF.why === 'nofolder' || (st.drv instanceof Map && !st.items.some(x => st.drv.has(x.bid))))
+          ? h('button', { class: 'btn sm', id: 'mf-drive-team', style: { marginTop: '6px' }, onclick: () => openDrivePanel({ team: true }) }, icon('cloud', 13), t('mf.drive.team')) : null;
         return h('div', { class: 'mf-src' }, h('div', { class: 'mf-src-h' }, icon('cloud', 16), h('b', t('mf.drive.h'))), msg ? h('div', { class: 'hint', id: 'mf-drive-msg' }, msg) : null,
-          st.busy ? h('div', { class: 'mf-prog' }, h('span', { id: 'mf-prog' }, st.prog), h('button', { class: 'btn sm', id: 'mf-stop', onclick: () => { st.stop = true; } }, t('mf.stop'))) : btn);
+          st.busy ? h('div', { class: 'mf-prog' }, h('span', { id: 'mf-prog' }, st.prog), h('button', { class: 'btn sm', id: 'mf-stop', onclick: () => { st.stop = true; } }, t('mf.stop'))) : btn, team);
       };
       const folderCard = () => h('div', { class: 'mf-src' }, h('div', { class: 'mf-src-h' }, icon('folder', 16), h('b', t('mf.dir.h'))), h('div', { class: 'hint' }, t('mf.dir.d')),
         h('div', { class: 'row-actions left' },
