@@ -2612,3 +2612,24 @@ html.has-winbar.wb-auto:not(.wb-peek) .wb-hot{display:block}
 .ide-sbtn.ide-probs.bad{color:var(--danger)}
 .ide-probn{font-weight:700}
 .ide-sbtn.ide-eng{width:auto;padding:0 6px;font:600 11px var(--font)}
+
+/* 1.7.19: подбор локальной модели под компьютер (карточка #ai-hw в «Подключения → ИИ → Локальные») */
+.ai-hw .ai-hw-head{display:flex;align-items:center;gap:8px;font-size:14px}
+.ai-hw .ai-hw-sys{display:flex;flex-direction:column;gap:2px;font-size:13px;color:var(--text2)}
+.ai-hw .ai-hw-rec{display:flex;gap:8px;align-items:flex-start;padding:8px 10px;border-radius:10px;background:var(--surface3);font-size:13px;line-height:1.45}
+.ai-hw .ai-hw-rec svg{flex:none;margin-top:2px;color:var(--accent)}
+.ai-hw .ai-hw-list{display:flex;flex-direction:column;gap:8px}
+.ai-hw .ai-hw-row{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:8px 10px;border-radius:10px;background:var(--surface);border:1px solid var(--border);min-width:0}
+.ai-hw .ai-hw-m{grid-column:1;min-width:0;overflow-wrap:anywhere}
+.ai-hw .ai-hw-n{grid-column:1;min-width:0}
+.ai-hw .ai-hw-f{grid-column:2;grid-row:1 / span 2;display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:6px}
+.ai-hw .ai-hw-have{display:inline-flex;align-items:center;gap:3px;margin-left:8px;font-size:12px;color:var(--accent)}
+.ai-hw .ai-fit{font-size:12px;padding:2px 8px;border-radius:999px;white-space:nowrap;background:var(--surface3);color:var(--text2)}
+.ai-hw .ai-fit.gpu,.ai-hw .ai-fit.unified{background:color-mix(in srgb,var(--accent) 22%,transparent);color:var(--text)}
+.ai-hw .ai-fit.cpu{background:color-mix(in srgb,#d9a400 24%,transparent);color:var(--text)}
+.ai-hw .ai-fit.slow,.ai-hw .ai-fit.no{background:color-mix(in srgb,#d64545 20%,transparent);color:var(--text)}
+.ai-hw .ai-hw-row.fit-no{opacity:.72}
+.ai-hw .ai-hw-pull{display:flex;flex-direction:column;gap:6px;padding:8px 10px;border-radius:10px;background:var(--surface3);font-size:13px}
+.ai-hw .ai-hw-bar{width:100%;height:10px;accent-color:var(--accent)}
+.ai-hw .ai-hw-pull .btn{align-self:flex-start}
+@media (max-width:520px){.ai-hw .ai-hw-row{grid-template-columns:1fr}.ai-hw .ai-hw-f{grid-column:1;grid-row:auto;flex-direction:row;justify-content:space-between;align-items:center}}

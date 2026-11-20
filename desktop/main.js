@@ -11,6 +11,8 @@ const { ShellUpdater } = require('./selfupdate');
 const { Notifier } = require('./notify');
 const { AiHub } = require('./ai');
 const { GhLogin } = require('./ghlogin');
+const hwInfo = require('./hw');
+const { OllamaHost } = require('./ollama');
 const { spawn } = require('child_process');
 const crypto = require('crypto');
 const path = require('path');
@@ -28,7 +30,7 @@ const DEV = process.argv.includes('--dev');
 const FRAMELESS = process.platform !== 'darwin' && !process.env.VN_NATIVE_FRAME;
 const WINBAR_H = 15;
 const CHROME_DEF = { dark: { color: '#343439', symbolColor: '#a4a4ac' }, light: { color: '#f0f0f5', symbolColor: '#6a6a72' } };
-const BRIDGE = 11;                     // версия «моста» оболочки: страница может потребовать не меньше (data-needs в её отметке сборки)
+const BRIDGE = 12;                     // версия «моста» оболочки: страница может потребовать не меньше (data-needs в её отметке сборки)
 const RECENT_MAX = 12;
 
 protocol.registerSchemesAsPrivileged([{ scheme: SCHEME, privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true } }]);
@@ -338,6 +340,21 @@ function getGhl() {
   return ghl;
 }
 
+/* Железо и Ollama (1.7.19): подбор локальной модели. Страница видит итог, а не команды и пути. */
+let hwCache = null;
+async function getHw() {
+  if (DEV && process.env.VNMAP_HW_FAKE) { try { return JSON.parse(process.env.VNMAP_HW_FAKE); } catch (e) { /* не JSON: определяем по-настоящему */ } }
+  if (hwCache && Date.now() - hwCache.at < 60000) return hwCache.info;
+  const info = await hwInfo.detect(); hwCache = { at: Date.now(), info };
+  return info;
+}
+let ol = null;
+function getOl() {
+  if (!ol) ol = new OllamaHost({ fetch: (u, o) => net.fetch(u, o), origin: () => { try { return new URL(getAi().baseOf('ollama')).origin; } catch (e) { return 'http://localhost:11434'; } } });
+  return ol;
+}
+const olWrap = async fn => { try { return Object.assign({ ok: true }, await fn()); } catch (e) { const m = /^ol:(\w+)/.exec(e && e.message || ''); return { ok: false, code: m ? m[1] : 'fail' }; } };
+
 /* ---------- уведомления в Telegram и Discord ----------
    Как и GitHub: страница в сеть не ходит, секреты (токен бота, ссылка вебхука) живут только здесь, зашифрованные системой. */
 let nt = null;
@@ -510,6 +527,11 @@ function registerIpc() {
   handle('ai:setBase', async (e, id, url) => aiWrap(async () => ({ st: getAi().setBase(String(id || ''), url) })));
   handle('ai:request', async (e, o) => aiWrap(async () => getAi().start(o, ev => { if (!e.sender.isDestroyed()) e.sender.send('ai:evt', ev); })));
   handle('ai:abort', async (e, id) => getAi().abort(id));
+  handle('hw:info', async () => getHw());
+  handle('ol:status', async () => getOl().status());
+  handle('ol:pullStart', async (e, model) => olWrap(async () => ({ st: getOl().pullStart(model) })));
+  handle('ol:pullStatus', async () => getOl().pullStatus());
+  handle('ol:pullCancel', async () => getOl().pullCancel());
 
   handle('desk:setLang', async (e, l) => { if (l === 'ru' || l === 'en') { lang = l; buildMenu(); applyTitle(); saveWinSettings(); } return true; });
 

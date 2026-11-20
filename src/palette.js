@@ -68,7 +68,7 @@ function palCommands() {
   add(t('gh.menu'), 'fork', () => openGhPanel(), 'github гитхаб репозиторий войти вход без токена код login sign in device code');
   add(t('gho.menu'), 'fork', () => openFromGithub(), 'github open link repository открыть ссылка репозиторий новелла');
   if (DESK) add(t('drive.menu'), 'cloud', () => openDrivePanel(), 'drive google диск облако');
-  add(t('ai.pal'), 'wand', () => openSettingsWindow('ai'), 'ai assistant helper gemini gpt claude deepseek groq ollama key api model ии нейросеть помощник ключ апи модель');
+  add(t('ai.pal'), 'wand', () => openSettingsWindow('ai'), 'ai assistant helper gemini gpt claude deepseek groq ollama key api model hardware gpu ram vram download local ии нейросеть помощник ключ апи модель железо видеокарта память скачать локальная подбор');
   add(t('dgn.pal'), 'info', () => openDiag(), t('dgn.kw'));
   add(t('ui.settings'), 'sliders', () => openSettingsWindow(), 'settings preferences mode simple professional настройки режим простой профессиональный подключения модули');
   add(t('top.help'), 'help', () => openHelp(), 'help справка помощь', '?');

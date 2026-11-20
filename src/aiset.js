@@ -221,10 +221,10 @@ function setAi(st, render) {
   const grp = (id, cards, note) => [h('div', { class: 'ai-grp', id: 'ai-grp-' + id }, h('b', {}, t('ai.grp.' + id)), h('span', { class: 'hint' }, t('ai.grp.' + id + '.h'))), ...cards, note ? h('div', { class: 'hint ai-grp-note' }, note) : null];
   const paint = () => {
     const y = st && st.body ? st.body.scrollTop : 0, loc = AI_PROV.filter(p => p.tag === 'local'), onl = AI_PROV.filter(p => p.tag !== 'local');
-    list.replaceChildren(...grp('online', onl.map(p => aiCard(p, paint))), ...grp('local', DESK ? loc.map(p => aiCard(p, paint)) : [], DESK ? '' : t('ai.grp.local.web')));
+    list.replaceChildren(...grp('online', onl.map(p => aiCard(p, paint))), ...grp('local', DESK ? [aiHwCard(), ...loc.map(p => aiCard(p, paint))] : [], DESK ? '' : t('ai.grp.local.web')));
     if (st && st.body) st.body.scrollTop = y;
   };
-  paint();
+  AIHW.paint = paint; paint();
   aiRefresh().then(() => { if (list.isConnected) { where.lastChild.textContent = aiWhereText(); paint(); } });
   box.append(where, list);
   return box;

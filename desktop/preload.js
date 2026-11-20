@@ -102,6 +102,13 @@ contextBridge.exposeInMainWorld('vnDesktop', {
     abort: id => call('ai:abort', id),
     onEvent: fn => sub(listeners.ai, fn),
   },
+  hw: { info: () => call('hw:info') },                                  // железо компьютера для подбора локальной модели (с 1.7.19)
+  ol: {                                                                 // Ollama: что запущено, какие модели скачаны, скачать модель
+    status: () => call('ol:status'),
+    pullStart: model => call('ol:pullStart', model),
+    pullStatus: () => call('ol:pullStatus'),
+    pullCancel: () => call('ol:pullCancel'),
+  },
   snap: {
     info: () => call('sn:info'),
     save: o => call('sn:save', o),
