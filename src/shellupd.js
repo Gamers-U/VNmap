@@ -120,6 +120,11 @@ function updMainBlock(st, guard, render) {
     if (p.blocked) box2.append(h('div', { class: 'upd-err' }, icon('alert', 16), h('span', t('upd.needs'))));
     if (!p.any && !p.shNone && !p.blocked && !st.perr) box2.append(h('div', { class: 'hint upd-ok' }, icon('check', 14), ' ', t('upd.res.latest', updVer())));
     box.append(box2);
+    /* что нового в версии, на которую обновится кнопка: описание выпуска с GitHub (его отдаёт проверка оболочки) */
+    const su = p.su, target = p.shNew ? su && su.latest : (p.doPage && p.pg && su && su.latest === (p.pg.version || '') ? su.latest : '');
+    const nb = target && typeof wnUpdBlock === 'function' ? wnUpdBlock(target, su.notes, su.htmlUrl) : null;
+    if (nb) box.append(nb);
+    else if (typeof openWhatsNew === 'function' && CHANGELOG.length) box.append(h('div', { class: 'row-actions left' }, h('button', { class: 'btn sm', id: 'wn-upd-all', type: 'button', onclick: () => openWhatsNew() }, icon('history', 13), t('wn.all.btn'))));
   }
   if (st.perr) box.append(h('div', { class: 'hint' }, t('upd.gh.fail', st.perr)));
   if (st.serr) box.append(h('div', { class: 'hint' }, t('upd.su.fail', st.serr)));

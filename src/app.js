@@ -216,5 +216,6 @@ function boot() {
   if (typeof ghOpenFromUrl === 'function') ghOpenFromUrl();
   if (first) { saveNow(); setTimeout(() => toast(t('welcome'), 7000), 600); }
   else setSaveState('saved');
+  if (typeof wnStartup === 'function') { if (first) wnStartup(true); else setTimeout(wnStartup, 2200); }
 }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();

@@ -8,7 +8,7 @@ DIST = os.path.join(ROOT, 'dist')
 os.makedirs(DIST, exist_ok=True)
 
 JS_ORDER = ['util.js', 'merge.js', 'i18n.js', 'model.js', 'geom.js', 'canvas.js', 'modal.js', 'nodemodal.js',
-            'script.js', 'text.js', 'effects.js', 'flags.js', 'jumps.js', 'condbuilder.js', 'members.js', 'files.js', 'registry.js', 'compiler.js', 'extras.js', 'guireg.js', 'translate.js', 'tlui.js', 'build.js', 'tools.js', 'toolsmenu.js', 'playeng.js', 'player.js', 'autorun.js', 'endguide.js','voicesheet.js', 'testlog.js', 'gamemode.js', 'analysis.js', 'layout.js', 'mappdf.js', 'notes.js', 'palette.js','palintent.js','replicas.js','rename.js','checks.js','branchstats.js','varstate.js','charpage.js','resources.js', 'weight.js', 'assetprod.js', 'recipes.js', 'snippets.js', 'customcode.js', 'codeedit.js', 'cmedit.js', 'codelang.js', 'codehint.js', 'hintenv.js', 'ide.js', 'digest.js', 'prose.js','branches.js','brlink.js','texted.js','docimport.js','winctl.js','docedit.js','pull.js','lazyfiles.js','ghopen.js', 'helptools.js', 'desktop.js', 'rpsdk.js','rpyimport.js', 'launcher.js', 'shellupd.js', 'drive.js', 'collab.js', 'sharefile.js', 'github.js', 'review.js', 'acl.js', 'tasks.js', 'whodid.js', 'notify.js', 'aicore.js', 'aiset.js', 'aihw.js', 'aichat.js', 'aiask.js', 'diag.js', 'metrics.js', 'minilint.js', 'filenames.js', 'fitbox.js', 'ctrlproj.js', 'statshub.js', 'syncchip.js', 'uimode.js', 'dock.js', 'winbar.js', 'satellite.js', 'uipresets.js', 'lessons.js', 'tour.js', 'walks.js', 'walks2.js', 'snapshots.js', 'app.js']
+            'script.js', 'text.js', 'effects.js', 'flags.js', 'jumps.js', 'condbuilder.js', 'members.js', 'files.js', 'registry.js', 'compiler.js', 'extras.js', 'guireg.js', 'translate.js', 'tlui.js', 'build.js', 'tools.js', 'toolsmenu.js', 'playeng.js', 'player.js', 'autorun.js', 'endguide.js','voicesheet.js', 'testlog.js', 'gamemode.js', 'analysis.js', 'layout.js', 'mappdf.js', 'notes.js', 'palette.js','palintent.js','replicas.js','rename.js','checks.js','branchstats.js','varstate.js','charpage.js','resources.js', 'weight.js', 'assetprod.js', 'recipes.js', 'snippets.js', 'customcode.js', 'codeedit.js', 'cmedit.js', 'codelang.js', 'codehint.js', 'hintenv.js', 'ide.js', 'digest.js', 'prose.js','branches.js','brlink.js','texted.js','docimport.js','winctl.js','docedit.js','pull.js','lazyfiles.js','ghopen.js', 'helptools.js', 'desktop.js', 'rpsdk.js','rpyimport.js', 'launcher.js', 'shellupd.js', 'whatsnew.js', 'drive.js', 'collab.js', 'sharefile.js', 'github.js', 'review.js', 'acl.js', 'tasks.js', 'whodid.js', 'notify.js', 'aicore.js', 'aiset.js', 'aihw.js', 'aichat.js', 'aiask.js', 'diag.js', 'metrics.js', 'minilint.js', 'filenames.js', 'fitbox.js', 'ctrlproj.js', 'statshub.js', 'syncchip.js', 'uimode.js', 'dock.js', 'winbar.js', 'satellite.js', 'uipresets.js', 'lessons.js', 'tour.js', 'walks.js', 'walks2.js', 'snapshots.js', 'app.js']
 
 def kebab(s):
     return re.sub(r'([A-Z])', lambda m: '-' + m.group(1).lower(), s)
@@ -73,6 +73,23 @@ if _kdups:
     sys.exit(1)
 js = '\n'.join(js_parts)
 js = js.replace('/*THEMES*/null', json.dumps(themes, ensure_ascii=False))
+# «Что нового»: короткий журнал изменений (changelog.json) встраивается в страницу; проверка формы записей
+_CL = json.load(open(os.path.join(ROOT, 'changelog.json'), encoding='utf-8'))
+_seen_cl = set()
+for _e in _CL:
+    _where = 'changelog.json ' + str(_e.get('v'))
+    if not re.match(r'^\d+\.\d+\.\d+$', str(_e.get('v', ''))) or not re.match(r'^\d{4}-\d{2}-\d{2}$', str(_e.get('d', ''))):
+        print('ОШИБКА:', _where, 'нужны v вида 1.7.25 и d вида 2026-11-20', file=sys.stderr); sys.exit(1)
+    if _e['v'] in _seen_cl: print('ОШИБКА: версия дважды в changelog.json:', _e['v'], file=sys.stderr); sys.exit(1)
+    _seen_cl.add(_e['v'])
+    for _k in ('add', 'chg', 'fix'):
+        for _p in _e.get(_k, []):
+            if not (isinstance(_p, list) and len(_p) == 2 and all(isinstance(x, str) and x.strip() for x in _p)):
+                print('ОШИБКА:', _where, _k, 'пункт должен быть парой [по-русски, in English]', file=sys.stderr); sys.exit(1)
+            if re.search('[А-Яа-яЁё]', _p[1]):
+                print('ОШИБКА:', _where, _k, 'английский текст с кириллицей:', _p[1][:60], file=sys.stderr); sys.exit(1)
+js = js.replace('/*CHANGELOG*/[]', json.dumps(_CL, ensure_ascii=False))
+
 
 # отметка сборки: по ней настольная версия отличает обновление от установленной страницы
 import datetime, hashlib, zipfile

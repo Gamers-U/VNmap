@@ -284,7 +284,7 @@ function openSettingsWindow(tab) {
         const now = Date.now(); taps = now - tapT > 2500 ? 1 : taps + 1; tapT = now;
         if (taps >= 7 && !S.devUnlocked) { S.devUnlocked = true; saveSettings(); toast(t('dev.unlocked')); st.tab = 'view'; render(); }
       });
-      return h('div', { class: 'm-wrap' }, modalHead(t('ui.settings'), m), st.body, h('div', { class: 'set-foot' }, ver, h('button', { class: 'btn sm', id: 'set-diag', type: 'button', onclick: () => openDiag() }, icon('info', 13), t('dgn.set'))));
+      return h('div', { class: 'm-wrap' }, modalHead(t('ui.settings'), m), st.body, h('div', { class: 'set-foot' }, ver, h('button', { class: 'btn sm', id: 'set-diag', type: 'button', onclick: () => openDiag() }, icon('info', 13), t('dgn.set')), h('button', { class: 'btn sm', id: 'set-wn', type: 'button', onclick: () => openWhatsNew() }, icon('history', 13), t('wn.set'))));
     },
   });
 }

@@ -2642,3 +2642,21 @@ html.has-winbar.wb-auto:not(.wb-peek) .wb-hot{display:block}
 .ai-hw .ai-ins-l{margin:6px 0 6px 20px;padding:0;display:flex;flex-direction:column;gap:6px}
 .ai-hw .ai-ins-cmd{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px}
 .ai-hw .ai-ins-cmd code{padding:4px 8px;border-radius:6px;background:var(--surface);border:1px solid var(--border);overflow-wrap:anywhere}
+
+/* «Что нового» (whatsnew.js): окно истории версий и блок в окне обновления */
+.wn-m .m-wrap{width:min(640px,94vw);max-height:86vh;display:flex;flex-direction:column}
+.wn-body{display:flex;flex-direction:column;gap:8px;padding:4px 2px 2px;overflow:auto}
+.wn-ver{border:1px solid var(--border);border-radius:10px;background:var(--surface2);padding:2px 12px}
+.wn-ver>summary{display:flex;align-items:center;gap:10px;flex-wrap:wrap;cursor:pointer;padding:9px 0;list-style:none}
+.wn-ver>summary::-webkit-details-marker{display:none}
+.wn-ver>summary::before{content:"▸";color:var(--text3);font-size:12px;width:10px}
+.wn-ver[open]>summary::before{content:"▾"}
+.wn-date{color:var(--text3);font-size:12.5px}
+.wn-ver .wn-groups{padding:0 0 10px}
+.wn-groups{display:flex;flex-direction:column;gap:8px}
+.wn-gh{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;color:var(--text3);margin-bottom:3px}
+.wn-add .wn-gh{color:var(--ok)}.wn-fix .wn-gh{color:var(--accent)}
+.wn-g ul,.wn-plain{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px;font-size:13.5px;line-height:1.45}
+.wn-upd{margin-top:10px;border:1px solid var(--border);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.wn-uh{display:flex;align-items:center;gap:6px}
+.wn-foot{margin-top:4px}

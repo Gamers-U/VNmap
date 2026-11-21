@@ -70,6 +70,7 @@ function palCommands() {
   if (DESK) add(t('drive.menu'), 'cloud', () => openDrivePanel(), 'drive google диск облако');
   add(t('ai.pal'), 'wand', () => openSettingsWindow('ai'), 'ai assistant helper gemini gpt claude deepseek groq ollama key api model hardware gpu ram vram download local ии нейросеть помощник ключ апи модель железо видеокарта память скачать локальная подбор');
   add(t('dgn.pal'), 'info', () => openDiag(), t('dgn.kw'));
+  add(t('wn.pal'), 'history', () => openWhatsNew(), 'changelog whats new release notes version history updates что нового изменения история версий обновления список изменений новое');
   add(t('ui.settings'), 'sliders', () => openSettingsWindow(), 'settings preferences mode simple professional настройки режим простой профессиональный подключения модули');
   add(t('top.help'), 'help', () => openHelp(), 'help справка помощь', '?');
   add(t('tour.btn'), 'sparkles', () => openTour(), 'tutorial tour lessons learn обучение туториал уроки тур', undefined, 'tour');
