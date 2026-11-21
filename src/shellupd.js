@@ -106,6 +106,7 @@ function updMainBlock(st, guard, render) {
   const go = () => updGo(st, guard, render);
   const box = h('div', { class: 'upd-sec upd-gh upd-main' }, h('div', { class: 'upd-h' }, t('upd.main.h')), h('div', { class: 'hint' }, t('upd.go.h')));
   const p = st.plan;
+  let wnDone = false;
   if (st.probing && !p) box.append(h('div', { class: 'upd-busy' }, h('span', { class: 'spin' }), t('upd.st.check')));
   if (p) {
     const box2 = h('div', { class: 'upd-plan' });
@@ -123,9 +124,10 @@ function updMainBlock(st, guard, render) {
     /* что нового в версии, на которую обновится кнопка: описание выпуска с GitHub (его отдаёт проверка оболочки) */
     const su = p.su, target = p.shNew ? su && su.latest : (p.doPage && p.pg && su && su.latest === (p.pg.version || '') ? su.latest : '');
     const nb = target && typeof wnUpdBlock === 'function' ? wnUpdBlock(target, su.notes, su.htmlUrl) : null;
-    if (nb) box.append(nb);
-    else if (typeof openWhatsNew === 'function' && CHANGELOG.length) box.append(h('div', { class: 'row-actions left' }, h('button', { class: 'btn sm', id: 'wn-upd-all', type: 'button', onclick: () => openWhatsNew() }, icon('history', 13), t('wn.all.btn'))));
+    if (nb) { box.append(nb); wnDone = true; }
   }
+  /* нет блока «что нового» (нет новой версии или нет связи с GitHub): «История версий» всё равно под рукой */
+  if (!wnDone && !st.probing && typeof openWhatsNew === 'function' && CHANGELOG.length) box.append(h('div', { class: 'row-actions left' }, h('button', { class: 'btn sm', id: 'wn-upd-all', type: 'button', onclick: () => openWhatsNew() }, icon('history', 13), t('wn.all.btn'))));
   if (st.perr) box.append(h('div', { class: 'hint' }, t('upd.gh.fail', st.perr)));
   if (st.serr) box.append(h('div', { class: 'hint' }, t('upd.su.fail', st.serr)));
   if (!DESK.shellUpdate) box.append(h('div', { class: 'upd-err' }, icon('alert', 16), h('span', t('upd.su.old'))), typeof ghShellButtons === 'function' ? ghShellButtons() : null);

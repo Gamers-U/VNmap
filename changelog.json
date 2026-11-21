@@ -1,4 +1,6 @@
 [
+  {"v": "1.7.27", "d": "2026-11-21",
+   "fix": [["В окне «Обновить» кнопка «История версий» есть и тогда, когда нет связи с GitHub", "The Update window has the Version history button even when GitHub cannot be reached"]]},
   {"v": "1.7.26", "d": "2026-11-21",
    "add": [["История версий: коротко о том, что менялось в каждой версии (Настройки → «Что нового», окно «Обновить», Ctrl+K)", "Version history: a short list of what changed in each version (Settings - What is new, the Update window, Ctrl+K)"],
            ["В окне «Обновить» перед обновлением видно, что нового в версии, на которую вы обновитесь", "The Update window shows what is new in the version you are about to install, before you update"],
